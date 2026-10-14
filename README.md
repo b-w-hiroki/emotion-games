@@ -21,3 +21,6 @@ npx serve dist
 
 ## 独自ドメイン
 最終URLは `https://play.birdman-studio.com/` を予定。DNS設定が済む前の `PUBLIC_ORIGIN` の既定値は `https://b-w-hiroki.github.io/emotion-games`。変更方法は `docs/DEPLOYMENT.md` を参照。
+
+## マルチエンドと結末図鑑
+3作品にそれぞれ5つの結末（計15個）。通常のプレイ以外に、待機・連打・画面タップなどの特殊操作で隠し結末を発見できます。回収状態は端末内に保存し、トップと各ゲームで進捗表示します。詳細は [結末設計](docs/ENDINGS.md) を参照。
