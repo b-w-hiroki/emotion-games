@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "project": "Emotion Games",
+  "brand": "birdman studio",
+  "social": "https://x.com/toriihiroki4649",
+  "games": [
+    {
+      "slug": "girigiri",
+      "id": "001",
+      "title": "ぎりぎり。",
+      "emotion": "緊張",
+      "feature": "長押しで水を注ぎ、離したあとも残る水滴まで見越して止める",
+      "eng": "GIRI GIRI",
+      "accent": "#4cc9df",
+      "visual": "water"
+    },
+    {
+      "slug": "ato-hitotsu",
+      "id": "002",
+      "title": "あと1個。",
+      "emotion": "ハラハラ",
+      "feature": "動くブロックをタイミングよく落として積み重ねる",
+      "eng": "ONE MORE",
+      "accent": "#ffbd79",
+      "visual": "tower"
+    },
+    {
+      "slug": "micha-dame",
+      "id": "003",
+      "title": "みちゃだめ。",
+      "emotion": "恐怖",
+      "feature": "扉が開かないよう長押しで12秒耐える",
+      "eng": "DO NOT LOOK",
+      "accent": "#e6a8bc",
+      "visual": "door"
+    }
+  ]
+}
