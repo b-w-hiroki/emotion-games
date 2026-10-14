@@ -32,3 +32,18 @@ test('runtime passes syntax validation',()=>{
  const r=spawnSync(process.execPath,['--check','assets/app.js'],{encoding:'utf8'});
  assert.equal(r.status,0,r.stderr);
 });
+
+test('milestone rewards are defined for every game and are independent of score',()=>{
+ const match=app.match(/const rewardSets=(\{[\s\S]*?\});\s*let collected=/);
+ assert.ok(match,'reward catalog must exist');
+ const rewards=vm.runInNewContext('('+match[1]+')');
+ assert.deepEqual(Object.keys(rewards).sort(),Object.keys(endings).sort());
+ for(const game of Object.keys(rewards)){
+  assert.ok(rewards[game].three.title.length>=3);
+  assert.ok(rewards[game].three.text.length>=10);
+  assert.ok(rewards[game].all.title.length>=3);
+  assert.ok(rewards[game].all.text.length>=10);
+  assert.ok(rewards[game].all.symbol);
+ }
+ for(const required of ['reward_unlocked','series_completion_share_tap','completion_share_tap','collected.length>=3','collected.length===endingList.length','const newly=unlock(id)','curtain.classList.toggle'])assert.ok(app.includes(required),required);
+});

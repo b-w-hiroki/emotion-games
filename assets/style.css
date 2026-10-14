@@ -17,3 +17,48 @@
 .ending-info small{font-size:11px;color:#b1bdd0;line-height:1.5}
 .ending-mark{font-size:20px;font-weight:800;color:#ecc391}
 @media(max-height:720px){.collect-bar{padding:0;margin-bottom:5px}.collect-bar button{padding:5px 9px}}
+
+/* Discovery and completion: lightweight, accessible, no external assets */
+.curtain{overflow-y:auto;overscroll-behavior:contain}
+.curtain.found-new{background:radial-gradient(circle at 50% 36%,#6c502466,transparent 55%),#09111ee9}
+.curtain.found-new .discovery-result{animation:discovery-rise .45s cubic-bezier(.18,.8,.25,1) both}
+.curtain.found-new .discovery-glyph{animation:discovery-pop .65s ease-out both}
+.discovery-result{margin:9px 0 3px;display:flex;align-items:center;gap:10px;justify-content:center;border:1px solid #b89a61;border-radius:12px;background:#3c3028e8;padding:9px 13px;width:min(292px,100%);min-height:48px}
+.discovery-glyph{font-size:24px;color:#ffd68e}
+.discovery-info{display:flex;flex:1;flex-direction:column;gap:3px;text-align:left;min-width:0}
+.discovery-info strong{font-size:11px;color:#ffe3ab;letter-spacing:.015em}
+.discovery-info small{font-size:10px;color:#efdfc6}
+.discovery-info small:empty{display:none}
+.discovery-sparks{font-size:12px;color:#f7d98c;opacity:.7}
+.curtain .btn{margin-top:10px}
+.curtain .share-btn{margin-top:11px;padding:8px 13px}
+.curtain .related{margin-top:10px}
+.curtain h2{font-size:clamp(27px,8vw,43px);margin:6px 0}
+.curtain p{font-size:13px;line-height:1.55;margin:7px 0}
+.collection-track{height:8px;background:#394353;overflow:hidden;border-radius:10px;margin:0 0 13px}
+.collection-track span{display:block;height:100%;width:0;background:linear-gradient(90deg,#b99368,#ffe2ae);transition:width .35s ease-out}
+#collection-awards{margin-top:14px;display:grid;gap:9px;padding-bottom:10px}
+.award-card{display:flex;gap:12px;border-radius:12px;padding:12px 13px;border:1px solid #434957;background:#1b2531}
+.award-card.earned{border-color:#c0a273;background:linear-gradient(125deg,#3d3025,#252f3a)}
+.award-symbol{font-size:27px;min-width:30px;color:#f0c68e}
+.award-card.locked .award-symbol{filter:grayscale(1);opacity:.5}
+.award-card>div{min-width:0;flex:1}
+.award-card small{font-size:10px;color:#c2bdaf;display:block}
+.award-card strong{font-size:15px;display:block;margin:4px 0}
+.award-card p{font-size:11px;color:#bdc6d3;line-height:1.6;margin:2px 0}
+.award-card.locked{opacity:.76}
+.completion-share{border-radius:9px;border:1px solid #dfb677;background:#31271e;color:#ffe7bc;padding:9px 12px;margin-top:8px;font-size:11px;font-weight:700}
+.archive-progress{margin-top:21px;padding:14px;border:1px solid #4b4b52;border-radius:12px;background:#151e28;max-width:500px;width:100%}
+.archive-progress-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:10px;letter-spacing:.13em;color:#d7b999;font-weight:750}
+.archive-progress-head strong{font-size:16px;color:#f7dfbd;letter-spacing:0}
+.archive-track{height:7px;border-radius:10px;overflow:hidden;background:#303846;margin-top:10px}
+.archive-track>span{display:block;height:100%;background:linear-gradient(90deg,#e19f81,#f1d198)}
+.archive-progress p{margin:9px 0 0;font-size:12px;color:#b5c3d2}
+.archive-award{margin-top:13px;display:flex;flex-direction:column;align-items:start;gap:7px;padding:12px;border:1px solid #b69b72;border-radius:9px;background:#382b2380}
+.archive-award strong{font-size:16px;color:#fbe3ab}
+.archive-award span{font-size:12px;color:#e2d7c5}
+.archive-award button{border:1px solid #d2ae84;border-radius:9px;color:#ffe0aa;padding:9px 12px;background:#362b25;font-size:12px}
+@keyframes discovery-rise{from{opacity:0;transform:translateY(13px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes discovery-pop{0%{transform:scale(.7) rotate(-35deg)}60%{transform:scale(1.28) rotate(7deg)}100%{transform:scale(1) rotate(0)}}
+@media (max-height:720px){.curtain{padding:10px}.curtain h2{font-size:25px}.curtain p{font-size:11px}.discovery-result{min-height:40px;padding:5px 10px;margin:4px 0}.curtain .btn{min-height:43px;margin-top:7px}.curtain .share-btn{margin-top:7px}.curtain .related{margin-top:6px}}
+@media (prefers-reduced-motion:reduce){.curtain.found-new .discovery-result,.curtain.found-new .discovery-glyph{animation:none}.collection-track span{transition:none}}
