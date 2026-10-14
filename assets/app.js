@@ -103,6 +103,6 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
  if(mode==='end'&&points===0){rr(110,90,135,240,3,'#09070d');ctx.fillStyle='#ff6975';ctx.beginPath();ctx.arc(157,167,5,0,7);ctx.arc(199,167,5,0,7);ctx.fill()}
  textAt('DO NOT LOOK',180,387,'11px system-ui','#9d899f');
  if(mode==='play'&&!s.started&&elapsed>=8){finish('ignore',40)}if(mode==='play'&&s.hold){s.held+=dt;record.textContent=s.held.toFixed(1)+'s';if(s.held>=12){finish('resist',100)}}}
-function tick(now){const dt=last?Math.min((now-last)/1000,.035):0;last=now;if(mode==='play'&&$('collection-panel').hidden){elapsed+=dt;timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else drawDoor(dt);raf=requestAnimationFrame(tick)}
+function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;if(mode==='play'&&$('collection-panel').hidden){elapsed+=dt;timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else drawDoor(dt);raf=requestAnimationFrame(tick)}
 raf=requestAnimationFrame(tick);
 })();
