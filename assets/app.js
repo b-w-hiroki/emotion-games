@@ -30,6 +30,7 @@ const endings={
  ]
 };
 
+const endingList=endings[slug]||[];
 const rewardSets={
  girigiri:{
   three:{title:'水面の記憶',text:'水は、最後の一滴まで気まぐれ。待つ勇気も、攻める勇気も、ひとつの答え。'},
@@ -44,7 +45,6 @@ const rewardSets={
   all:{title:'向こう側の証人',text:'見たものと、見なかったもの。どちらもあなたの記憶になった。',symbol:'◇'}
  }
 };
-const endingList=endings[slug]||[];
 let collected=[];try{const raw=JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)||'[]');if(Array.isArray(raw))collected=raw.filter(id=>endingList.some(e=>e.id===id))}catch(_){}
 let lastEnding='';
 
