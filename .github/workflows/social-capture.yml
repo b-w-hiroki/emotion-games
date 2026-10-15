@@ -20,6 +20,7 @@ jobs:
       - run: npm run build
       - run: node scripts/capture-social.mjs
       - run: node scripts/qa-endings.mjs
+      - run: node scripts/qa-20.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:
