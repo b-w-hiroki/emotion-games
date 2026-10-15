@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140" role="img" aria-label="小さな火の精の炎">
+<defs>
+<radialGradient id="halo"><stop stop-color="#ffe89e" stop-opacity=".7"/><stop offset=".42" stop-color="#ffb16b" stop-opacity=".25"/><stop offset="1" stop-color="#f97b3d" stop-opacity="0"/></radialGradient>
+<linearGradient id="outer" x1=".1" y1=".2" x2=".8" y2="1"><stop stop-color="#ffe8a7"/><stop offset=".28" stop-color="#f9aa56"/><stop offset=".7" stop-color="#f27c43"/><stop offset="1" stop-color="#d85a40"/></linearGradient>
+<linearGradient id="inner" x1=".2" y1=".9" x2=".8" y2=".12"><stop stop-color="#fff5c1"/><stop offset=".5" stop-color="#ffe8a2"/><stop offset="1" stop-color="#ffc96e"/></linearGradient>
+</defs>
+<ellipse cx="51" cy="77" rx="50" ry="63" fill="url(#halo)"/>
+<path d="M50 124C14 124 11 91 25 65C36 46 44 45 42 7C57 23 58 38 55 51C70 40 70 23 68 14C93 39 89 61 81 79C92 73 92 62 91 58C103 91 88 121 64 124Z" fill="url(#outer)" stroke="#ffe2a0" stroke-opacity=".5" stroke-width="1.5"/>
+<path d="M53 113C30 113 28 94 37 74C44 59 49 53 49 39C59 57 60 64 56 72C68 66 70 58 70 48C86 76 85 114 64 115Z" fill="url(#inner)"/>
+<path d="M52 117C39 115 38 102 41 93C48 81 50 80 51 68C62 86 67 96 63 108C60 113 58 117 52 117Z" fill="#fffce2" opacity=".93"/>
+<path d="M30 84C19 97 27 109 36 116 M79 69C86 92 79 105 72 113" stroke="#ffe6a6" opacity=".5" stroke-width="2" fill="none"/>
+<g fill="#ffebad" opacity=".9"><circle cx="11" cy="68" r="2"/><circle cx="88" cy="42" r="1.8"/><circle cx="78" cy="14" r="1.5"/><circle cx="19" cy="116" r="1.2"/></g>
+</svg>
