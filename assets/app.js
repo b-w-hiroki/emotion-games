@@ -101,6 +101,8 @@ const backdrops=candle?sceneNames.map(name=>{
  img.src=base+'assets/kienaide-'+name+'.svg';
  return img;
 }):[];
+const characterArt=candle?Object.fromEntries(['hero','flame'].map(name=>{const img=new Image();img.src=base+'assets/kienaide-'+name+'.svg';return [name,img]})):null;
+const loaded=img=>!!(img?.complete&&img.naturalWidth>0);
 let audio=null,audioEnabled=true;
 function initCandleAudio(){
  if(!candle||audio)return;
@@ -388,6 +390,20 @@ function drawCandle(dt){
  floorLight.addColorStop(1,'rgba(255,170,87,0)');
  ctx.fillStyle=floorLight;ctx.fillRect(15,110,330,260);
  const halo=ctx.createRadialGradient(x,220,2,x,220,80+health*.45);halo.addColorStop(0,'rgba(255,218,148,.48)');halo.addColorStop(1,'rgba(255,176,99,0)');ctx.fillStyle=halo;ctx.fillRect(35,80,290,290);
+ // The illustrated character remains separate from the flame so each can respond independently.
+ const heroReady=loaded(characterArt?.hero),flameReady=loaded(characterArt?.flame);
+ if(heroReady){
+  ctx.save();
+  if(!motionReduced&&mode==='play')ctx.translate(0,Math.sin(elapsed*2.05)*.85);
+  ctx.drawImage(characterArt.hero,0,0,360,400);
+  ctx.restore();
+  // Animated firelight is cast on the clothing even though the painted base is static.
+  ctx.fillStyle='rgba(255,175,91,'+(.035+.13*lightStrength)+')';
+  ctx.beginPath();ctx.ellipse(189,222,38,42,-.24,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,224,167,'+(.2+.44*lightStrength)+')';
+  ctx.lineWidth=2.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(154,233);ctx.quadraticCurveTo(177,244,204,231);ctx.stroke();
+ }else{
  // Traveller, coat, hands and candle. Layered fabric and scarf give the protagonist a readable silhouette.
  const faceBounce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?0:Math.sin(elapsed*1.9)*1.2;
  const litAmount=Math.min(1,health/82);
@@ -398,8 +414,19 @@ function drawCandle(dt){
  ctx.strokeStyle='rgba(253,196,137,'+(.22+litAmount*.28)+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(154,221);ctx.quadraticCurveTo(179,233,208,220);ctx.stroke();
  ctx.fillStyle='#20283a';ctx.beginPath();ctx.arc(180,170+faceBounce,29,0,7);ctx.fill();
  ctx.fillStyle='rgba(255,182,112,'+(.12+.36*lightStrength)+')';ctx.beginPath();ctx.arc(180,170,29,Math.PI*.15,Math.PI*.85);ctx.lineTo(180,170);ctx.fill();ctx.beginPath();ctx.moveTo(142,315);ctx.quadraticCurveTo(147,205,180,199);ctx.quadraticCurveTo(217,207,220,315);ctx.fill();
+
+ }
+ if(flameReady){
+  // The flame breathes with the world but keeps its base in the girl's hands.
+  const sway=motionReduced?0:Math.sin(elapsed*6.3)*Math.min(2.2,wind*2.4);
+  ctx.save();ctx.translate(x+sway,232);ctx.rotate(motionReduced?0:Math.sin(elapsed*4.6)*wind*.11);
+  ctx.drawImage(characterArt.flame,-27,-fireHeight*1.35,54,Math.max(15,fireHeight*1.55));
+  ctx.restore();
+ }else{
  rr(162,229,36,86,6,'#e8d7c3');rr(167,237,8,68,4,'#fff0d8');ctx.fillStyle='#49363a';ctx.fillRect(179,216,3,18);
  ctx.beginPath();ctx.moveTo(x,235);ctx.bezierCurveTo(x-24,219,x-8,197-fireHeight/3,x+Math.sin(elapsed*2)*5,218-fireHeight);ctx.bezierCurveTo(x+23,198,x+17,227,x,235);ctx.fillStyle=health>14?'#ffad4c':'#93a0b7';ctx.fill();ctx.beginPath();ctx.moveTo(x,232);ctx.quadraticCurveTo(x-9,216,x,223-fireHeight*.3);ctx.quadraticCurveTo(x+9,220,x,232);ctx.fillStyle='#fff1bf';ctx.fill();
+
+ }
  // Personality is revealed through small expressive eyes rather than a large mascot face.
  if(health>6){
   const eyey=227-fireHeight*.43,blink=!motionReduced&&Math.sin(elapsed*1.9)>.993;
@@ -418,7 +445,16 @@ function drawCandle(dt){
    ctx.fillStyle='rgba(255,235,180,.65)';ctx.fillRect(x+Math.cos(angle)*radius,215+Math.sin(angle)*radius,2.3,2.3);
   }
  }
- if(shield){ctx.fillStyle='rgba(238,177,139,'+(.23+.5*lightStrength)+')';ctx.beginPath();ctx.ellipse(132,236,27,76,-.32,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(228,236,27,76,.32,0,7);ctx.fill()}
+ if(shield){
+  // Cupping the flame reads as a gesture, rather than two abstract translucent bars.
+  const c=.3+.55*lightStrength;
+  ctx.fillStyle='rgba(232,167,128,'+c+')';
+  ctx.beginPath();ctx.ellipse(154,226,13,30,-.42,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(208,226,13,30,.42,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,222,179,'+(.34+.48*lightStrength)+')';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(159,207);ctx.quadraticCurveTo(145,226,161,241);
+  ctx.moveTo(201,207);ctx.quadraticCurveTo(214,226,200,241);ctx.stroke();
+ }
  if(s.mote){const m=s.mote,pulse=1+Math.sin(elapsed*5)*.18;ctx.save();ctx.translate(m.x,m.y);ctx.scale(pulse,pulse);const glow=ctx.createRadialGradient(0,0,1,0,0,31);glow.addColorStop(0,'rgba(255,235,180,.95)');glow.addColorStop(1,'rgba(255,193,104,0)');ctx.fillStyle=glow;ctx.fillRect(-34,-34,68,68);textAt('✦',0,7,'bold 24px system-ui','#fff0bf');ctx.restore();textAt('記憶にふれる',m.x,m.y+42,'bold 10px system-ui','#fff1cf')}
  const meter=(label,value,y,color)=>{textAt(label,24,y,'bold 10px system-ui','#e5e7ec','left');rr(24,y+8,132,7,4,'#263247');rr(24,y+8,132*Math.max(0,value)/100,7,4,color)};
  meter('灯り',health,18,'#ffb15b');meter('息',s.oxygen===undefined?100:s.oxygen,43,'#a4cee2');
