@@ -64,6 +64,13 @@ try{
     const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
   }))));
   assert.deepEqual(artLoaded,[true,true,true,true],'all chapter art must load at runtime');
+  const actors=await t.page.evaluate(async()=>Promise.all(['hero','flame'].map(name=>new Promise(ok=>{
+    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
+  }))));
+  assert.deepEqual(actors,[true,true],'character layers should load without exceptions');
+  await t.page.waitForTimeout(250);
+  await t.page.screenshot({path:'artifacts/screenshots/kienaide-illustrated-actors-390.png'});
+  console.log('PASS: detailed player silhouette and flame image layers load in Chromium');
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-art-scene01-390.png'});
   console.log('PASS: all four illustrated chapter backgrounds loaded in Chromium');
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
