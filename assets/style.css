@@ -69,3 +69,14 @@
 .game-shell.ember .action{background:linear-gradient(135deg,#ffe5b4,#f4a85f)}
 .game-shell.ember .hud>div{border-color:#63505b}
 .game-shell.ember .arena{border-color:#8e6471;box-shadow:0 24px 66px #0007,0 0 40px #bb6e3522}
+
+/* 16 new prototype variants — one shared engine, distinct emotional atmospheres. */
+.card.timing .card-art{background:radial-gradient(ellipse at 55% 45%,var(--tone),#202538 70%);color:#fff}
+.card.balance .card-art{background:radial-gradient(ellipse at 30% 35%,var(--tone),#1a2c3a 79%)}
+.card.rhythm .card-art{background:radial-gradient(ellipse at 50% 25%,var(--tone),#19192d 78%)}
+.card.choice .card-art{background:radial-gradient(ellipse at 70% 25%,var(--tone),#342535 80%)}
+.card.timing .art-icon,.card.balance .art-icon,.card.rhythm .art-icon,.card.choice .art-icon{color:#fff;opacity:.96;text-shadow:0 0 29px #fff8}
+.game-shell.timing .arena,.game-shell.balance .arena,.game-shell.rhythm .arena,.game-shell.choice .arena{border-color:var(--tone);box-shadow:0 20px 65px #0006,0 0 32px color-mix(in srgb,var(--tone),transparent 81%)}
+.game-shell.timing .action,.game-shell.balance .action,.game-shell.rhythm .action,.game-shell.choice .action{background:linear-gradient(130deg,var(--tone),#f3cfb4)}
+.card .card-info .emotion{line-height:1.7}
+@media(max-width:700px){.cards{gap:12px}.card-art{min-height:155px}}
