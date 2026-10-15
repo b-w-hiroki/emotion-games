@@ -20,7 +20,7 @@ test("near-extinction recovery comes from the player's timely release, not RNG",
  assert.equal(eligible(base,40),false,'no arbitrary early shortcut');
 });
 test('highlight is shareable but never auto-posted',()=>{
- for(const x of ['moment_card_created','moment-save','canvas.toBlob','navigator.canShare','miracle_triggered','releaseAt=elapsed'])
+ for(const x of ['moment_card_created','moment-save','card.toBlob','navigator.canShare','miracle_triggered','releaseAt=elapsed'])
   assert.ok(app.includes(x),x);
  assert.equal(spawnSync(process.execPath,['--check','assets/app.js'],{encoding:'utf8'}).status,0);
 });
