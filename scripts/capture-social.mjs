@@ -50,6 +50,9 @@ async function grab(slug,scenario){
    await page.waitForTimeout(600);await page.locator('#action').click();await page.waitForTimeout(550);
    const score=Number(await page.locator('#record').innerText());
    if(score<1)throw new Error('ato-hitotsu: first block did not land');
+  }else if(slug==='kienaide'){
+   await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(6100);await page.mouse.up();await page.waitForTimeout(350);
+   if(!(await page.locator('#curtain-title').innerText()).includes('守りすぎた'))throw new Error('kienaide: all-hold ending missing');
   }else if(slug==='micha-dame'){
    await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(12450);await page.mouse.up();await page.waitForTimeout(300);
    if(!(await page.locator('#curtain-title').innerText()).includes('見なかった'))throw new Error('micha-dame: cannot clear by holding');
@@ -68,6 +71,6 @@ async function grab(slug,scenario){
 }
 try{
  await grab('',false);
- for(const slug of ['girigiri','ato-hitotsu','micha-dame'])await grab(slug,true);
+ for(const slug of ['girigiri','ato-hitotsu','micha-dame','kienaide'])await grab(slug,true);
  fs.writeFileSync(path.join(out,'QA_REPORT.json'),JSON.stringify({viewports:['390x844'],status:'passed',results},null,2));
 }finally{await browser.close();await new Promise(r=>server.close(r))}

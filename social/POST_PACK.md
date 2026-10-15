@@ -17,3 +17,11 @@ https://b-w-hiroki.github.io/emotion-games/ato-hitotsu/?utm_source=x&utm_medium=
 https://b-w-hiroki.github.io/emotion-games/micha-dame/?utm_source=x&utm_medium=social&utm_campaign=emotion003
 
 ※各作品の6〜15秒の実プレイ録画・iPhone QA・公開URL確認後に投稿する。
+
+## 004｜きえないで。
+消えそうな小さな炎を守るゲームを作りました。
+風が強いときは指で守る。でも、守りすぎても消えてしまう。
+どんな結末になった？
+https://play.birdman-studio.com/kienaide/?utm_source=x&utm_medium=social&utm_campaign=emotion004
+
+動画案：最初に風で火が消えかける瞬間→長押しで守る→酸欠で消える意外な結末→5種の結末をほのめかす。SNS投稿は公開確認後、手動。

@@ -53,6 +53,23 @@ try{
   await t.ctx.close();console.log('PASS: no-input ending');
  }
 
+
+ {
+  const t=await pageFor('kienaide');
+  await t.page.locator('#stage').click({position:{x:180,y:180}});
+  await t.page.locator('#stage').click({position:{x:180,y:180}});
+  await check(t,'ひとつの願い。');
+  await t.page.reload();
+  assert.equal(await t.page.locator('#collection-progress').innerText(),'結末 1 / 5');
+  await t.ctx.close();console.log('PASS: flame secret wish and persistent discovery');
+ }
+ {
+  const t=await pageFor('kienaide');
+  await t.page.waitForTimeout(7200);
+  await check(t,'風にさらわれた。');
+  await t.ctx.close();console.log('PASS: flame exposed to wind extinguishes');
+ }
+
  // Reward thresholds, persistence, duplicate suppression, and the final archive.
  async function seeded(slug,ids){
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
@@ -109,17 +126,18 @@ try{
   await page.addInitScript(()=>{const all={
     'girigiri':['empty','one-drop','normal','perfect','overflow'],
     'ato-hitotsu':['wait','rush','collapse','precision','sky'],
-    'micha-dame':['ignore','knock','peek','whisper','resist']};
+    'micha-dame':['ignore','knock','peek','whisper','resist'],
+    'kienaide':['blown','smother','wish','survive','dawn']};
     for(const [slug,ids] of Object.entries(all))localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(ids));
   });
   await page.goto(base);
   assert.ok(await page.locator('.archive-award').isVisible(),'archive completion badge');
-  assert.ok((await page.locator('.archive-progress').innerText()).includes('15/15'));
+  assert.ok((await page.locator('.archive-progress').innerText()).includes('20/20'));
   assert.ok(await page.locator('#share-archive').isVisible());
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
   assert.equal(overflow,false,'no horizontal scrolling');
-  await page.screenshot({path:'artifacts/screenshots/archive-15of15-390.png'});
+  await page.screenshot({path:'artifacts/screenshots/archive-20of20-390.png'});
   assert.deepEqual(errors,[]);
-  await ctx.close();console.log('PASS: complete 15/15 archive');
+  await ctx.close();console.log('PASS: complete 20/20 archive');
  }
 }finally{await browser.close();await new Promise(ok=>server.close(ok))}
