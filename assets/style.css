@@ -80,3 +80,21 @@
 .game-shell.timing .action,.game-shell.balance .action,.game-shell.rhythm .action,.game-shell.choice .action{background:linear-gradient(130deg,var(--tone),#f3cfb4)}
 .card .card-info .emotion{line-height:1.7}
 @media(max-width:700px){.cards{gap:12px}.card-art{min-height:155px}}
+
+/* Research mode: invisible labels reduce leading questions; optional survey never blocks replay. */
+html[data-study="1"] .game-heading .label span{visibility:hidden}
+.study-feedback{width:min(292px,100%);margin:7px auto 0;color:#e8e8ee;text-align:left}
+.study-feedback details{background:#1c2939;border:1px solid #68798e;border-radius:9px;padding:7px 9px;font-size:11px}
+.study-feedback summary{cursor:pointer;list-style:revert;font-weight:750;text-align:center}
+.study-feedback p{font-size:11px;margin:6px 0;color:#d7dce6}
+.study-feelings{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.study-feelings button{padding:6px 9px;min-height:29px;border:1px solid #5a7b96;border-radius:99px;background:#32465e;color:#f9f5f0;font-size:11px;white-space:nowrap}
+.study-feelings button:disabled{opacity:.55;cursor:default}
+#study-saved{display:block;text-align:center;color:#f6cf9e;font-size:10px;margin-top:4px}
+.study-dashboard{background:#141f2d;border:1px solid #657d92;padding:13px 16px;border-radius:12px;margin-top:20px;width:min(530px,100%)}
+.study-dashboard strong{font-size:12px;letter-spacing:.08em;color:#e2bb8a}
+.study-dashboard p{font-size:12px;line-height:1.6;color:#bfcbd6;margin:8px 0}
+.study-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.study-actions span{font-size:11px;color:#d0d7df;margin-right:auto}
+.study-actions button{border:1px solid #6b879c;border-radius:8px;background:#263a4f;color:#e9ecf2;padding:7px 10px;font-size:11px}
+@media(max-height:720px){.study-feedback{margin-top:5px}.study-feedback details{padding:5px 7px}}
