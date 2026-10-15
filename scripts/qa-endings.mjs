@@ -63,6 +63,11 @@ try{
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
   await t.page.waitForTimeout(7600);
   await check(t,'風にさらわれた。');
+  assert.ok(await t.page.locator('#moment-save').isVisible(),'candle ending must offer image card');
+  await t.page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
+  const [download]=await Promise.all([t.page.waitForEvent('download'),t.page.locator('#moment-save').click()]);
+  assert.match(download.suggestedFilename(),/^kienaide-blown\\.png$/);
+  await t.page.screenshot({path:'artifacts/screenshots/kienaide-share-result-390.png'});
   await t.page.reload();
   assert.equal(await t.page.locator('#collection-progress').innerText(),'結末 1 / 5');
   await t.ctx.close();console.log('PASS: four-chapter flame journey, sound control, failure and persistence');
