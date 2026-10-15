@@ -111,3 +111,19 @@ html[data-study="1"] .card-info .emotion{visibility:hidden}
 .study-actions span{font-size:11px;color:#d0d7df;margin-right:auto}
 .study-actions button{border:1px solid #6b879c;border-radius:8px;background:#263a4f;color:#e9ecf2;padding:7px 10px;font-size:11px}
 @media(max-height:720px){.study-feedback{margin-top:5px}.study-feedback details{padding:5px 7px}}
+
+/* Shareable moment, kept in the game result overlay and not the play HUD. */
+.moment-save{border:1px solid #d8bb83;border-radius:9px;padding:9px 13px;background:linear-gradient(145deg,#433526,#2d292b);color:#ffe7b6;font-size:12px;font-weight:800;margin-top:8px}
+.moment-save:hover{border-color:#ffe3a0;background:#51402c}
+.game-shell.ember .curtain{overflow-y:auto;overscroll-behavior:contain}
+.game-shell.ember .curtain .btn{min-height:48px;margin-top:9px}
+.game-shell.ember .curtain .share-btn{margin-top:9px}
+.game-shell.ember .curtain .related{margin-top:7px}
+@media(max-height:720px){
+.game-shell.ember .curtain{padding:12px 16px}
+.game-shell.ember .curtain h2{font-size:clamp(24px,7vw,35px)}
+.game-shell.ember .curtain p{font-size:11px;line-height:1.5;margin:4px}
+.game-shell.ember .curtain .btn{min-height:40px}
+.game-shell.ember .curtain .share-btn{padding:6px 11px;margin-top:6px}
+.game-shell.ember .moment-save{padding:6px 10px;margin-top:5px;font-size:11px}
+}
