@@ -3,7 +3,7 @@ import vm from 'node:vm';
 const microScope={window:{}};vm.runInNewContext(fs.readFileSync('assets/microgames.js','utf8'),microScope,{timeout:500});
 const expanded=microScope.window.EmotionMissions.endings;
 const root=path.resolve('dist');
-const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.json':'application/json'};
+const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.svg':'image/svg+xml','.json':'application/json'};
 const server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(!u.pathname.startsWith('/emotion-games/')){res.writeHead(404);return res.end()}const part=decodeURIComponent(u.pathname.slice(15));const file=path.resolve(root,part.endsWith('/')?part+'index.html':part||'index.html');if(!file.startsWith(root+path.sep)){res.writeHead(403);return res.end()}try{res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});res.end(fs.readFileSync(file))}catch(_){res.writeHead(404);res.end('not found')}});
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const base='http://127.0.0.1:'+server.address().port+'/emotion-games/';
