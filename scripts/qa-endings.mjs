@@ -58,7 +58,7 @@ try{
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
   const page=await ctx.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(({slug,ids})=>localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(ids)),{slug,ids});
+  await page.addInitScript(({slug,ids})=>{const key='emotion-endings-v1-'+slug;if(localStorage.getItem(key)===null)localStorage.setItem(key,JSON.stringify(ids))},{slug,ids});
   await page.goto(base+slug+'/');
   await page.locator('#play').click();
   return {ctx,page,errors};
@@ -70,6 +70,7 @@ try{
  {
   const t=await seeded('micha-dame',['ignore','peek']);
   await knock(t);
+  assert.equal(await t.page.locator('#curtain-title').innerText(),'叩き返された。');
   assert.equal(await t.page.locator('#collection-progress').innerText(),'結末 3 / 5');
   assert.ok((await t.page.locator('#discovery-state').innerText()).includes('新しい'));
   assert.ok((await t.page.locator('#discovery-milestone').innerText()).includes('余韻'));
