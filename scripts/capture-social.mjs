@@ -56,6 +56,13 @@ async function grab(slug,scenario){
   }else if(slug==='micha-dame'){
    await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(12450);await page.mouse.up();await page.waitForTimeout(300);
    if(!(await page.locator('#curtain-title').innerText()).includes('見なかった'))throw new Error('micha-dame: cannot clear by holding');
+  }else{
+   const kind=JSON.parse(fs.readFileSync('catalog.json','utf8')).games.find(g=>g.slug===slug)?.visual;
+   if(kind==='timing'||kind==='rhythm'){await page.locator('#action').click();await page.locator('#action').click();}
+   else if(kind==='balance'){for(let i=0;i<4;i++)await page.locator('#action').click();}
+   else if(kind==='choice'){for(let i=0;i<3;i++)await page.locator('#action').click();}
+   await page.waitForTimeout(340);
+   if(await page.locator('#curtain').evaluate(e=>e.classList.contains('hidden')))throw new Error(key+': no result');
   }
   await page.screenshot({path:path.join(out,'screenshots',key+'-after.png')});
  }
@@ -71,6 +78,6 @@ async function grab(slug,scenario){
 }
 try{
  await grab('',false);
- for(const slug of ['girigiri','ato-hitotsu','micha-dame','kienaide'])await grab(slug,true);
+ for(const slug of JSON.parse(fs.readFileSync('catalog.json','utf8')).games.map(g=>g.slug))await grab(slug,true);
  fs.writeFileSync(path.join(out,'QA_REPORT.json'),JSON.stringify({viewports:['390x844'],status:'passed',results},null,2));
 }finally{await browser.close();await new Promise(r=>server.close(r))}
