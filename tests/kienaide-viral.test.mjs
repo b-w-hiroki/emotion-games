@@ -8,7 +8,7 @@ const match=app.match(/function canTriggerMiracle\(s,time\)\{[\s\S]*?\n\}/);
 assert.ok(match,'Player-triggered near-miss rescue condition must exist');
 const eligible=vm.runInNewContext('('+match[0]+')');
 const base={rescue:false,memories:2,flame:21,oxygen:51,shield:false,wind:.29,releaseAt:78.5};
-test('near-extinction recovery comes from the player's timely release, not RNG',()=>{
+test("near-extinction recovery comes from the player's timely release, not RNG",()=>{
  assert.equal(eligible(base,79),true);
  assert.equal(eligible({...base,releaseAt:60},79),false,'old release does not count');
  assert.equal(eligible({...base,shield:true},79),false,'cannot trigger while protected');
