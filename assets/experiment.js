@@ -55,11 +55,14 @@ window.emotionTrack=(name,payload)=>{
  if(typeof prior==='function')prior(name,payload);
  if(name==='game_start'){
   current={id:Date.now()+'-'+Math.round(Math.random()*1e7),slug:game,target:document.querySelector('.game-heading .label span')?.textContent?.replace('/','').trim()||null,start:performance.now(),inputs:0,recorded:false};
+  records.push({id:current.id,game_id:game,target:current.target,mode:'blind',duration_ms:null,inputs:0,ending_id:null,score:null,completed:false,answered:false,felt:null});
+  records=records.slice(-300);save();
   panel.hidden=true;panel.querySelector('summary').textContent='今の気持ちを記録（任意）';panel.querySelector('details').open=false;panel.querySelector('#study-saved').textContent='';panel.querySelectorAll('button').forEach(x=>x.disabled=false);
  }
  if(name==='game_complete'&&current&&!current.recorded){
-  const entry={id:current.id,game_id:game,target:current.target,mode:'blind',duration_ms:Math.round(performance.now()-current.start),inputs:current.inputs,ending_id:payload?.ending_id||null,score:payload?.score??null,answered:false,felt:null};
-  records.push(entry);records=records.slice(-300);save();current.recorded=false;
+  const entry=records.find(e=>e.id===current.id);
+  if(entry){entry.duration_ms=Math.round(performance.now()-current.start);entry.inputs=current.inputs;entry.ending_id=payload?.ending_id||null;entry.score=payload?.score??null;entry.completed=true;save()}
+  current.recorded=false;
   panel.hidden=false;
  }
 };
