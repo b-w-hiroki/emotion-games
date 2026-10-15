@@ -24,3 +24,7 @@ test('highlight is shareable but never auto-posted',()=>{
   assert.ok(app.includes(x),x);
  assert.equal(spawnSync(process.execPath,['--check','assets/app.js'],{encoding:'utf8'}).status,0);
 });
+
+test('the four chapters differ in shelter, bridge exposure and rescue foreshadowing',()=>{
+ for(const marker of ["tunnelGust=chapter===1", "s.shelterUntil=elapsed+3.5", "chapter===2?1.2:0", "bridgeCold=chapter===2?.62:1", "rescue_foreshadowed", "s.miracleHint=true"]){assert.ok(app.includes(marker),marker)}
+});
