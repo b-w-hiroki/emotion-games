@@ -60,6 +60,12 @@ try{
  {
   const t=await pageFor('kienaide','?qa=1');
   assert.ok(await t.page.locator('#story-beat').isVisible());
+  const artLoaded=await t.page.evaluate(async()=>Promise.all(['snow-street','wind-tunnel','frozen-bridge','dawn-village'].map(name=>new Promise(ok=>{
+    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
+  }))));
+  assert.deepEqual(artLoaded,[true,true,true,true],'all chapter art must load at runtime');
+  await t.page.screenshot({path:'artifacts/screenshots/kienaide-art-scene01-390.png'});
+  console.log('PASS: all four illustrated chapter backgrounds loaded in Chromium');
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
   await t.page.waitForTimeout(7600);
   await check(t,'風にさらわれた。');
