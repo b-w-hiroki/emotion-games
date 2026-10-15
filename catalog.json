@@ -33,6 +33,16 @@
       "eng": "DO NOT LOOK",
       "accent": "#e6a8bc",
       "visual": "door"
+    },
+    {
+      "slug": "kienaide",
+      "id": "004",
+      "title": "きえないで。",
+      "emotion": "切なさ",
+      "feature": "風が強い時は長押しで炎を守る。守り続けると酸素が不足する。5つの隠し結末を集める。",
+      "eng": "KEEP THE LIGHT",
+      "accent": "#ffc77d",
+      "visual": "flame"
     }
   ]
 }
