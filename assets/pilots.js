@@ -89,7 +89,7 @@ M.frame=(ctx,s,t,dt,finish)=>{
  }else if(s.slug==='tobo'){
   if(!s.started&&t>=8){close(s,'idle',20,finish);return}
   if(s.started){
-   p.gravity+=(s.hold?-55:28)*dt;
+   p.gravity+=(s.hold?55:-28)*dt;
    p.gravity=Math.max(-38,Math.min(38,p.gravity));
    p.height+=p.gravity*dt;
    p.x+=21*dt;
