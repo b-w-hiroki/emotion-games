@@ -13,3 +13,18 @@ test('GitHub Pages deployment sets the canonical custom origin for social previe
 });
 
 test('every game has public microgame script in generated page contract',()=>{const s=fs.readFileSync('scripts/build.mjs','utf8');assert.ok(s.includes("'microgames.js'"));assert.ok(s.includes('assets/microgames.js'))});
+
+test('four separate illustrated Kienaide chapter SVG assets ship in the build',()=>{
+ const names=['snow-street','wind-tunnel','frozen-bridge','dawn-village'];
+ const build=fs.readFileSync('scripts/build.mjs','utf8');
+ const app=fs.readFileSync('assets/app.js','utf8');
+ for(const name of names){
+  const path='assets/kienaide-'+name+'.svg';
+  const art=fs.readFileSync(path,'utf8');
+  assert.ok(art.includes('<svg'),path);
+  assert.ok(art.length>3000,path+' must be a real visual layer');
+  assert.ok(build.includes("'"+name+"'"),name+' not built');
+  assert.ok(app.includes("'"+name+"'"),name+' not rendered');
+ }
+ assert.ok(app.includes('ctx.drawImage(scene,0,0,360,400)'));
+});

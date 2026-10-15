@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
 const root=path.resolve('dist');
-const types={'.js':'text/javascript','.css':'text/css','.html':'text/html','.png':'image/png','.json':'application/json'};
+const types={'.js':'text/javascript','.css':'text/css','.html':'text/html','.png':'image/png','.svg':'image/svg+xml','.json':'application/json'};
 const srv=http.createServer((req,res)=>{
  const u=new URL(req.url,'http://localhost');
  if(!u.pathname.startsWith('/emotion-games/')){res.writeHead(404);return res.end()}

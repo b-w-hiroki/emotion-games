@@ -3,7 +3,7 @@ const catalog=JSON.parse(fs.readFileSync('catalog.json','utf8')).games;
 const sandbox={window:{}};vm.runInNewContext(fs.readFileSync('assets/microgames.js','utf8'),sandbox,{timeout:500});
 const extras=sandbox.window.EmotionMissions.games;
 const out='artifacts/screenshots';fs.mkdirSync(out,{recursive:true});
-const root=path.resolve('dist'),mime={'.js':'application/javascript','.css':'text/css','.html':'text/html','.png':'image/png'};
+const root=path.resolve('dist'),mime={'.js':'application/javascript','.css':'text/css','.html':'text/html','.png':'image/png','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(!u.pathname.startsWith('/emotion-games/')){res.writeHead(404);return res.end('Not found')}const rel=decodeURIComponent(u.pathname.slice('/emotion-games/'.length));const f=path.resolve(root,rel.endsWith('/')?rel+'index.html':rel||'index.html');if(!f.startsWith(root+path.sep)){res.writeHead(403);return res.end()}try{res.writeHead(200,{'content-type':mime[path.extname(f)]||'text/plain'});res.end(fs.readFileSync(f))}catch(_){res.writeHead(404);res.end('missing')}});
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));const base='http://127.0.0.1:'+server.address().port+'/emotion-games/';const browser=await chromium.launch({headless:true,args:['--no-sandbox']});const issues=[];
 try{

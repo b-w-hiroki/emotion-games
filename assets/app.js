@@ -95,6 +95,12 @@ const $=id=>document.getElementById(id),record=$('record'),best=$('best'),timer=
 let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
 try{high=Number(localStorage.getItem('emotion-v1-'+slug))||0}catch(_){}if(!candle)best.textContent=high?String(high):'—';
 const state={};
+const sceneNames=['snow-street','wind-tunnel','frozen-bridge','dawn-village'];
+const backdrops=candle?sceneNames.map(name=>{
+ const img=new Image();
+ img.src=base+'assets/kienaide-'+name+'.svg';
+ return img;
+}):[];
 let audio=null,audioEnabled=true;
 function initCandleAudio(){
  if(!candle||audio)return;
@@ -274,7 +280,7 @@ function drawCandle(dt){
   {at:70,label:'最終章　夜明け前',line:'あと少し。名前を呼ぶ声がした。'}
  ];
  let chapter=0;for(let i=1;i<chapters.length;i++)if(elapsed>=chapters[i].at)chapter=i;
- if(mode==='play'&&chapter!==s.chapter){s.chapter=chapter;mark('chapter_reached',{chapter:chapter+1})}
+ if(mode==='play'&&chapter!==s.chapter){s.previousChapter=s.chapter;s.chapter=chapter;s.sceneChangedAt=elapsed;mark('chapter_reached',{chapter:chapter+1})}
  if(mode==='play'&&elapsed>(s.storyPause||0))setStory(chapters[chapter].label,chapters[chapter].line);
  const gustWave=Math.pow((Math.sin(elapsed*(.42+chapter*.055)-.9)+1)/2,2.3);
  const crossWind=Math.pow((Math.sin(elapsed*.19+1.8)+1)/2,4);
@@ -320,12 +326,35 @@ function drawCandle(dt){
   record.textContent=Math.max(0,Math.round(s.flame))+'%';const remaining=Math.max(0,Math.ceil(s.journey-elapsed));timer.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
  }
  const wind=s.wind||.2,health=s.flame===undefined?72:s.flame;
+ const scene=backdrops[chapter];
+ const artReady=!!(scene?.complete&&scene.naturalWidth);
+ const homeScale=.62+progress*.58,homeX=artReady&&chapter===3?253:270-progress*34,homeY=artReady&&chapter===3?266:236-progress*30;
+ if(artReady){
+  ctx.drawImage(scene,0,0,360,400);
+  // Crossing into a new chapter briefly retains the previous one for a cinematic dissolve.
+  const transition=elapsed-(s.sceneChangedAt??-999);
+  const prev=backdrops[s.previousChapter];
+  if(transition>=0&&transition<1.35&&prev?.complete&&prev.naturalWidth&&s.previousChapter!==chapter){
+   ctx.save();ctx.globalAlpha=Math.max(0,1-transition/1.35);ctx.drawImage(prev,0,0,360,400);ctx.restore();
+  }
+ }else{
  const horizon=ctx.createLinearGradient(0,0,0,400);
  horizon.addColorStop(0,`rgb(${Math.round(14+progress*58)},${Math.round(23+progress*45)},${Math.round(47+progress*43)})`);horizon.addColorStop(.72,`rgb(${Math.round(38+progress*92)},${Math.round(50+progress*58)},${Math.round(72+progress*48)})`);horizon.addColorStop(1,'#182334');ctx.fillStyle=horizon;ctx.fillRect(0,0,360,400);
  for(let i=0;i<22;i++){const x=(i*79+27+elapsed*(8+wind*28))%390-15,y=(i*53+13+Math.sin(i)*8)%255;ctx.fillStyle='rgba(239,242,249,'+(.22+wind*.34)+')';ctx.beginPath();ctx.arc(x,y,1+wind*1.2,0,7);ctx.fill()}
  // The destination grows closer in every chapter.
- const homeScale=.62+progress*.58,homeX=270-progress*34,homeY=236-progress*30;
+
  ctx.save();ctx.translate(homeX,homeY);ctx.scale(homeScale,homeScale);ctx.fillStyle='#172233';ctx.fillRect(-34,-42,68,64);ctx.beginPath();ctx.moveTo(-42,-42);ctx.lineTo(0,-72);ctx.lineTo(42,-42);ctx.fill();ctx.fillStyle='#ffd58c';ctx.fillRect(7,-27,15,18);ctx.fillStyle='rgba(255,211,137,'+(s.rescue?'.55':'.16')+')';ctx.fillRect(s.rescue?-15:1,-33,s.rescue?53:27,s.rescue?50:30);ctx.restore();
+
+ }
+ if(artReady){
+  // Moving snow remains an independent foreground layer, even when the scenery is static.
+  for(let i=0;i<28;i++){
+   const xx=(i*67+elapsed*(9+wind*41))%387-15;
+   const yy=(i*59+Math.sin(i*4.3)*18+elapsed*(9+i%3*5))%419-10;
+   ctx.fillStyle='rgba(230,243,250,'+(.24+wind*.22)+')';
+   ctx.beginPath();ctx.arc(xx,yy,(i%4===0?1.9:1),0,Math.PI*2);ctx.fill();
+  }
+ }
  if(s.rescue){
   const since=elapsed-s.rescueAt,flare=Math.max(0,1-since/6);
   const glow=ctx.createRadialGradient(homeX,homeY,0,homeX,homeY,flare*200+55);
@@ -347,7 +376,7 @@ function drawCandle(dt){
   ctx.strokeStyle='rgba(191,234,255,.38)';ctx.lineWidth=2;
   for(let k=0;k<6;k++){ctx.beginPath();ctx.moveTo(k*73-30,320);ctx.lineTo(k*73+26,291);ctx.stroke()}
  }
- ctx.fillStyle='#142233';ctx.fillRect(0,318,360,82);ctx.fillStyle='#536277';ctx.beginPath();ctx.moveTo(0,331);ctx.lineTo(86,286);ctx.lineTo(151,326);ctx.lineTo(235,284);ctx.lineTo(360,329);ctx.lineTo(360,348);ctx.lineTo(0,348);ctx.fill();
+ if(!artReady){ctx.fillStyle='#142233';ctx.fillRect(0,318,360,82);ctx.fillStyle='#536277';ctx.beginPath();ctx.moveTo(0,331);ctx.lineTo(86,286);ctx.lineTo(151,326);ctx.lineTo(235,284);ctx.lineTo(360,329);ctx.lineTo(360,348);ctx.lineTo(0,348);ctx.fill()}
  ctx.strokeStyle='rgba(214,224,237,'+(.18+wind*.5)+')';ctx.lineWidth=1.5+wind*1.8;
  for(let i=0;i<7;i++){const y=96+i*31,x0=((elapsed*(86+wind*145)+i*93)%520)-135;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(x0+63,y-9-wind*8,x0+119,y);ctx.stroke()}
  const x=180+Math.sin(elapsed*5.1)*(shield?2:wind*15),fireHeight=Math.max(10,45*(health/100));
@@ -359,8 +388,15 @@ function drawCandle(dt){
  floorLight.addColorStop(1,'rgba(255,170,87,0)');
  ctx.fillStyle=floorLight;ctx.fillRect(15,110,330,260);
  const halo=ctx.createRadialGradient(x,220,2,x,220,80+health*.45);halo.addColorStop(0,'rgba(255,218,148,.48)');halo.addColorStop(1,'rgba(255,176,99,0)');ctx.fillStyle=halo;ctx.fillRect(35,80,290,290);
- // Traveller, coat, hands and candle.
- ctx.fillStyle='#20283a';ctx.beginPath();ctx.arc(180,170,29,0,7);ctx.fill();
+ // Traveller, coat, hands and candle. Layered fabric and scarf give the protagonist a readable silhouette.
+ const faceBounce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?0:Math.sin(elapsed*1.9)*1.2;
+ const litAmount=Math.min(1,health/82);
+ ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(181,324,70,11,0,0,7);ctx.fill();
+ ctx.fillStyle='#293c56';ctx.beginPath();ctx.moveTo(144,218);ctx.lineTo(126,285);ctx.lineTo(141,338);ctx.lineTo(224,338);ctx.lineTo(231,286);ctx.lineTo(216,212);ctx.closePath();ctx.fill();
+ ctx.strokeStyle='#658197';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(148,239);ctx.lineTo(159,317);ctx.moveTo(212,239);ctx.lineTo(205,318);ctx.stroke();
+ ctx.fillStyle='#9a6470';ctx.beginPath();ctx.moveTo(144,207);ctx.quadraticCurveTo(177,221,215,207);ctx.lineTo(222,231);ctx.quadraticCurveTo(188,241,151,230);ctx.closePath();ctx.fill();
+ ctx.strokeStyle='rgba(253,196,137,'+(.22+litAmount*.28)+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(154,221);ctx.quadraticCurveTo(179,233,208,220);ctx.stroke();
+ ctx.fillStyle='#20283a';ctx.beginPath();ctx.arc(180,170+faceBounce,29,0,7);ctx.fill();
  ctx.fillStyle='rgba(255,182,112,'+(.12+.36*lightStrength)+')';ctx.beginPath();ctx.arc(180,170,29,Math.PI*.15,Math.PI*.85);ctx.lineTo(180,170);ctx.fill();ctx.beginPath();ctx.moveTo(142,315);ctx.quadraticCurveTo(147,205,180,199);ctx.quadraticCurveTo(217,207,220,315);ctx.fill();
  rr(162,229,36,86,6,'#e8d7c3');rr(167,237,8,68,4,'#fff0d8');ctx.fillStyle='#49363a';ctx.fillRect(179,216,3,18);
  ctx.beginPath();ctx.moveTo(x,235);ctx.bezierCurveTo(x-24,219,x-8,197-fireHeight/3,x+Math.sin(elapsed*2)*5,218-fireHeight);ctx.bezierCurveTo(x+23,198,x+17,227,x,235);ctx.fillStyle=health>14?'#ffad4c':'#93a0b7';ctx.fill();ctx.beginPath();ctx.moveTo(x,232);ctx.quadraticCurveTo(x-9,216,x,223-fireHeight*.3);ctx.quadraticCurveTo(x+9,220,x,232);ctx.fillStyle='#fff1bf';ctx.fill();
