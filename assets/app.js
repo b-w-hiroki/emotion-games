@@ -103,10 +103,30 @@ function initCandleAudio(){
  const noise=ac.createBufferSource(),buffer=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate);
  const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
  noise.buffer=buffer;noise.loop=true;const filter=ac.createBiquadFilter(),windGain=ac.createGain();filter.type='lowpass';filter.frequency.value=950;windGain.gain.value=.02;noise.connect(filter).connect(windGain).connect(master);noise.start();
- audio={ac,master,windGain,lastPulse:0};
+ const fireOsc=ac.createOscillator(),fireGain=ac.createGain(),fireFilter=ac.createBiquadFilter();
+ fireOsc.type='triangle';fireOsc.frequency.value=210;fireFilter.type='lowpass';fireFilter.frequency.value=600;fireGain.gain.value=0;
+ fireOsc.connect(fireFilter).connect(fireGain).connect(master);fireOsc.start();
+ audio={ac,master,windGain,fireOsc,fireGain,fireFilter,lastPulse:0};
 }
 function candleTone(freq=620,duration=.22,volume=.18){
  if(!audio||!audioEnabled)return;const {ac,master}=audio,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(freq,ac.currentTime);g.gain.setValueAtTime(volume,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+duration);o.connect(g).connect(master);o.start();o.stop(ac.currentTime+duration);
+}
+function candleChord(){
+ if(!audio||!audioEnabled)return;
+ const {ac,master}=audio,now=ac.currentTime;
+ for(const [i,freq] of [392,493.88,587.33,783.99].entries()){
+  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;
+  const start=now+i*.18;g.gain.setValueAtTime(.0001,start);g.gain.exponentialRampToValueAtTime(.085,start+.16);
+  g.gain.exponentialRampToValueAtTime(.0001,start+1.8);o.connect(g).connect(master);o.start(start);o.stop(start+1.9);
+ }
+}
+function flameExpression(s){
+ if(s.rescue)return 'hope';
+ if((s.oxygen??100)<24)return 'suffocating';
+ if((s.flame??72)<31)return 'afraid';
+ if(s.shield)return 'comfort';
+ if((s.wind??0)>.58)return 'afraid';
+ return 'calm';
 }
 function setStory(chapter,text){
  if(!candle)return;const el=$('story-beat');if(!el||state.story===chapter)return;state.story=chapter;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+chapter+'</small><strong>'+text+'</strong>';el.classList.add('show');candleTone(440+state.chapter*70,.45,.12);
@@ -282,11 +302,18 @@ function drawCandle(dt){
    s.rescue=true;s.rescueAt=elapsed;s.flame=Math.min(100,s.flame+24);
    s.storyPause=elapsed+6;
    setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');
-   candleTone(920,.75,.22);mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)});
+   candleChord();mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)});
   }
   const slots=[{id:'scarf',at:12,x:82,y:145},{id:'table',at:37,x:278,y:178},{id:'promise',at:62,x:92,y:213}];
   const active=slots.find(m=>elapsed>=m.at&&elapsed<m.at+8&&!s.memoryGot.has(m.id));s.mote=active?{...active,got:false}:null;
-  if(audio&&audioEnabled){audio.windGain.gain.setTargetAtTime(.025+s.wind*.12,audio.ac.currentTime,.08);if(s.oxygen<24&&elapsed-audio.lastPulse>.75){audio.lastPulse=elapsed;candleTone(110,.16,.22)}}
+  if(audio&&audioEnabled){
+   const now=audio.ac.currentTime,emotion=flameExpression(s),quiet=s.rescue&&elapsed-s.rescueAt<.48;
+   audio.windGain.gain.setTargetAtTime(quiet?0:.02+s.wind*.13,now,.09);
+   audio.fireGain.gain.setTargetAtTime(quiet?0:emotion==='comfort'?.035:emotion==='afraid'?.012:.021,now,.14);
+   audio.fireOsc.frequency.setTargetAtTime(emotion==='afraid'?147:emotion==='hope'?310:emotion==='suffocating'?95:220,now,.15);
+   audio.fireFilter.frequency.setTargetAtTime(emotion==='suffocating'?220:emotion==='hope'?860:520,now,.18);
+   if(s.oxygen<24&&elapsed-audio.lastPulse>.75){audio.lastPulse=elapsed;candleTone(110,.16,.22)}
+  }
   if(s.oxygen<=0){finish('smother',0);return}
   if(s.flame<=0){finish('blown',0);return}
   if(elapsed>=s.journey){timer.textContent='00:00';const score=Math.round(s.flame*.65+s.oxygen*.15+s.memories*7);finish(s.memories===3?(s.flame>=68?'dawn':'wish'):'survive',score);return}
@@ -324,12 +351,38 @@ function drawCandle(dt){
  ctx.strokeStyle='rgba(214,224,237,'+(.18+wind*.5)+')';ctx.lineWidth=1.5+wind*1.8;
  for(let i=0;i<7;i++){const y=96+i*31,x0=((elapsed*(86+wind*145)+i*93)%520)-135;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(x0+63,y-9-wind*8,x0+119,y);ctx.stroke()}
  const x=180+Math.sin(elapsed*5.1)*(shield?2:wind*15),fireHeight=Math.max(10,45*(health/100));
+ const character=flameExpression(s),motionReduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches||false;
+ const lightStrength=Math.min(1,health/100)*(s.rescue?1.25:1);
+ // The flame is a real light source: its intensity changes the nearby traveller and the path.
+ const floorLight=ctx.createRadialGradient(x,263,5,x,263,150);
+ floorLight.addColorStop(0,'rgba(255,181,96,'+(.22*lightStrength)+')');
+ floorLight.addColorStop(1,'rgba(255,170,87,0)');
+ ctx.fillStyle=floorLight;ctx.fillRect(15,110,330,260);
  const halo=ctx.createRadialGradient(x,220,2,x,220,80+health*.45);halo.addColorStop(0,'rgba(255,218,148,.48)');halo.addColorStop(1,'rgba(255,176,99,0)');ctx.fillStyle=halo;ctx.fillRect(35,80,290,290);
  // Traveller, coat, hands and candle.
- ctx.fillStyle='#20283a';ctx.beginPath();ctx.arc(180,170,29,0,7);ctx.fill();ctx.beginPath();ctx.moveTo(142,315);ctx.quadraticCurveTo(147,205,180,199);ctx.quadraticCurveTo(217,207,220,315);ctx.fill();
+ ctx.fillStyle='#20283a';ctx.beginPath();ctx.arc(180,170,29,0,7);ctx.fill();
+ ctx.fillStyle='rgba(255,182,112,'+(.12+.36*lightStrength)+')';ctx.beginPath();ctx.arc(180,170,29,Math.PI*.15,Math.PI*.85);ctx.lineTo(180,170);ctx.fill();ctx.beginPath();ctx.moveTo(142,315);ctx.quadraticCurveTo(147,205,180,199);ctx.quadraticCurveTo(217,207,220,315);ctx.fill();
  rr(162,229,36,86,6,'#e8d7c3');rr(167,237,8,68,4,'#fff0d8');ctx.fillStyle='#49363a';ctx.fillRect(179,216,3,18);
  ctx.beginPath();ctx.moveTo(x,235);ctx.bezierCurveTo(x-24,219,x-8,197-fireHeight/3,x+Math.sin(elapsed*2)*5,218-fireHeight);ctx.bezierCurveTo(x+23,198,x+17,227,x,235);ctx.fillStyle=health>14?'#ffad4c':'#93a0b7';ctx.fill();ctx.beginPath();ctx.moveTo(x,232);ctx.quadraticCurveTo(x-9,216,x,223-fireHeight*.3);ctx.quadraticCurveTo(x+9,220,x,232);ctx.fillStyle='#fff1bf';ctx.fill();
- if(shield){ctx.fillStyle='rgba(238,177,139,.48)';ctx.beginPath();ctx.ellipse(132,236,27,76,-.32,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(228,236,27,76,.32,0,7);ctx.fill()}
+ // Personality is revealed through small expressive eyes rather than a large mascot face.
+ if(health>6){
+  const eyey=227-fireHeight*.43,blink=!motionReduced&&Math.sin(elapsed*1.9)>.993;
+  ctx.fillStyle=character==='suffocating'?'#687386':'#714631';
+  if(blink){ctx.fillRect(x-7,eyey,4,1.4);ctx.fillRect(x+3,eyey,4,1.4)}
+  else{ctx.beginPath();ctx.ellipse(x-5,eyey,1.65,character==='afraid'?2.5:1.8,0,0,7);ctx.ellipse(x+5,eyey,1.65,character==='afraid'?2.5:1.8,0,0,7);ctx.fill()}
+  ctx.strokeStyle='#81513b';ctx.lineWidth=1;
+  ctx.beginPath();
+  if(character==='afraid'||character==='suffocating')ctx.arc(x,eyey+7,2,0,Math.PI);
+  else ctx.arc(x,eyey+5,4,.15*Math.PI,.85*Math.PI);
+  ctx.stroke();
+ }
+ if(character==='hope'){
+  for(let i=0;i<7;i++){
+   const angle=i*2.4+elapsed*(motionReduced?0:1.1),radius=21+i*2;
+   ctx.fillStyle='rgba(255,235,180,.65)';ctx.fillRect(x+Math.cos(angle)*radius,215+Math.sin(angle)*radius,2.3,2.3);
+  }
+ }
+ if(shield){ctx.fillStyle='rgba(238,177,139,'+(.23+.5*lightStrength)+')';ctx.beginPath();ctx.ellipse(132,236,27,76,-.32,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(228,236,27,76,.32,0,7);ctx.fill()}
  if(s.mote){const m=s.mote,pulse=1+Math.sin(elapsed*5)*.18;ctx.save();ctx.translate(m.x,m.y);ctx.scale(pulse,pulse);const glow=ctx.createRadialGradient(0,0,1,0,0,31);glow.addColorStop(0,'rgba(255,235,180,.95)');glow.addColorStop(1,'rgba(255,193,104,0)');ctx.fillStyle=glow;ctx.fillRect(-34,-34,68,68);textAt('✦',0,7,'bold 24px system-ui','#fff0bf');ctx.restore();textAt('記憶にふれる',m.x,m.y+42,'bold 10px system-ui','#fff1cf')}
  const meter=(label,value,y,color)=>{textAt(label,24,y,'bold 10px system-ui','#e5e7ec','left');rr(24,y+8,132,7,4,'#263247');rr(24,y+8,132*Math.max(0,value)/100,7,4,color)};
  meter('灯り',health,18,'#ffb15b');meter('息',s.oxygen===undefined?100:s.oxygen,43,'#a4cee2');
