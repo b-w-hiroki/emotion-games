@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { spawnSync } from 'node:child_process';
 
 const app=fs.readFileSync('assets/app.js','utf8');
-const match=app.match(/const endings=(\\{[\\s\\S]*?\\});\\s*Object.assign\\(endings/);
+const match=app.match(/const endings=(\{[\s\S]*?\});\s*Object.assign\(endings/);
 assert.ok(match,'Ending catalog must be defined and readable');
 const endings=vm.runInNewContext('('+match[1]+')');
 
@@ -34,7 +34,7 @@ test('runtime passes syntax validation',()=>{
 });
 
 test('milestone rewards are defined for every game and are independent of score',()=>{
- const match=app.match(/const rewardSets=(\\{[\\s\\S]*?\\});\\s*Object.assign\\(rewardSets/);
+ const match=app.match(/const rewardSets=(\{[\s\S]*?\});\s*Object.assign\(rewardSets/);
  assert.ok(match,'reward catalog must exist');
  const rewards=vm.runInNewContext('('+match[1]+')');
  assert.deepEqual(Object.keys(rewards).sort(),Object.keys(endings).sort());
