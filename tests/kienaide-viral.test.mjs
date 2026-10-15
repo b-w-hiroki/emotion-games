@@ -28,3 +28,9 @@ test('highlight is shareable but never auto-posted',()=>{
 test('the four chapters differ in shelter, bridge exposure and rescue foreshadowing',()=>{
  for(const marker of ["tunnelGust=chapter===1", "s.shelterUntil=elapsed+3.5", "chapter===2?1.2:0", "bridgeCold=chapter===2?.62:1", "rescue_foreshadowed", "s.miracleHint=true"]){assert.ok(app.includes(marker),marker)}
 });
+
+test('living flame uses state-dependent facial expression, light and layered sound',()=>{
+ for(const marker of ["function flameExpression(s)","if(s.rescue)return 'hope'","'suffocating'","'comfort'","const floorLight=ctx.createRadialGradient","audio.fireGain.gain.setTargetAtTime","fireOsc.frequency","function candleChord()","prefers-reduced-motion"]){
+  assert.ok(app.includes(marker),marker);
+ }
+});
