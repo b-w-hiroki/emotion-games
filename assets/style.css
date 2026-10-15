@@ -69,6 +69,18 @@
 .game-shell.ember .action{background:linear-gradient(135deg,#ffe5b4,#f4a85f)}
 .game-shell.ember .hud>div{border-color:#63505b}
 .game-shell.ember .arena{border-color:#8e6471;box-shadow:0 24px 66px #0007,0 0 40px #bb6e3522}
+.game-shell.ember{max-width:590px}
+.game-shell.ember .arena{max-height:min(55svh,500px)}
+.story-beat{position:absolute;z-index:1;left:14px;right:14px;top:67px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;pointer-events:none;opacity:.82;text-shadow:0 2px 12px #07101d,0 1px 2px #07101d;transition:opacity .35s,transform .35s}
+.story-beat.show{animation:story-arrive 4s ease both}
+.story-beat small{font-size:9px;letter-spacing:.18em;color:#f4d3a4;font-weight:800}
+.story-beat strong{font-size:12px;line-height:1.55;color:#f6f1e8;font-weight:650}
+.sound-toggle{position:absolute;z-index:3;right:9px;top:9px;border:1px solid #ffffff3d;background:#111b29bd;color:#e9eef5;border-radius:99px;padding:6px 9px;font-size:9px;font-weight:750;backdrop-filter:blur(5px)}
+.game-shell.ember .curtain{background:radial-gradient(circle at 50% 39%,#804b2c55,transparent 47%),#0a1320ef}
+.game-shell.ember .curtain h2{text-shadow:0 0 30px #f8ae6188}
+@keyframes story-arrive{0%{opacity:0;transform:translateY(7px)}12%,76%{opacity:1;transform:translateY(0)}100%{opacity:.58;transform:translateY(0)}}
+@media(max-height:720px){.game-shell.ember .arena{max-height:48svh}.story-beat{top:54px}.story-beat strong{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.story-beat.show{animation:none}}
 
 /* 16 new prototype variants — one shared engine, distinct emotional atmospheres. */
 .card.timing .card-art{background:radial-gradient(ellipse at 55% 45%,var(--tone),#202538 70%);color:#fff}

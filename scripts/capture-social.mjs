@@ -29,7 +29,7 @@ async function grab(slug,scenario){
  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true,recordVideo:{dir:path.join(out,'social'),size:{width:390,height:844}}});
  const page=await context.newPage();
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- const url=site+(slug?slug+'/':'');
+ const url=site+(slug?slug+'/':'')+(slug==='kienaide'?'?qa=1':'');
  await page.goto(url,{waitUntil:'load'});await page.waitForTimeout(450);
  const key=slug||'index';
  const heading=slug?'.game-heading h1':'.hero h1';
@@ -51,7 +51,7 @@ async function grab(slug,scenario){
    const score=Number(await page.locator('#record').innerText());
    if(score<1)throw new Error('ato-hitotsu: first block did not land');
   }else if(slug==='kienaide'){
-   await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(6100);await page.mouse.up();await page.waitForTimeout(350);
+   await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(1600);await page.mouse.up();await page.waitForTimeout(200);
    if(!(await page.locator('#curtain-title').innerText()).includes('守りすぎた'))throw new Error('kienaide: all-hold ending missing');
   }else if(slug==='micha-dame'){
    await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(12450);await page.mouse.up();await page.waitForTimeout(300);
