@@ -9,7 +9,7 @@ const isPilot=s=>pilotIds.includes(s.slug);
 const old={makeState:M.makeState,down:M.down,up:M.up,tap:M.tap,canvasTap:M.canvasTap,frame:M.frame};
 const close=(s,id,score,finish)=>{if(s.completed)return;s.completed=true;finish(id,score)};
 const lightPos=t=>({x:180+105*Math.sin(t*2.4),y:208+74*Math.cos(t*1.77)});
-function attemptLight(s,x,y,t){const p=lightPos(t),distance=Math.hypot(x-p.x,y-p.y);s.pending={at:t,distance};s.started=true;}
+function attemptLight(s,x,y,t){const p=lightPos(t),distance=Math.hypot(x-p.x,y-p.y);s.special.pending={at:t,distance};s.started=true;}
 const scenes=[
 {caption:'帰り道、雨にぬれた子がいる。',left:'傘を渡す',right:'声をかける'},
 {caption:'バス停には、お年寄りがひとり。',left:'いっしょに待つ',right:'先を急ぐ'},
