@@ -39,6 +39,8 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run build
+        env:
+          PUBLIC_ORIGIN: https://play.birdman-studio.com
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
