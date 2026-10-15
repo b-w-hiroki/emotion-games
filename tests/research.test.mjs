@@ -50,7 +50,7 @@ test('legacy titles still use their existing engine',()=>{
 });
 test('research mode is explicit opt-in and exportable',()=>{
  const study=fs.readFileSync('assets/experiment.js','utf8');
- for(const needle of ["query.get('study')!=='1'","emotion-games-study-v1","study-export","duration_ms","inputs:current.inputs","window.emotionTrack","answered:false","study-clear"])assert.ok(study.includes(needle),needle);
+ for(const needle of ["query.get('study')!=='1'","emotion-games-study-v1","study-export","duration_ms","entry.inputs=current.inputs","window.emotionTrack","answered:false","study-clear"])assert.ok(study.includes(needle),needle);
  for(const file of ['assets/pilots.js','assets/experiment.js']){
   const r=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
  }
