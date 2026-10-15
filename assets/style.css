@@ -62,3 +62,10 @@
 @keyframes discovery-pop{0%{transform:scale(.7) rotate(-35deg)}60%{transform:scale(1.28) rotate(7deg)}100%{transform:scale(1) rotate(0)}}
 @media (max-height:720px){.curtain{padding:10px}.curtain h2{font-size:25px}.curtain p{font-size:11px}.discovery-result{min-height:40px;padding:5px 10px;margin:4px 0}.curtain .btn{min-height:43px;margin-top:7px}.curtain .share-btn{margin-top:7px}.curtain .related{margin-top:6px}}
 @media (prefers-reduced-motion:reduce){.curtain.found-new .discovery-result,.curtain.found-new .discovery-glyph{animation:none}.collection-track span{transition:none}}
+
+/* 004: candle, wind and lingering warmth */
+.card.ember .card-art{background:radial-gradient(ellipse at 50% 38%,#ce864f 0%,#6e4855 36%,#1b263e 90%);}
+.card.ember .art-icon{color:#ffdeae;text-shadow:0 0 30px #ffae58}
+.game-shell.ember .action{background:linear-gradient(135deg,#ffe5b4,#f4a85f)}
+.game-shell.ember .hud>div{border-color:#63505b}
+.game-shell.ember .arena{border-color:#8e6471;box-shadow:0 24px 66px #0007,0 0 40px #bb6e3522}
