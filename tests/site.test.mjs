@@ -42,3 +42,20 @@ test('the lead character and flame sprite are built as separately replaceable as
  assert.ok(app.includes('ctx.drawImage(characterArt.flame'));
  assert.ok(app.includes('if(heroReady)')&&app.includes('if(flameReady)'));
 });
+
+test('optimized playable Kienaide v3 images remain valid WebP binaries',()=>{
+ const names=['snow-town','traveller-flame','flame-spirit','hold-button','start-button','retry-button','gallery-button'];
+ const build=fs.readFileSync('scripts/build.mjs','utf8');
+ for(const n of names){
+  const p='assets/kienaide-v3/'+n+'.webp';
+  const d=fs.readFileSync(p);
+  assert.ok(d.byteLength>5000,p);
+  assert.equal(d.toString('ascii',0,4),'RIFF',p+' header');
+  assert.equal(d.toString('ascii',8,12),'WEBP',p+' signature');
+  assert.ok(build.includes("'"+n+"'"),p+' not copied to dist');
+ }
+ const preview=fs.readFileSync('previews/kienaide-v3.html','utf8');
+ assert.ok(preview.includes('assets/kienaide-v3/snow-town.webp'));
+ assert.ok(preview.includes('kienaide-art-endings-v1'));
+ assert.ok(build.includes("kienaide-preview"));
+});
