@@ -9,10 +9,10 @@ await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const base='http://127.0.0.1:'+server.address().port+'/emotion-games/';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
- async function pageFor(slug){
+ async function pageFor(slug,query=''){
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base+slug+'/');await page.locator('#play').click();
+  await page.goto(base+slug+'/'+query);await page.locator('#play').click();
   return {ctx,page,errors};
  }
  async function check(obj,title,count=1){
@@ -58,19 +58,45 @@ try{
 
 
  {
-  const t=await pageFor('kienaide');
-  await t.page.locator('#stage').click({position:{x:180,y:180}});
-  await t.page.locator('#stage').click({position:{x:180,y:180}});
-  await check(t,'ひとつの願い。');
+  const t=await pageFor('kienaide','?qa=1');
+  assert.ok(await t.page.locator('#story-beat').isVisible());
+  assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
+  await t.page.waitForTimeout(7600);
+  await check(t,'風にさらわれた。');
   await t.page.reload();
   assert.equal(await t.page.locator('#collection-progress').innerText(),'結末 1 / 5');
-  await t.ctx.close();console.log('PASS: flame secret wish and persistent discovery');
+  await t.ctx.close();console.log('PASS: four-chapter flame journey, sound control, failure and persistence');
  }
  {
-  const t=await pageFor('kienaide');
-  await t.page.waitForTimeout(7200);
-  await check(t,'風にさらわれた。');
-  await t.ctx.close();console.log('PASS: flame exposed to wind extinguishes');
+  const t=await pageFor('kienaide','?qa=1');
+  const box=await t.page.locator('#action').boundingBox();let holding=false;
+  for(let i=0;i<150&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
+   const hint=await t.page.locator('#hint').innerText();
+   if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
+   if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
+   await t.page.waitForTimeout(60);
+  }
+  if(holding)await t.page.mouse.up();
+  await check(t,'まだ、ここに。');
+  assert.ok(Number((await t.page.locator('#record').innerText()).replace('%',''))>0);
+  await t.ctx.close();console.log('PASS: readable wind telegraph supports a complete night journey');
+ }
+ {
+  const t=await pageFor('kienaide','?qa=1');
+  const box=await t.page.locator('#action').boundingBox(),targets=[{remaining:78,x:82,y:145},{remaining:53,x:278,y:178},{remaining:28,x:92,y:213}];let holding=false;
+  for(let i=0;i<170&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
+   const hint=await t.page.locator('#hint').innerText(),clock=await t.page.locator('#timer').innerText(),remaining=Number(clock.split(':')[0])*60+Number(clock.split(':')[1]);
+   const target=targets.find(x=>!x.done&&remaining<=x.remaining&&remaining>=x.remaining-6);
+   if(target){if(holding){await t.page.mouse.up();holding=false}if(target===targets[0])await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'});await t.page.locator('#stage').click({position:{x:target.x,y:target.y}});target.done=true}
+   if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
+   if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
+   await t.page.waitForTimeout(55);
+  }
+  if(holding)await t.page.mouse.up();
+  const title=await t.page.locator('#curtain-title').innerText();assert.ok(['わすれない。','おかえり。'].includes(title),title);
+  assert.equal(await t.page.locator('#best').innerText(),'3 / 3');assert.deepEqual(t.errors,[]);
+  await t.page.screenshot({path:'artifacts/screenshots/kienaide-memories-result-390.png'});
+  await t.ctx.close();console.log('PASS: all three memory collectibles change the arrival ending');
  }
 
  // Reward thresholds, persistence, duplicate suppression, and the final archive.
