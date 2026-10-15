@@ -43,6 +43,166 @@
       "eng": "KEEP THE LIGHT",
       "accent": "#ffc77d",
       "visual": "flame"
+    },
+    {
+      "slug": "ato-isshun",
+      "id": "005",
+      "title": "あと一瞬。",
+      "emotion": "焦り",
+      "feature": "動く針を、狙った瞬間に止める。",
+      "eng": "LAST SECOND",
+      "accent": "#ff797c",
+      "visual": "timing"
+    },
+    {
+      "slug": "hikari-oikake",
+      "id": "006",
+      "title": "ひかりを追え。",
+      "emotion": "ワクワク",
+      "feature": "揺れる光点を一瞬で捕まえる。",
+      "eng": "CATCH LIGHT",
+      "accent": "#85b7ff",
+      "visual": "timing"
+    },
+    {
+      "slug": "aka-no-mae",
+      "id": "007",
+      "title": "赤になる前に。",
+      "emotion": "スリル",
+      "feature": "警告ラインをぎりぎりで止める。",
+      "eng": "RED LINE",
+      "accent": "#ff6479",
+      "visual": "timing"
+    },
+    {
+      "slug": "niji-no-hashi",
+      "id": "008",
+      "title": "にじの橋。",
+      "emotion": "期待",
+      "feature": "動く足場へ踏み出す一瞬を決める。",
+      "eng": "RAINBOW STEP",
+      "accent": "#82e2d3",
+      "visual": "timing"
+    },
+    {
+      "slug": "yurenaide",
+      "id": "009",
+      "title": "ゆれないで。",
+      "emotion": "緊張",
+      "feature": "揺れる器を持ちこたえて安定させる。",
+      "eng": "STAY STILL",
+      "accent": "#b6a7fa",
+      "visual": "balance"
+    },
+    {
+      "slug": "tobo",
+      "id": "010",
+      "title": "とべるかな。",
+      "emotion": "期待",
+      "feature": "風に煽られる紙飛行機の高度を保つ。",
+      "eng": "FLY AGAIN",
+      "accent": "#7ed6f4",
+      "visual": "balance"
+    },
+    {
+      "slug": "kobosanai",
+      "id": "011",
+      "title": "こぼさないで。",
+      "emotion": "ヒヤヒヤ",
+      "feature": "揺れるお盆のバランスを保つ。",
+      "eng": "DON'T SPILL",
+      "accent": "#f8c37f",
+      "visual": "balance"
+    },
+    {
+      "slug": "fuusen",
+      "id": "012",
+      "title": "ふくらめ。",
+      "emotion": "ドキドキ",
+      "feature": "割れそうな風船をほどよい大きさに保つ。",
+      "eng": "BALLOON",
+      "accent": "#fe91bc",
+      "visual": "balance"
+    },
+    {
+      "slug": "kokoro-no-oto",
+      "id": "013",
+      "title": "こころのおと。",
+      "emotion": "くせになる",
+      "feature": "鼓動に合わせて4回タップする。",
+      "eng": "HEART BEAT",
+      "accent": "#f595a1",
+      "visual": "rhythm"
+    },
+    {
+      "slug": "hibiki",
+      "id": "014",
+      "title": "ひびき。",
+      "emotion": "不安",
+      "feature": "暗闇から返る音のリズムをなぞる。",
+      "eng": "ECHO",
+      "accent": "#a89afe",
+      "visual": "rhythm"
+    },
+    {
+      "slug": "se-no",
+      "id": "015",
+      "title": "せーのっ。",
+      "emotion": "ワクワク",
+      "feature": "光る合図と息を合わせて一斉に押す。",
+      "eng": "TOGETHER",
+      "accent": "#86e8bf",
+      "visual": "rhythm"
+    },
+    {
+      "slug": "hoshi-otoshi",
+      "id": "016",
+      "title": "ほしをつかめ。",
+      "emotion": "高揚",
+      "feature": "落ちる星のリズムを指で拾う。",
+      "eng": "CATCH STARS",
+      "accent": "#f2d385",
+      "visual": "rhythm"
+    },
+    {
+      "slug": "kasa-o",
+      "id": "017",
+      "title": "かさをどうぞ。",
+      "emotion": "温かさ",
+      "feature": "最後の傘を誰に渡すか選ぶ。",
+      "eng": "ONE UMBRELLA",
+      "accent": "#9dcdf5",
+      "visual": "choice"
+    },
+    {
+      "slug": "saigo-hitotsu",
+      "id": "018",
+      "title": "さいごのひとつ。",
+      "emotion": "葛藤",
+      "feature": "ひとつだけ残ったものをどう分けるか。",
+      "eng": "LAST PIECE",
+      "accent": "#ffc3a1",
+      "visual": "choice"
+    },
+    {
+      "slug": "tegami",
+      "id": "019",
+      "title": "おくれない手紙。",
+      "emotion": "切なさ",
+      "feature": "伝えたかった言葉を送るか迷う。",
+      "eng": "UNSENT LETTER",
+      "accent": "#d6b7eb",
+      "visual": "choice"
+    },
+    {
+      "slug": "okaeri",
+      "id": "020",
+      "title": "おかえり。",
+      "emotion": "感動",
+      "feature": "帰り道で待つ誰かへの選択を重ねる。",
+      "eng": "WELCOME HOME",
+      "accent": "#f0b5a0",
+      "visual": "choice"
     }
   ]
 }
