@@ -1,4 +1,7 @@
 import fs from 'node:fs';import path from 'node:path';import http from 'node:http';import assert from 'node:assert/strict';import { chromium } from 'playwright';
+import vm from 'node:vm';
+const microScope={window:{}};vm.runInNewContext(fs.readFileSync('assets/microgames.js','utf8'),microScope,{timeout:500});
+const expanded=microScope.window.EmotionMissions.endings;
 const root=path.resolve('dist');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.json':'application/json'};
 const server=http.createServer((req,res)=>{const u=new URL(req.url,'http://localhost');if(!u.pathname.startsWith('/emotion-games/')){res.writeHead(404);return res.end()}const part=decodeURIComponent(u.pathname.slice(15));const file=path.resolve(root,part.endsWith('/')?part+'index.html':part||'index.html');if(!file.startsWith(root+path.sep)){res.writeHead(403);return res.end()}try{res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});res.end(fs.readFileSync(file))}catch(_){res.writeHead(404);res.end('not found')}});
@@ -123,20 +126,19 @@ try{
  {
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.addInitScript(()=>{const all={
+  const all={...Object.fromEntries(Object.entries(expanded).map(([slug,entries])=>[slug,entries.map(e=>e.id)])),
     'girigiri':['empty','one-drop','normal','perfect','overflow'],
     'ato-hitotsu':['wait','rush','collapse','precision','sky'],
     'micha-dame':['ignore','knock','peek','whisper','resist'],
     'kienaide':['blown','smother','wish','survive','dawn']};
-    for(const [slug,ids] of Object.entries(all))localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(ids));
-  });
+  await page.addInitScript(all=>{for(const [slug,ids] of Object.entries(all))localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(ids))},all);
   await page.goto(base);
   assert.ok(await page.locator('.archive-award').isVisible(),'archive completion badge');
-  assert.ok((await page.locator('.archive-progress').innerText()).includes('20/20'));
+  assert.ok((await page.locator('.archive-progress').innerText()).includes('100/100'));
   assert.ok(await page.locator('#share-archive').isVisible());
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
   assert.equal(overflow,false,'no horizontal scrolling');
-  await page.screenshot({path:'artifacts/screenshots/archive-20of20-390.png'});
+  await page.screenshot({path:'artifacts/screenshots/archive-100of100-390.png'});
   assert.deepEqual(errors,[]);
   await ctx.close();console.log('PASS: complete 20/20 archive');
  }
