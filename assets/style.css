@@ -127,3 +127,32 @@ html[data-study="1"] .card-info .emotion{visibility:hidden}
 .game-shell.ember .curtain .share-btn{padding:6px 11px;margin-top:6px}
 .game-shell.ember .moment-save{padding:6px 10px;margin-top:5px;font-size:11px}
 }
+
+/* Focused scene reading: while playing the short journey, minimize the surrounding site UI.
+   Leave the introduction and ending screens unchanged for sharing and collection. */
+body.kienaide-playing .top{min-height:50px;padding:8px 16px}
+body.kienaide-playing .logo{font-size:16px}
+body.kienaide-playing .follow{padding:6px 10px;font-size:10px}
+body.kienaide-playing .game-heading{padding:0 0 4px}
+body.kienaide-playing .game-heading .label{font-size:9px}
+body.kienaide-playing .game-heading h1{font-size:29px;margin:1px 0}
+body.kienaide-playing .game-heading p{display:none}
+body.kienaide-playing .game-shell.ember{padding-top:1px}
+body.kienaide-playing .game-shell.ember .hud{gap:5px;margin-bottom:5px}
+body.kienaide-playing .game-shell.ember .hud>div{padding:4px 3px;border-radius:8px;background:#152032}
+body.kienaide-playing .game-shell.ember .hud small{font-size:8px}
+body.kienaide-playing .game-shell.ember .hud strong{font-size:15px;margin-top:1px}
+body.kienaide-playing .game-shell.ember .collect-bar{margin-bottom:4px;padding:1px 2px;font-size:10px}
+body.kienaide-playing .game-shell.ember .collect-bar button{font-size:10px;padding:5px 8px}
+body.kienaide-playing .game-shell.ember .play-controls{padding-top:5px}
+body.kienaide-playing .game-shell.ember .play-controls>p{min-height:16px;font-size:11px;margin:3px 0 7px}
+body.kienaide-playing .game-shell.ember .controls-bottom{margin-top:5px}
+body.kienaide-playing .game-shell.ember .controls-bottom>*{padding:3px}
+.game-shell.ember .story-beat{left:18px;right:18px;top:62px;padding:6px 8px 12px;border-radius:10px;background:linear-gradient(180deg,rgba(6,14,28,.65),rgba(6,14,28,.36) 65%,transparent);text-shadow:0 2px 7px #02080e}
+.game-shell.ember .story-beat small{font-size:10px;color:#ffdda9}
+.game-shell.ember .story-beat strong{font-size:12px;color:#fff1d8}
+@media(max-width:390px){
+ body.kienaide-playing .game-shell.ember .arena{max-height:min(57svh,420px)}
+ body.kienaide-playing .game-shell.ember .game-heading h1{font-size:26px}
+ body.kienaide-playing .game-shell.ember .action{font-size:15px}
+}

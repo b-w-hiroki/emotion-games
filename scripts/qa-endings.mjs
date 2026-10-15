@@ -64,6 +64,13 @@ try{
     const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
   }))));
   assert.deepEqual(artLoaded,[true,true,true,true],'all chapter art must load at runtime');
+  const actors=await t.page.evaluate(async()=>Promise.all(['hero','flame'].map(name=>new Promise(ok=>{
+    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
+  }))));
+  assert.deepEqual(actors,[true,true],'character layers should load without exceptions');
+  await t.page.waitForTimeout(250);
+  await t.page.screenshot({path:'artifacts/screenshots/kienaide-illustrated-actors-390.png'});
+  console.log('PASS: detailed player silhouette and flame image layers load in Chromium');
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-art-scene01-390.png'});
   console.log('PASS: all four illustrated chapter backgrounds loaded in Chromium');
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
@@ -108,6 +115,25 @@ try{
   assert.equal(await t.page.locator('#best').innerText(),'3 / 3');assert.deepEqual(t.errors,[]);
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-memories-result-390.png'});
   await t.ctx.close();console.log('PASS: all three memory collectibles change the arrival ending');
+ }
+
+
+ {
+  // Production-focused first view: controls need to fit on smaller iPhones without panning.
+  const small=await browser.newContext({viewport:{width:360,height:640},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
+  const page=await small.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'kienaide/');await page.locator('#play').click();
+  await page.waitForTimeout(220);
+  const fit=await page.evaluate(()=>{
+   const action=document.querySelector('#action').getBoundingClientRect();
+   const stage=document.querySelector('#stage').getBoundingClientRect();
+   return {buttonBottom:action.bottom,stageTop:stage.top,stageBottom:stage.bottom,scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,scrollTop:scrollY};
+  });
+  assert.equal(fit.scrollWidth<=fit.viewportWidth+2,true,'360px layout must not scroll horizontally');
+  assert.ok(fit.buttonBottom<=640,'primary action must be available in the first 360x640 viewport: '+JSON.stringify(fit));
+  await page.screenshot({path:'artifacts/screenshots/kienaide-active-360x640.png'});
+  assert.deepEqual(errors,[]);
+  await small.close();console.log('PASS: small-iPhone primary action visible with live illustrated scene');
  }
 
  // Reward thresholds, persistence, duplicate suppression, and the final archive.

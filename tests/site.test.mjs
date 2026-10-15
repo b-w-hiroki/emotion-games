@@ -28,3 +28,17 @@ test('four separate illustrated Kienaide chapter SVG assets ship in the build',(
  }
  assert.ok(app.includes('ctx.drawImage(scene,0,0,360,400)'));
 });
+
+test('the lead character and flame sprite are built as separately replaceable assets',()=>{
+ const build=fs.readFileSync('scripts/build.mjs','utf8');
+ const app=fs.readFileSync('assets/app.js','utf8');
+ for(const name of ['hero','flame']){
+  const art=fs.readFileSync('assets/kienaide-'+name+'.svg','utf8');
+  assert.ok(art.includes('<svg')&&art.includes('</svg>'),name);
+  assert.ok(art.length>1200,name);
+  assert.ok(build.includes("'"+name+"'"),name+' not included in build');
+ }
+ assert.ok(app.includes('ctx.drawImage(characterArt.hero,0,0,360,400)'));
+ assert.ok(app.includes('ctx.drawImage(characterArt.flame'));
+ assert.ok(app.includes('if(heroReady)')&&app.includes('if(flameReady)'));
+});
