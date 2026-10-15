@@ -66,7 +66,7 @@ let lastEnding='';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mark(event,data){try{window.emotionTrack?.(event,{game_id:slug,...data})}catch(_){}}
 function currentUrl(){const u=new URL(location.href);for(const x of ['utm_source','utm_medium','utm_campaign','utm_content','study'])u.searchParams.delete(x);return u.href}
-async function share(score){mark('share_tap',{ending_id:lastEnding});const ending=endingList.find(e=>e.id===lastEnding);const text=game.title+'｜'+(ending?ending.title:'')+' 【結末 '+collected.length+'/'+endingList.length+'】 '+(score?'記録 '+score+'。':'')+' あなたはどんな結末になる？';const url=currentUrl();if(navigator.share){try{await navigator.share({title:game.title,text,url});return}catch(e){if(e.name==='AbortError')return}}window.open('https://twitter.com/intent/tweet?'+new URLSearchParams({text,url}).toString(),'_blank','noopener,noreferrer')}
+async function share(score){mark('share_tap',{ending_id:lastEnding});const ending=endingList.find(e=>e.id===lastEnding);const text=game.title+'｜'+(ending?ending.title:'')+(candle&&state.rescue?' 【奇跡の灯り】':'')+' 【結末 '+collected.length+'/'+endingList.length+'】 '+(score?'記録 '+score+'。':'')+' あなたはどんな結末になる？';const url=currentUrl();if(navigator.share){try{await navigator.share({title:game.title,text,url});return}catch(e){if(e.name==='AbortError')return}}window.open('https://twitter.com/intent/tweet?'+new URLSearchParams({text,url}).toString(),'_blank','noopener,noreferrer')}
 
 async function openShare(text,title){
  const url=currentUrl();
@@ -89,7 +89,7 @@ if(!game){
  return;
 }
 const candle=slug==='kienaide';
-root.innerHTML=top()+'<main class="game-shell '+game.theme+'" style="--tone:'+esc(game.accent||'#e9a76f')+'"><div class="game-heading"><div class="label">EMOTION '+game.number+' <span>/ '+game.emotion+'</span></div><h1>'+game.title+'</h1><p>'+game.subtitle+'</p></div><div class="hud"><div><small>'+(candle?'LIGHT':'RECORD')+'</small><strong id="record">—</strong></div><div><small>'+(candle?'MEMORY':'BEST')+'</small><strong id="best">'+(candle?'0 / 3':'—')+'</strong></div><div><small>'+(candle?'DAWN':'TIME')+'</small><strong id="timer">'+(candle?'01:30':'00:00')+'</strong></div></div><div class="collect-bar"><span id="collection-progress" aria-live="polite"></span><button id="open-collection" type="button">結末図鑑を見る ↗</button></div><div class="arena"><canvas id="stage" width="360" height="400" aria-label="'+game.title+' のゲーム画面"></canvas>'+(candle?'<div class="story-beat" id="story-beat" role="status" aria-live="polite"><small>第一章　雪の路地</small><strong>窓の灯りが、帰り道の目印だった。</strong></div><button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">音 ON</button>':'')+'<div class="curtain" id="curtain"><span class="eyebrow" id="curtain-kicker">'+(candle?'A SHORT NIGHT JOURNEY':'ONE IDEA GAME')+'</span><h2 id="curtain-title">'+game.title+'</h2><p id="curtain-description">'+(candle?'吹雪の町を歩き、たったひとつの灯りを家まで届ける。風の線が強くなったら長押しでかばい、凪いだら離して呼吸を戻そう。':game.mechanic)+'</p><div class="discovery-result" id="discovery-result" role="status" aria-live="polite" hidden><span class="discovery-glyph" aria-hidden="true">✦</span><span class="discovery-info"><strong id="discovery-state">NEW ENDING</strong><small id="discovery-counter"></small><small id="discovery-milestone"></small></span><span class="discovery-sparks" aria-hidden="true">✧ ✦ ✧</span></div><button class="btn" id="play">'+(candle?'夜を歩く →':'プレイ開始 →')+'</button><button class="share-btn" id="share" hidden>結果をXで共有 ↗</button><a class="related" id="related" href="'+('../'+games[(games.findIndex(g=>g.slug===slug)+1)%games.length].slug+'/')+'" hidden>次のゲームを遊ぶ →</a></div><section class="collection-panel" id="collection-panel" hidden role="dialog" aria-modal="true" aria-label="結末図鑑"><div class="collection-head"><strong>結末図鑑</strong><button id="close-collection" type="button">閉じる ✕</button></div><p>予想外の操作にも、結末が隠れている。</p><div class="collection-track" role="progressbar" aria-label="結末の回収率" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><span id="collection-track-fill"></span></div><ol id="collection-list"></ol><div id="collection-awards"></div></section></div><div class="play-controls"><p id="hint">'+(slug==='girigiri'?'長押しで注ぐ。離すと落下中の水が残る。':slug==='ato-hitotsu'?'タイミングよく落として高く積もう。':candle?'風が強まったら長押し。凪いだら離して、息を戻す。':window.EmotionMissions?.endings[slug]?game.mechanic:'指を離したら扉が開いてしまう。')+'</p><button class="action" id="action" disabled>'+(slug==='girigiri'?'長押しで注ぐ':slug==='ato-hitotsu'?'ここで落とす！':candle?'長押しで灯りをかばう':window.EmotionMissions?.endings[slug]?({timing:'ここで止める！',balance:'長押しで調節',rhythm:'リズムをタップ！',choice:'左を選ぶ（右は画面）'}[game.theme]):'扉を押さえ続ける')+'</button><div class="controls-bottom"><button id="reset">最初から</button><a href="../">ゲーム一覧へ</a><a href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">新作を見る ↗</a></div></div></main>';
+root.innerHTML=top()+'<main class="game-shell '+game.theme+'" style="--tone:'+esc(game.accent||'#e9a76f')+'"><div class="game-heading"><div class="label">EMOTION '+game.number+' <span>/ '+game.emotion+'</span></div><h1>'+game.title+'</h1><p>'+game.subtitle+'</p></div><div class="hud"><div><small>'+(candle?'LIGHT':'RECORD')+'</small><strong id="record">—</strong></div><div><small>'+(candle?'MEMORY':'BEST')+'</small><strong id="best">'+(candle?'0 / 3':'—')+'</strong></div><div><small>'+(candle?'DAWN':'TIME')+'</small><strong id="timer">'+(candle?'01:30':'00:00')+'</strong></div></div><div class="collect-bar"><span id="collection-progress" aria-live="polite"></span><button id="open-collection" type="button">結末図鑑を見る ↗</button></div><div class="arena"><canvas id="stage" width="360" height="400" aria-label="'+game.title+' のゲーム画面"></canvas>'+(candle?'<div class="story-beat" id="story-beat" role="status" aria-live="polite"><small>第一章　雪の路地</small><strong>窓の灯りが、帰り道の目印だった。</strong></div><button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">音 ON</button>':'')+'<div class="curtain" id="curtain"><span class="eyebrow" id="curtain-kicker">'+(candle?'A SHORT NIGHT JOURNEY':'ONE IDEA GAME')+'</span><h2 id="curtain-title">'+game.title+'</h2><p id="curtain-description">'+(candle?'吹雪の町を歩き、たったひとつの灯りを家まで届ける。風の線が強くなったら長押しでかばい、凪いだら離して呼吸を戻そう。':game.mechanic)+'</p><div class="discovery-result" id="discovery-result" role="status" aria-live="polite" hidden><span class="discovery-glyph" aria-hidden="true">✦</span><span class="discovery-info"><strong id="discovery-state">NEW ENDING</strong><small id="discovery-counter"></small><small id="discovery-milestone"></small></span><span class="discovery-sparks" aria-hidden="true">✧ ✦ ✧</span></div><button class="btn" id="play">'+(candle?'夜を歩く →':'プレイ開始 →')+'</button><button class="share-btn" id="share" hidden>結果をXで共有 ↗</button>'+(candle?'<button class="moment-save" id="moment-save" type="button" hidden>結末カードを保存・共有 ↗</button>':'')+'<a class="related" id="related" href="'+('../'+games[(games.findIndex(g=>g.slug===slug)+1)%games.length].slug+'/')+'" hidden>次のゲームを遊ぶ →</a></div><section class="collection-panel" id="collection-panel" hidden role="dialog" aria-modal="true" aria-label="結末図鑑"><div class="collection-head"><strong>結末図鑑</strong><button id="close-collection" type="button">閉じる ✕</button></div><p>予想外の操作にも、結末が隠れている。</p><div class="collection-track" role="progressbar" aria-label="結末の回収率" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><span id="collection-track-fill"></span></div><ol id="collection-list"></ol><div id="collection-awards"></div></section></div><div class="play-controls"><p id="hint">'+(slug==='girigiri'?'長押しで注ぐ。離すと落下中の水が残る。':slug==='ato-hitotsu'?'タイミングよく落として高く積もう。':candle?'風が強まったら長押し。凪いだら離して、息を戻す。':window.EmotionMissions?.endings[slug]?game.mechanic:'指を離したら扉が開いてしまう。')+'</p><button class="action" id="action" disabled>'+(slug==='girigiri'?'長押しで注ぐ':slug==='ato-hitotsu'?'ここで落とす！':candle?'長押しで灯りをかばう':window.EmotionMissions?.endings[slug]?({timing:'ここで止める！',balance:'長押しで調節',rhythm:'リズムをタップ！',choice:'左を選ぶ（右は画面）'}[game.theme]):'扉を押さえ続ける')+'</button><div class="controls-bottom"><button id="reset">最初から</button><a href="../">ゲーム一覧へ</a><a href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">新作を見る ↗</a></div></div></main>';
 const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d'),curtain=document.getElementById('curtain'),action=document.getElementById('action');
 const $=id=>document.getElementById(id),record=$('record'),best=$('best'),timer=$('timer');
 let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
@@ -113,6 +113,49 @@ function setStory(chapter,text){
 }
 if(candle){
  const sound=$('sound-toggle');sound.addEventListener('click',()=>{initCandleAudio();audioEnabled=!audioEnabled;sound.setAttribute('aria-pressed',String(audioEnabled));sound.textContent=audioEnabled?'音 ON':'音 OFF';if(audio)audio.master.gain.value=audioEnabled ? .13 : 0});
+}
+
+function canTriggerMiracle(s,time){
+ return !s.rescue && time>=70 && time<=89 &&
+   (s.memories||0)>=2 && s.flame>0 && s.flame<=29 && s.oxygen>=30 &&
+   !s.shield && time-s.releaseAt>=0 && time-s.releaseAt<=1.3 &&
+   s.wind<.46;
+}
+if(candle){
+ const save=$('moment-save');
+ save.addEventListener('click',async()=>{
+  if(mode!=='end')return;
+  const card=document.createElement('canvas');card.width=900;card.height=1200;
+  const g=card.getContext('2d');
+  const gradient=g.createLinearGradient(0,0,0,1200);
+  gradient.addColorStop(0,'#111a32');gradient.addColorStop(.6,'#182a40');gradient.addColorStop(1,'#101524');
+  g.fillStyle=gradient;g.fillRect(0,0,900,1200);
+  g.fillStyle='#d3c9ba';g.font='bold 27px system-ui,sans-serif';g.textAlign='center';g.fillText('BIRDMAN STUDIO   /   EMOTION GAMES',450,66);
+  g.font='bold 67px system-ui,sans-serif';g.fillStyle='#ffe0a2';g.fillText('きえないで。',450,152);
+  const box={x:90,y:208,w:720,h:800};
+  g.save();g.beginPath();g.roundRect(box.x,box.y,box.w,box.h,25);g.clip();g.drawImage(canvas,box.x,box.y,box.w,box.h);g.restore();
+  g.strokeStyle='#b9a18b';g.lineWidth=3;g.strokeRect(box.x,box.y,box.w,box.h);
+  g.fillStyle='#fff0d7';g.font='bold 35px system-ui,sans-serif';
+  const ending=endingList.find(e=>e.id===lastEnding);
+  g.fillText(ending?.title||'あなたの夜',450,1071);
+  g.font='24px system-ui,sans-serif';g.fillStyle='#e7caad';
+  const memoryText='記憶 '+(state.memories||0)+'/3'+(state.rescue?'   •   奇跡の灯り':'');
+  g.fillText(memoryText,450,1111);
+  g.font='20px system-ui,sans-serif';g.fillStyle='#b8becd';
+  g.fillText('play.birdman-studio.com/kienaide/',450,1163);
+  const blob=await new Promise(ok=>card.toBlob(ok,'image/png'));
+  if(!blob)return;
+  mark('moment_card_created',{ending_id:lastEnding,rescue:!!state.rescue});
+  const filename='kienaide-'+(lastEnding||'ending')+'.png';
+  const file=new File([blob],filename,{type:'image/png'});
+  if(navigator.canShare?.({files:[file]})&&navigator.share){
+   try{await navigator.share({title:'きえないで。',files:[file],text:'私の夜の結末。あなたならどう守る？ '+currentUrl()});return}
+   catch(e){if(e.name==='AbortError')return}
+  }
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+ });
 }
 function renderCollection(){
  $('collection-progress').textContent='結末 '+collected.length+' / '+endingList.length;
@@ -152,8 +195,8 @@ canvas.addEventListener('click',e=>{
 });
 
 function store(n){if(n<=high)return;high=n;if(!candle)best.textContent=String(high);try{localStorage.setItem('emotion-v1-'+slug,String(high))}catch(_){}}
-function display(title,description,kicker='YOUR RESULT'){mode='end';down=false;$('collection-panel').hidden=true;action.disabled=true;curtain.classList.remove('hidden');$('curtain-kicker').textContent=kicker;$('curtain-title').textContent=title;$('curtain-description').textContent=description;$('play').textContent=candle?'もう一度、夜を歩く ↻':'もう一度遊ぶ ↻';$('share').hidden=false;$('related').hidden=false;if(candle){$('story-beat').classList.remove('show');$('hint').textContent='夜の記憶は、結末図鑑に残った。';if(audio)audio.windGain.gain.setTargetAtTime(0,audio.ac.currentTime,.4)}answer=title;mark('game_complete',{score:points,ending_id:lastEnding,outcome:points>0?'success':'lose',memories:state.memories||0,chapter:state.chapter||0})}
-function run(){mode='play';curtain.classList.remove('found-new');$('discovery-result').hidden=true;down=false;elapsed=0;points=0;answer='';lastEnding='';$('collection-panel').hidden=true;record.textContent='0';action.disabled=false;curtain.classList.add('hidden');Object.keys(state).forEach(x=>delete state[x]);if(slug==='girigiri')Object.assign(state,{fill:0,drips:[],spawner:0,pour:false,stopping:null,spill:0,started:false});if(slug==='ato-hitotsu')Object.assign(state,{tower:[{x:72,y:340,w:216}],moving:{x:0,y:316,w:216},velocity:158,level:0,streak:0,lastDrop:-1});if(slug==='micha-dame')Object.assign(state,{hold:false,held:0,eyes:0,failed:false,knocks:0,knockTime:-1,started:false});if(slug==='kienaide'){initCandleAudio();audio?.ac.resume();Object.assign(state,{shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:90,qaSpeed:new URLSearchParams(location.search).has('qa')?12:1,story:'',storyPause:0});best.textContent='0 / 3';setStory('第一章　雪の路地','窓の灯りが、帰り道の目印だった。')}if(window.EmotionMissions?.endings[slug])state.micro=window.EmotionMissions.makeState(slug);mark('game_start');$('hint').textContent=state.micro?game.mechanic:(slug==='girigiri'?'注ぐのを止めるタイミングを見極めろ':slug==='ato-hitotsu'?'タップしてブロックを落とす':slug==='kienaide'?'風の線が濃くなったら長押し。凪いだら離す。':'長押しで扉を押さえろ')}
+function display(title,description,kicker='YOUR RESULT'){mode='end';down=false;$('collection-panel').hidden=true;action.disabled=true;curtain.classList.remove('hidden');$('curtain-kicker').textContent=kicker;$('curtain-title').textContent=title;$('curtain-description').textContent=description;$('play').textContent=candle?'もう一度、夜を歩く ↻':'もう一度遊ぶ ↻';$('share').hidden=false;$('related').hidden=false;if(candle){$('moment-save').hidden=false;$('story-beat').classList.remove('show');$('hint').textContent='夜の記憶は、結末図鑑に残った。';if(audio)audio.windGain.gain.setTargetAtTime(0,audio.ac.currentTime,.4)}answer=title;mark('game_complete',{score:points,ending_id:lastEnding,outcome:points>0?'success':'lose',memories:state.memories||0,chapter:state.chapter||0,miracle:!!state.rescue,lowest_flame:state.lowestFlame??null})}
+function run(){mode='play';curtain.classList.remove('found-new');$('discovery-result').hidden=true;down=false;elapsed=0;points=0;answer='';lastEnding='';$('collection-panel').hidden=true;record.textContent='0';action.disabled=false;curtain.classList.add('hidden');Object.keys(state).forEach(x=>delete state[x]);if(slug==='girigiri')Object.assign(state,{fill:0,drips:[],spawner:0,pour:false,stopping:null,spill:0,started:false});if(slug==='ato-hitotsu')Object.assign(state,{tower:[{x:72,y:340,w:216}],moving:{x:0,y:316,w:216},velocity:158,level:0,streak:0,lastDrop:-1});if(slug==='micha-dame')Object.assign(state,{hold:false,held:0,eyes:0,failed:false,knocks:0,knockTime:-1,started:false});if(slug==='kienaide'){initCandleAudio();audio?.ac.resume();$('moment-save').hidden=true;Object.assign(state,{shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:90,qaSpeed:new URLSearchParams(location.search).has('qa')?12:1,story:'',storyPause:0,rescue:false,rescueAt:-1,releaseAt:-100,lowestFlame:72,peakWind:0});best.textContent='0 / 3';setStory('第一章　雪の路地','窓の灯りが、帰り道の目印だった。')}if(window.EmotionMissions?.endings[slug])state.micro=window.EmotionMissions.makeState(slug);mark('game_start');$('hint').textContent=state.micro?game.mechanic:(slug==='girigiri'?'注ぐのを止めるタイミングを見極めろ':slug==='ato-hitotsu'?'タップしてブロックを落とす':slug==='kienaide'?'風の線が濃くなったら長押し。凪いだら離す。':'長押しで扉を押さえろ')}
 function finish(id,n,description){
  if(mode!=='play')return;
  const ending=endingList.find(e=>e.id===id);if(!ending)throw Error('Unknown ending '+id);
@@ -171,7 +214,7 @@ function finish(id,n,description){
 $('play').addEventListener('click',()=>{if(mode==='end')mark('game_retry');run()});
 $('reset').addEventListener('click',()=>{if(mode!=='intro')mark('game_retry');run()});
 $('share').addEventListener('click',()=>share(points?points+'点':''));
-function holdRelease(){if(!down)return;down=false;if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide')state.shield=false;if(state.micro)window.EmotionMissions.up(state.micro)}
+function holdRelease(){if(!down)return;down=false;if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;state.releaseAt=elapsed}if(state.micro)window.EmotionMissions.up(state.micro)}
 action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0)return;e.preventDefault();down=true;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide')state.shield=true;if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 action.addEventListener('pointerup',holdRelease);action.addEventListener('pointercancel',holdRelease);
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
@@ -219,6 +262,14 @@ function drawCandle(dt){
  if(mode==='play'){
   if(shield){s.oxygen=Math.max(0,s.oxygen-(4.5+s.wind*3.8)*step);s.flame=Math.min(100,s.flame+(1.35-s.wind*.35)*step)}
   else{s.oxygen=Math.min(100,s.oxygen+15*step);s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8):2.25)*step))}
+  s.lowestFlame=Math.min(s.lowestFlame??100,s.flame);
+  s.peakWind=Math.max(s.peakWind||0,s.wind);
+  if(canTriggerMiracle(s,elapsed)){
+   s.rescue=true;s.rescueAt=elapsed;s.flame=Math.min(100,s.flame+24);
+   s.storyPause=elapsed+6;
+   setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');
+   candleTone(920,.75,.22);mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)});
+  }
   const slots=[{id:'scarf',at:12,x:82,y:145},{id:'table',at:37,x:278,y:178},{id:'promise',at:62,x:92,y:213}];
   const active=slots.find(m=>elapsed>=m.at&&elapsed<m.at+8&&!s.memoryGot.has(m.id));s.mote=active?{...active,got:false}:null;
   if(audio&&audioEnabled){audio.windGain.gain.setTargetAtTime(.025+s.wind*.12,audio.ac.currentTime,.08);if(s.oxygen<24&&elapsed-audio.lastPulse>.75){audio.lastPulse=elapsed;candleTone(110,.16,.22)}}
@@ -233,7 +284,20 @@ function drawCandle(dt){
  for(let i=0;i<22;i++){const x=(i*79+27+elapsed*(8+wind*28))%390-15,y=(i*53+13+Math.sin(i)*8)%255;ctx.fillStyle='rgba(239,242,249,'+(.22+wind*.34)+')';ctx.beginPath();ctx.arc(x,y,1+wind*1.2,0,7);ctx.fill()}
  // The destination grows closer in every chapter.
  const homeScale=.62+progress*.58,homeX=270-progress*34,homeY=236-progress*30;
- ctx.save();ctx.translate(homeX,homeY);ctx.scale(homeScale,homeScale);ctx.fillStyle='#172233';ctx.fillRect(-34,-42,68,64);ctx.beginPath();ctx.moveTo(-42,-42);ctx.lineTo(0,-72);ctx.lineTo(42,-42);ctx.fill();ctx.fillStyle='#ffd58c';ctx.fillRect(7,-27,15,18);ctx.fillStyle='rgba(255,211,137,.16)';ctx.fillRect(1,-33,27,30);ctx.restore();
+ ctx.save();ctx.translate(homeX,homeY);ctx.scale(homeScale,homeScale);ctx.fillStyle='#172233';ctx.fillRect(-34,-42,68,64);ctx.beginPath();ctx.moveTo(-42,-42);ctx.lineTo(0,-72);ctx.lineTo(42,-42);ctx.fill();ctx.fillStyle='#ffd58c';ctx.fillRect(7,-27,15,18);ctx.fillStyle='rgba(255,211,137,'+(s.rescue?'.55':'.16')+')';ctx.fillRect(s.rescue?-15:1,-33,s.rescue?53:27,s.rescue?50:30);ctx.restore();
+ if(s.rescue){
+  const since=elapsed-s.rescueAt,flare=Math.max(0,1-since/6);
+  const glow=ctx.createRadialGradient(homeX,homeY,0,homeX,homeY,flare*200+55);
+  glow.addColorStop(0,'rgba(255,230,156,'+(.4+flare*.5)+')');
+  glow.addColorStop(1,'rgba(255,184,91,0)');
+  ctx.fillStyle=glow;ctx.fillRect(0,20,360,320);
+  if(since>=0&&since<6){
+   for(let i=0;i<14;i++){const r=i*1.7+since*4,a=i*2.4+since*.8;
+    ctx.fillStyle='rgba(255,221,158,'+Math.max(0,.9-since*.13)+')';
+    ctx.fillRect(homeX+Math.cos(a)*r,homeY+Math.sin(a)*r,2.5,2.5)}
+   textAt('手を離したら、光が返ってきた。',180,94,'bold 15px system-ui','#ffe7af');
+  }
+ }
  ctx.fillStyle='#142233';ctx.fillRect(0,318,360,82);ctx.fillStyle='#536277';ctx.beginPath();ctx.moveTo(0,331);ctx.lineTo(86,286);ctx.lineTo(151,326);ctx.lineTo(235,284);ctx.lineTo(360,329);ctx.lineTo(360,348);ctx.lineTo(0,348);ctx.fill();
  ctx.strokeStyle='rgba(214,224,237,'+(.18+wind*.5)+')';ctx.lineWidth=1.5+wind*1.8;
  for(let i=0;i<7;i++){const y=96+i*31,x0=((elapsed*(86+wind*145)+i*93)%520)-135;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(x0+63,y-9-wind*8,x0+119,y);ctx.stroke()}
