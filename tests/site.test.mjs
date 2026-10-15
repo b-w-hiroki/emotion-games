@@ -4,3 +4,9 @@ test('catalog has three distinct safe slugs',()=>{assert.equal(games.length,3);a
 test('runtime provides result sharing and replay',()=>{const src=fs.readFileSync('assets/app.js','utf8');for(const snippet of ['navigator.share','game_retry','game_complete','pointerdown','pointercancel','requestAnimationFrame'])assert.ok(src.includes(snippet),snippet)});
 test('runtime script parses',()=>{assert.equal(cp.spawnSync(process.execPath,['--check','assets/app.js']).status,0)});
 test('workflow verifies before deploy',()=>{const w=fs.readFileSync('.github/workflows/pages.yml','utf8');assert.ok(w.includes('needs: verify'));assert.ok(w.includes('deploy-pages@v4'))});
+
+test('GitHub Pages deployment sets the canonical custom origin for social previews',()=>{
+ const workflow=fs.readFileSync('.github/workflows/pages.yml','utf8');
+ assert.match(workflow,/PUBLIC_ORIGIN:\s*https:\/\/play\.birdman-studio\.com/);
+ assert.match(workflow,/uses: actions\/deploy-pages@v4/);
+});
