@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 400" role="img" aria-label="雪の道で小さな炎を抱える旅人">
+<defs>
+ <linearGradient id="coat" x1=".2" y1="0" x2=".96" y2="1"><stop stop-color="#45556b"/><stop offset=".3" stop-color="#25344d"/><stop offset=".75" stop-color="#121b2f"/><stop offset="1" stop-color="#0a1424"/></linearGradient>
+ <linearGradient id="hood" x1=".1" y1=".1" x2="1" y2=".9"><stop stop-color="#b2a9a1"/><stop offset=".23" stop-color="#656878"/><stop offset=".7" stop-color="#363c55"/><stop offset="1" stop-color="#253147"/></linearGradient>
+ <linearGradient id="hair" x1=".1" y1="0" x2=".96" y2=".92"><stop stop-color="#4f3b39"/><stop offset=".3" stop-color="#2a292e"/><stop offset=".7" stop-color="#151c27"/><stop offset="1" stop-color="#111925"/></linearGradient>
+ <linearGradient id="face" x1=".1" y1=".05" x2=".9" y2="1"><stop stop-color="#ecd3ba"/><stop offset=".55" stop-color="#c39880"/><stop offset="1" stop-color="#8c6d68"/></linearGradient>
+ <linearGradient id="warm" x1=".2" y1=".75" x2=".85" y2=".2"><stop stop-color="#eea86a" stop-opacity="0"/><stop offset=".72" stop-color="#f7bb7a" stop-opacity=".35"/><stop offset="1" stop-color="#ffe3b1" stop-opacity=".7"/></linearGradient>
+ <linearGradient id="scarf" x1="0" y1="0" x2=".95" y2="1"><stop stop-color="#c49a98"/><stop offset=".47" stop-color="#845e72"/><stop offset="1" stop-color="#5f4966"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#ffd4a4" stop-opacity=".75"/><stop offset=".6" stop-color="#fdc17d" stop-opacity=".19"/><stop offset="1" stop-color="#fcb76e" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="2.2"/></filter>
+</defs>
+<ellipse cx="180" cy="334" rx="82" ry="13" fill="#070d19" opacity=".35"/>
+<path d="M130 318Q128 276 124 256Q121 221 139 209L160 202L204 201Q241 203 247 241Q254 282 235 338Q186 345 128 334Z" fill="url(#coat)" stroke="#5a6874" stroke-width="1.2"/>
+<path d="M134 294L129 334Q163 345 181 343L183 229L171 207L152 210Q127 237 134 294Z" fill="#29374c" opacity=".7"/>
+<path d="M216 211Q234 238 231 280L222 336L180 341L182 216Z" fill="#11192a" opacity=".72"/>
+<path d="M178 222L179 337" stroke="#8b8590" stroke-width="1.5" opacity=".5"/>
+<path d="M146 257Q143 286 152 325 M210 269Q211 299 206 327" stroke="#8894a2" stroke-width="1.5" opacity=".4" fill="none"/>
+<path d="M135 252Q114 291 126 319Q133 332 150 320L165 251Z" fill="#39445b"/>
+<path d="M225 248Q245 293 233 323Q218 337 205 314L193 244Z" fill="#202e48"/>
+<path d="M123 313Q137 323 151 315 M214 319Q227 325 237 312" stroke="#aab9c4" opacity=".35" stroke-width="3" fill="none"/>
+<!-- thick fur hood and layered hair -->
+<path d="M135 190Q117 171 120 142Q121 106 154 103Q182 87 211 109Q232 132 224 176L215 209L177 221L148 206Z" fill="url(#hood)" stroke="#a2a9ad" opacity=".96" stroke-width="2"/>
+<path d="M141 180Q120 168 131 130Q144 96 174 104Q204 97 216 127Q226 156 211 190L190 207L152 201Z" fill="url(#hair)"/>
+<path d="M136 147Q132 115 159 103Q172 98 188 105Q148 108 143 150Z" fill="#7f7480" opacity=".36"/>
+<path d="M141 175Q131 166 135 141Q136 108 164 107Q180 104 202 112Q187 120 181 144Q169 163 157 180Z" fill="#1e222d"/>
+<path d="M157 154Q151 139 165 126Q179 113 197 130Q210 142 206 163Q206 182 194 195Q180 206 163 191Q156 180 157 154Z" fill="url(#face)"/>
+<path d="M202 150Q212 162 207 177Q204 190 194 195Q204 174 202 150Z" fill="#a27767" opacity=".5"/>
+<path d="M173 165Q180 160 187 165 M191 165L198 167" stroke="#553e41" stroke-width="2" stroke-linecap="round" fill="none"/>
+<path d="M179 163Q182 168 188 163" stroke="#eac8b9" stroke-width=".8" fill="none"/>
+<ellipse cx="184" cy="167" rx="1.8" ry="2.1" fill="#261c24"/>
+<path d="M185 175Q188 177 186 179 M180 186Q186 189 191 185" stroke="#995f60" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+<ellipse cx="202" cy="182" rx="12" ry="22" fill="url(#warm)" opacity=".8"/>
+<path d="M148 153Q146 124 172 113Q190 110 210 128Q188 121 178 136Q170 145 164 171L155 181Z" fill="url(#hair)"/>
+<path d="M153 138Q176 121 194 126 M147 157Q158 133 175 127" stroke="#988381" stroke-width="1.1" fill="none" opacity=".6"/>
+<path d="M217 153Q222 179 213 201" stroke="#121822" stroke-width="7" fill="none" opacity=".75"/>
+<!-- scarf and fur edging -->
+<path d="M140 185Q149 204 180 202Q206 200 215 185Q226 203 214 221Q185 237 148 222Q130 209 140 185Z" fill="url(#scarf)" stroke="#b18d92" stroke-width="1.7"/>
+<path d="M139 185Q153 204 174 207Q198 211 215 191" stroke="#e5c5b9" opacity=".6" stroke-width="4" fill="none"/>
+<path d="M157 210Q158 230 144 259L159 261Q187 239 186 219Z" fill="#876373" stroke="#b99a9d" stroke-width="1.4"/>
+<path d="M163 224L158 247 M150 209Q178 224 213 211" stroke="#dfb2ae" stroke-width="2" opacity=".54" fill="none"/>
+<path d="M133 197Q146 209 150 227 M215 199Q232 211 226 231" stroke="#e8ded2" stroke-width="7" opacity=".56" fill="none" stroke-linecap="round" stroke-dasharray="1 7"/>
+<!-- sleeves brought inward toward the flame -->
+<path d="M139 228Q134 240 151 265L164 262L172 239L155 222Z" fill="#334159" stroke="#7b808d" stroke-width="1.5"/>
+<path d="M221 229Q227 248 210 264L197 259L192 238L205 218Z" fill="#27374f" stroke="#78818e" stroke-width="1.5"/>
+<path d="M142 230Q148 249 156 255 M217 232Q213 247 207 256" stroke="#edb688" stroke-width="3" opacity=".28" fill="none"/>
+<!-- mitten fingers positioned below small fire -->
+<path d="M148 257Q149 245 160 243Q167 241 171 252L172 266Q155 277 148 267Z" fill="#7a5961" stroke="#d29d88" stroke-width="1.5"/>
+<path d="M211 255Q207 243 197 242Q186 242 188 258L192 268Q208 277 213 268Z" fill="#745962" stroke="#d8a18a" stroke-width="1.4"/>
+<path d="M153 250Q157 245 162 249 M201 248Q206 249 206 255" stroke="#f4c79b" stroke-width="2" fill="none" opacity=".75"/>
+<!-- fire reflection on scarf, cheeks, fingers and fur -->
+<ellipse cx="180" cy="230" rx="57" ry="65" fill="url(#glow)" opacity=".23"/>
+<path d="M151 210Q174 222 206 214 M155 250L167 254 M195 252L207 255" fill="none" stroke="#ffd0a0" stroke-width="2.3" opacity=".62"/>
+<!-- fine snow flecks caught by fabric -->
+<g fill="#e3ecf7" opacity=".68"><circle cx="132" cy="174" r="1.6"/><circle cx="148" cy="116" r="1.1"/><circle cx="208" cy="111" r="1.4"/><circle cx="220" cy="145" r="1.3"/><circle cx="145" cy="219" r="1.5"/><circle cx="224" cy="222" r=".9"/><circle cx="229" cy="271" r="1.4"/><circle cx="137" cy="300" r=".8"/><circle cx="213" cy="321" r="1"/></g>
+</svg>
