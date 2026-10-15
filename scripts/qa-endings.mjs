@@ -117,6 +117,25 @@ try{
   await t.ctx.close();console.log('PASS: all three memory collectibles change the arrival ending');
  }
 
+
+ {
+  // Production-focused first view: controls need to fit on smaller iPhones without panning.
+  const small=await browser.newContext({viewport:{width:360,height:640},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
+  const page=await small.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'kienaide/');await page.locator('#play').click();
+  await page.waitForTimeout(220);
+  const fit=await page.evaluate(()=>{
+   const action=document.querySelector('#action').getBoundingClientRect();
+   const stage=document.querySelector('#stage').getBoundingClientRect();
+   return {buttonBottom:action.bottom,stageTop:stage.top,stageBottom:stage.bottom,scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,scrollTop:scrollY};
+  });
+  assert.equal(fit.scrollWidth<=fit.viewportWidth+2,true,'360px layout must not scroll horizontally');
+  assert.ok(fit.buttonBottom<=640,'primary action must be available in the first 360x640 viewport: '+JSON.stringify(fit));
+  await page.screenshot({path:'artifacts/screenshots/kienaide-active-360x640.png'});
+  assert.deepEqual(errors,[]);
+  await small.close();console.log('PASS: small-iPhone primary action visible with live illustrated scene');
+ }
+
  // Reward thresholds, persistence, duplicate suppression, and the final archive.
  async function seeded(slug,ids){
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
