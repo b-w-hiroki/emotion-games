@@ -60,3 +60,13 @@ npx serve dist
 - Chromium：既存4本＋新規16本の操作・図鑑・保存・モバイル2サイズ検証
 - GitHub Actions artifact：作品別プレイ録画（WebM、変換可能時MP4）・390pxスクリーンショット・結果画面
 - DNSチェック完了・HTTPS・実機確認まではSNS投稿しない
+
+## AI × 感情の実験モード
+
+これは20本を同じ型で量産するだけのサービスではありません。異なるルールをAIで作り、操作で狙った感情が生じるかを実ユーザーで検証します。
+
+- 既存001–004と新実験006/010/014/017：**固有の操作／判定を持つゲーム**
+- 残り12本：共通ルールを使う**未差別化の試作**。固有ルールの実装とQAが次段階
+- [仮説と測定・実験の限界](docs/RESEARCH.md)
+- 調査用URL：`https://play.birdman-studio.com/?study=1` から作品を選ぶ（一般ユーザーには強制しない）
+- 回答は端末内に保存。検証モードのトップでJSONを保存し、`node scripts/analyze-study.mjs path/to/emotion-games-study.json` で集計できる。外部自動送信はしない。
