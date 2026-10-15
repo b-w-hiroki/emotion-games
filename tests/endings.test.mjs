@@ -10,7 +10,7 @@ assert.ok(match,'Ending catalog must be defined and readable');
 const endings=vm.runInNewContext('('+match[1]+')');
 
 test('all games offer at least five unique collectible outcomes',()=>{
- for(const slug of ['girigiri','ato-hitotsu','micha-dame']){
+ for(const slug of ['girigiri','ato-hitotsu','micha-dame','kienaide']){
   const list=endings[slug];
   assert.equal(list.length,5,slug);
   assert.equal(new Set(list.map(x=>x.id)).size,list.length);
