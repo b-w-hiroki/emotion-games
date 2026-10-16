@@ -259,7 +259,8 @@ function showKienaideIntro(){
  let index=0;
  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
  const advance=()=>{scene.textContent=lines[index++];if(index>=lines.length){clearInterval(introTimer);introTimer=setTimeout(done,reduced?600:2400)}};
- const done=()=>{clearTimeout(introTimer);clearInterval(introTimer);introTimer=null;overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}run()};
+ let finished=false;
+ const done=()=>{if(finished)return;finished=true;clearTimeout(introTimer);clearInterval(introTimer);introTimer=null;overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}run()};
  skip.addEventListener('click',done,{once:true});
  advance();if(index<lines.length)introTimer=setInterval(()=>{if(index<lines.length)advance()},reduced?650:3000);
 }
