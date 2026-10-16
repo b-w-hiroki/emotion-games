@@ -299,7 +299,7 @@ function drawCandle(dt){
    if(s.finalePhase==='gust-warning'){setStory('最後の風','風が止まった。次の一息に備えて。');s.storyPause=elapsed+2;mark('finale_warning',{});}
    if(s.finalePhase==='gust-active'){setStory('最後の風','守るか、息を残すか。');s.storyPause=elapsed+5;mark('finale_gust',{});}
    if(s.finalePhase==='silence'){setStory('静寂','風の音が、消えた。');s.storyPause=elapsed+1.5;mark('finale_silence',{flame:Math.round(s.flame),oxygen:Math.round(s.oxygen)});}
-   if(s.finalePhase==='window-reply'){setStory('窓の向こう','遠い窓が、かすかに光った。');s.storyPause=elapsed+2;mark('finale_window',{flame:Math.round(s.flame)});}
+   if(s.finalePhase==='window-reply'){setStory('窓の向こう',s.flame>0?'遠い窓が、かすかに光った。':'窓は、まだ暗い。');s.storyPause=elapsed+2;mark('finale_window',{flame:Math.round(s.flame)});}
   }
  if(chapter===1&&s.shelterReady&&s.wind<.29&&!shield){
   s.shelterReady=false;s.shelterUntil=elapsed+3.5;mark('shelter_discovered',{chapter:2});
