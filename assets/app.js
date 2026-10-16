@@ -325,7 +325,7 @@ function drawCandle(dt){
  KV.frame(ctx,s,elapsed,{reduced:reducedMotion(),playing:true,caption:text,warn,expression:K.flameExpression(s)});
  // Test/QA hooks: plain data attributes, no globals.
  const m=s.mote?KV.toCss(s.mote.u*KV.view.W,s.mote.y):null;
- if(s.mote&&s.announced!==s.mote.id){s.announced=s.mote.id;$('memory-live').textContent='記憶が浮かんでいる。タップかMキーでふれる。'}canvas.dataset.chapter=String(s.chapter+1);canvas.dataset.phase=s.finalePhase;canvas.dataset.event=s.event&&elapsed>=s.event.warnAt?s.event.kind:'';canvas.dataset.mote=m?Math.round(m.x)+','+Math.round(m.y):'';canvas.dataset.reply=s.replyLevel||'';const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);
+ if(s.mote&&s.announced!==s.mote.id){s.announced=s.mote.id;$('memory-live').textContent='記憶が浮かんでいる。タップかMキーでふれる。'}canvas.dataset.chapter=String(s.chapter+1);canvas.dataset.quality=String(KV.perf.quality);canvas.dataset.phase=s.finalePhase;canvas.dataset.event=s.event&&elapsed>=s.event.warnAt?s.event.kind:'';canvas.dataset.mote=m?Math.round(m.x)+','+Math.round(m.y):'';canvas.dataset.reply=s.replyLevel||'';const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);
 }
 // Each ending plays its own short scene before the result card slides in.
 function candleEnding(){
@@ -335,6 +335,6 @@ function candleEnding(){
  $('next-hint').hidden=!missing.length;if(missing.length){const next=missing[(runCount+missing.length)%missing.length];$('next-hint').textContent='まだ見ぬ結末のヒント：'+next.hint}
  const token=endingAt;setTimeout(()=>{if(mode==='end'&&endingAt===token)curtain.classList.remove('hidden')},reduced?500:2600);
 }
-function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;if(mode==='play'&&$('collection-panel').hidden){elapsed+=dt*(candle?(state.qaSpeed||1):1);if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide')drawCandle(dt);else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);raf=requestAnimationFrame(tick)}
+function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;if(mode==='play'&&$('collection-panel').hidden){elapsed+=dt*(candle?(state.qaSpeed||1):1);if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide'){drawCandle(dt);if(mode==='play')KV.sample(dt*1000)}else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);raf=requestAnimationFrame(tick)}
 raf=requestAnimationFrame(tick);
 })();

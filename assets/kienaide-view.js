@@ -26,10 +26,24 @@ function create(base){
   if(cache.size>80)cache.clear();
   cache.set(key,c);return c;
  }
+ // Several layers that always move together are baked into one raster: fewer full-screen blits.
+ function baked(key,parts,w,h){
+  const ck='bake|'+key+'|'+w+'|'+h;if(cache.has(ck))return cache.get(ck);
+  if(!parts.every(p=>ready(p.name)))return null;
+  const c=document.createElement('canvas');c.width=Math.round(w);c.height=Math.round(h);const g=c.getContext('2d');
+  for(const p of parts){g.globalAlpha=p.alpha??1;g.globalCompositeOperation=p.op||'source-over';g.drawImage(imgs[p.name],0,0,c.width,c.height)}
+  cache.set(ck,c);return c;
+ }
+ // Adaptive resolution: if frames stay slow, render fewer pixels instead of dropping frames.
+ const perf={ema:16,frames:0,quality:1};
+ function sample(ms){
+  if(!(ms>0&&ms<250))return;perf.ema=perf.ema*.92+ms*.08;perf.frames++;
+  if(perf.frames>45&&perf.ema>26&&perf.quality>.5){perf.quality=Math.max(.5,perf.quality*.8);perf.frames=0;view.cssW=0}
+ }
  const view={W:360,scale:1,ox:0,oy:0,dpr:1,cssW:0,cssH:0};
  function resize(canvas){
   const box=canvas.getBoundingClientRect(),cssW=Math.max(1,box.width),cssH=Math.max(1,box.height);
-  const dpr=Math.min(2,root.devicePixelRatio||1);
+  const dpr=Math.min(2,root.devicePixelRatio||1)*perf.quality;
   const W=Math.max(300,Math.min(ART,cssW/cssH*H));
   const scale=Math.min(cssW/W,cssH/H);
   if(cssW===view.cssW&&cssH===view.cssH&&dpr===view.dpr)return view;
@@ -46,17 +60,19 @@ function create(base){
  function drawChapter(ctx,ci,cam,alpha=1,lightAlpha=1){
   const W=view.W,k=CHAPTER_KEYS[ci],px=view.dpr*view.scale;
   ctx.save();ctx.globalAlpha=alpha;
-  const plane=(layer,zoom,depth,composite)=>{
-   const z=1.04+zoom*cam.p+ (layer==='fore'?cam.breath*.006:0),size=ART*z;
-   const c=raster(k+'-'+layer,ART*1.25*px,ART*1.25*px);if(!c)return false;
+  const plane=(c,zoom,depth,composite)=>{
+   if(!c)return false;
+   const z=1.04+zoom*cam.p,size=ART*z;
    const x=W/2-VP.x*z+cam.sway*depth*14+cam.push*depth*10,y=VP.y-VP.y*z+cam.bob*depth*3;
    if(composite)ctx.globalCompositeOperation=composite;
    ctx.drawImage(c,x,y,size,size);ctx.globalCompositeOperation='source-over';return true;
   };
-  let ok=plane('sky',ZOOM.sky,DEPTH.sky);
-  ok=plane('far',ZOOM.far,DEPTH.far)&&ok;
-  ok=plane('mid',ZOOM.mid,DEPTH.mid)&&ok;
-  ctx.globalAlpha=alpha*lightAlpha;plane('lights',ZOOM.mid,DEPTH.mid,'lighter');ctx.globalAlpha=alpha;
+  const R=ART*1.25*px;
+  // Sky and far plane move almost identically: one raster. Chapters 1–3 keep a constant light level,
+  // so their light sources are baked into the mid plane; chapter 4's window light stays live.
+  let ok=plane(baked(k+'-back',[{name:k+'-sky'},{name:k+'-far'}],R,R),ZOOM.far,DEPTH.far);
+  if(ci<3&&lightAlpha===.9)ok=plane(baked(k+'-midlit',[{name:k+'-mid'},{name:k+'-lights',op:'lighter',alpha:.9}],R,R),ZOOM.mid,DEPTH.mid)&&ok;
+  else{ok=plane(raster(k+'-mid',R,R),ZOOM.mid,DEPTH.mid)&&ok;ctx.globalAlpha=alpha*lightAlpha;plane(raster(k+'-lights',R,R),ZOOM.mid,DEPTH.mid,'lighter');ctx.globalAlpha=alpha}
   ctx.restore();
   return ok;
  }
@@ -314,7 +330,7 @@ function create(base){
   ctx.beginPath();ctx.ellipse(x-17,y+14-(1-q)*30,15,10,-.5,0,6.283);ctx.ellipse(x+17,y+14-(1-q)*30,15,10,.5,0,6.283);ctx.fill();
   ctx.strokeStyle='#c97d84';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x-28,y+8-(1-q)*30);ctx.quadraticCurveTo(x,y+26-(1-q)*30,x+28,y+8-(1-q)*30);ctx.stroke();ctx.restore();
  }
- return {view,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,imgs,failed:()=>failed,names};
+ return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,imgs,failed:()=>failed,names};
 }
 root.KienaideView={create};
 })(typeof window!=='undefined'?window:globalThis);

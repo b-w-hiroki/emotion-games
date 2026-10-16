@@ -57,9 +57,10 @@ try{
   const {ctx,page,errors}=await open(sizes[0],'?qa=1&seed=2&speed=1');
   await page.locator('#play').click();await page.waitForTimeout(1200);
   const alive=await warmth(page);
-  // FPS at real speed over 3 s.
+  // FPS at real speed over 3 s, after the renderer has had 2 s to settle its resolution.
+  await page.waitForTimeout(2000);
   const fps=await page.evaluate(()=>new Promise(ok=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<3000)requestAnimationFrame(f);else ok(n/((performance.now()-t0)/1000))};requestAnimationFrame(f)}));
-  fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,warmAlive:Math.round(alive)},null,1));
+  fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,quality:Number(await page.locator('#stage').getAttribute('data-quality')),warmAlive:Math.round(alive)},null,1));
   assert.ok(fps>=30,'frame rate '+fps.toFixed(1));
   await page.goto(base+'?qa=1&seed=2&speed=12');await page.locator('#play').click();
   await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
