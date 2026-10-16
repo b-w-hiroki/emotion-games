@@ -25,7 +25,7 @@ try {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'?qa=1');
   const assets=await page.evaluate(async()=>{
-   const els=[...document.images];
+   const els=[...document.images].filter(img=>img.getAttribute('src'));
    await Promise.all(els.map(img=>img.decode().catch(()=>null)));
    return els.map(img=>({url:img.src.substring(img.src.lastIndexOf('/')+1),width:img.naturalWidth}));
   });
