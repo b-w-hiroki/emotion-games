@@ -10,7 +10,7 @@ test('finale phases are produced by the core and drive story, sound and analytic
 });
 test('existing ending flow, saves and accessibility hooks remain',()=>{
  // Gallery IDs and storage keys are the save format: they must never change.
- const ids=[...app.matchAll(/kienaide:\[\n([\s\S]*?)\n \]/g)][0][1].match(/id:'([a-z]+)'/g).map(x=>x.slice(4,-1));
+ const ids=[...app.matchAll(/kienaide:\[\r?\n([\s\S]*?)\r?\n \]/g)][0][1].match(/id:'([a-z]+)'/g).map(x=>x.slice(4,-1));
  assert.deepEqual(ids,['blown','smother','wish','survive','dawn']);
  assert.ok(app.includes("localStorage.getItem('emotion-endings-v1-'+slug)"));
  assert.ok(app.includes("localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(collected))"));
