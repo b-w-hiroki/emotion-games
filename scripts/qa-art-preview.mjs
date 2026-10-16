@@ -64,6 +64,22 @@ try {
   await page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#share').click()]);
   assert.equal(download.suggestedFilename(),'kienaide-blown.png');
+  // A second run survives into the new event window and checks real-time visual feedback.
+  await page.locator('#start').click();
+  await page.locator('#hold').dispatchEvent('pointerdown',{pointerId:4});
+  await page.waitForTimeout(2100); // 12x QA: reaches the 22-second gust window
+  const eventState=await page.evaluate(()=>({
+   cue:document.querySelector('#eventCue').textContent,
+   shown:document.querySelector('#eventCue').classList.contains('visible'),
+   gust:document.querySelector('#scene').classList.contains('gust'),
+   wind:document.querySelector('#scene').style.getPropertyValue('--wind')
+  }));
+  assert.ok(eventState.shown&&eventState.cue.includes('突風'),JSON.stringify(eventState));
+  assert.equal(eventState.gust,true);
+  await page.screenshot({path:'artifacts/screenshots/kienaide-v3-gust-'+width+'.png'});
+  await page.locator('#hold').dispatchEvent('pointerup',{pointerId:4});
+  await page.waitForTimeout(300);
+  assert.deepEqual(errors,[]);
   assert.deepEqual(errors,[]);
   await context.close();
   console.log('PASS illustrated playable Kienaide',width+'x'+height,'assets',assets.length,'ending, gallery and PNG export');
