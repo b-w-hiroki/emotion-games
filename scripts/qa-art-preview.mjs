@@ -42,6 +42,16 @@ try {
   assert.ok(box&&box.height>=40,JSON.stringify(box));
   assert.ok(fit.scrollWidth<=fit.width+2,'horizontal overflow '+JSON.stringify(fit));
   assert.ok(fit.buttonBottom<=fit.viewportHeight+2,'action offscreen '+JSON.stringify(fit));
+  const sceneLayout=await page.evaluate(()=>{
+   const chapter=document.querySelector('#chapter').getBoundingClientRect();
+   const hero=document.querySelector('#hero').getBoundingClientRect();
+   const hud=document.querySelector('.hud').getBoundingClientRect();
+   return {chapter:{left:chapter.left,right:chapter.right,top:chapter.top,bottom:chapter.bottom},heroCenter:hero.left+hero.width/2,hudBottom:hud.bottom};
+  });
+  assert.ok(sceneLayout.chapter.right < sceneLayout.heroCenter-16,
+    'chapter text must be clear of the face: '+JSON.stringify(sceneLayout));
+  assert.ok(sceneLayout.chapter.top>=sceneLayout.hudBottom-4,
+    'chapter text must not overlap HUD: '+JSON.stringify(sceneLayout));
   await page.screenshot({path:'artifacts/screenshots/kienaide-v3-playing-'+width+'.png'});
   // A legitimate unprotected run must end; it should never rely on a seeded fake ending.
   await page.waitForFunction(()=>!document.querySelector('#modal').hidden,null,{timeout:16000});
