@@ -22,6 +22,7 @@ jobs:
       - run: node scripts/qa-endings.mjs
       - run: node scripts/qa-20.mjs
       - run: node scripts/qa-research.mjs
+      - run: node scripts/qa-art-preview.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:
