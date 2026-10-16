@@ -239,7 +239,31 @@ function finish(id,n,description){
  curtain.classList.toggle('found-new',newly);
  if(milestone)mark('reward_unlocked',{tier:count===3?'three':'complete',found_count:count});
 }
-$('play').addEventListener('click',()=>{if(mode==='end')mark('game_retry');run()});
+// The first journey starts with a short, skippable prologue. No autoplay audio is required.
+const introKey='emotion-kienaide-intro-v1';
+let introTimer=null;
+function showKienaideIntro(){
+ if(!candle)return run();
+ let seen=false;try{seen=localStorage.getItem(introKey)==='1'}catch(_){}
+ if(seen)return run();
+ const overlay=document.createElement('div');
+ overlay.id='kienaide-intro';
+ overlay.setAttribute('role','dialog');overlay.setAttribute('aria-label','最後の灯り');
+ Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'9999',background:'linear-gradient(160deg,#0b1528,#29364d 70%,#151d2d)',color:'#fff2d8',display:'grid',placeItems:'center',padding:'24px',textAlign:'center'});
+ const scene=document.createElement('div');
+ Object.assign(scene.style,{maxWidth:'360px',font:'500 19px/1.8 system-ui',whiteSpace:'pre-line'});
+ const skip=document.createElement('button');skip.type='button';skip.textContent='スキップして遊ぶ';
+ Object.assign(skip.style,{position:'absolute',right:'18px',bottom:'max(26px,env(safe-area-inset-bottom))',padding:'12px 18px',borderRadius:'22px',border:'1px solid #e0c99c',background:'#17263a',color:'#fff2d8',font:'600 14px system-ui'});
+ overlay.append(scene,skip);document.body.append(overlay);
+ const lines=['雪の夜。町の明かりが消えた。','暖炉には、小さな灯りがひとつ。','灯りは少女の手に飛び込み、遠い家を見つめた。','「……あそこに、帰りたいの？」','きえないで。'];
+ let index=0;
+ const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+ const advance=()=>{scene.textContent=lines[index++];if(index>=lines.length){clearInterval(introTimer);introTimer=setTimeout(done,reduced?600:2400)}};
+ const done=()=>{clearTimeout(introTimer);clearInterval(introTimer);introTimer=null;overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}run()};
+ skip.addEventListener('click',done,{once:true});
+ advance();if(index<lines.length)introTimer=setInterval(()=>{if(index<lines.length)advance()},reduced?650:3000);
+}
+$('play').addEventListener('click',()=>{if(mode==='end'){mark('game_retry');run()}else if(candle)showKienaideIntro();else run()});
 $('reset').addEventListener('click',()=>{if(mode!=='intro')mark('game_retry');run()});
 $('share').addEventListener('click',()=>share(points?points+'点':''));
 function holdRelease(){if(!down)return;down=false;if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;state.releaseAt=elapsed}if(state.micro)window.EmotionMissions.up(state.micro)}
