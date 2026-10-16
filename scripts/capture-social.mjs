@@ -39,6 +39,7 @@ async function grab(slug,scenario){
  await page.screenshot({path:path.join(out,'screenshots',key+'-before.png')});
  if(scenario){
   await page.locator('#play').click();
+  if(slug==='kienaide'&&await page.locator('#kienaide-intro').count())await page.locator('#kienaide-intro button').click();
   await page.waitForTimeout(300);
   if(!(await page.locator('#action').isVisible()))throw new Error(key+': action button hidden');
   const box=await page.locator('#action').boundingBox();

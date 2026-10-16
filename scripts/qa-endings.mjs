@@ -13,6 +13,7 @@ try{
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+slug+'/'+query);await page.locator('#play').click();
+  if(slug==='kienaide'&&await page.locator('#kienaide-intro').count())await page.locator('#kienaide-intro button').click();
   return {ctx,page,errors};
  }
  async function check(obj,title,count=1){
@@ -57,6 +58,21 @@ try{
  }
 
 
+ {
+  const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  const page=await ctx.newPage();
+  await page.goto(base+'kienaide/?qa=1');
+  await page.locator('#play').click();
+  assert.equal(await page.locator('#kienaide-intro').count(),1,'first play should show the prologue');
+  await page.locator('#kienaide-intro button').click();
+  assert.equal(await page.locator('#kienaide-intro').count(),0,'skip should remove the prologue');
+  assert.ok(await page.locator('#action').isEnabled(),'skip should start gameplay');
+  await page.reload();
+  await page.locator('#play').click();
+  assert.equal(await page.locator('#kienaide-intro').count(),0,'repeat play should bypass the prologue');
+  await ctx.close();
+  console.log('PASS: first-play prologue, skip and repeat-play persistence');
+ }
  {
   const t=await pageFor('kienaide','?qa=1');
   assert.ok(await t.page.locator('#story-beat').isVisible());
