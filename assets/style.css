@@ -156,3 +156,15 @@ body.kienaide-playing .game-shell.ember .controls-bottom>*{padding:3px}
  body.kienaide-playing .game-shell.ember .game-heading h1{font-size:26px}
  body.kienaide-playing .game-shell.ember .action{font-size:15px}
 }
+
+/* Keep the primary action fully visible on 360x640 without scrolling. */
+@media(max-width:390px) and (max-height:680px){
+ body.kienaide-playing .game-shell.ember .arena{max-height:46svh}
+ body.kienaide-playing .top{min-height:42px;padding:5px 12px}
+ body.kienaide-playing .game-heading{padding-bottom:0}
+ body.kienaide-playing .game-heading h1{font-size:23px}
+ body.kienaide-playing .game-shell.ember .hud{margin-bottom:2px}
+ body.kienaide-playing .game-shell.ember .collect-bar{margin-bottom:2px}
+ body.kienaide-playing .game-shell.ember .play-controls{padding-top:2px}
+ body.kienaide-playing .game-shell.ember .play-controls>p{margin:2px 0 3px}
+}
