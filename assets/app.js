@@ -337,7 +337,7 @@ function drawCandle(dt){
   if(elapsed>=s.journey){timer.textContent='00:00';const score=Math.round(s.flame*.65+s.oxygen*.15+s.memories*7);finish(s.memories===3?(s.flame>=68?'dawn':'wish'):'survive',score);return}
   record.textContent=Math.max(0,Math.round(s.flame))+'%';const remaining=Math.max(0,Math.ceil(s.journey-elapsed));timer.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
  }
- const wind=s.wind||.2,health=s.flame===undefined?72:s.flame;
+ const wind=s.wind??.2,health=s.flame===undefined?72:s.flame;
  const scene=backdrops[chapter];
  const artReady=!!(scene?.complete&&scene.naturalWidth);
  const homeScale=.62+progress*.58,homeX=artReady&&chapter===3?253:270-progress*34,homeY=artReady&&chapter===3?266:236-progress*30;
