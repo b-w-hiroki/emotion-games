@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 const games=JSON.parse(fs.readFileSync('catalog.json')).games;
 test('catalog has twenty distinct safe slugs',()=>{assert.equal(games.length,20);assert.equal(new Set(games.map(g=>g.slug)).size,games.length);for(const g of games){assert.match(g.slug,/^[a-z][a-z0-9-]+$/);assert.ok(g.feature.length>=10)}});
 test('runtime provides result sharing and replay',()=>{const src=fs.readFileSync('assets/app.js','utf8');for(const snippet of ['navigator.share','game_retry','game_complete','pointerdown','pointercancel','requestAnimationFrame'])assert.ok(src.includes(snippet),snippet)});
-test('kienaide is a complete vertical slice rather than a short gauge demo',()=>{const src=fs.readFileSync('assets/app.js','utf8');for(const snippet of ['journey:90','第一章　雪の路地','最終章　夜明け前','memory_collected','AudioContext','story-beat','s.memories===3'])assert.ok(src.includes(snippet),snippet)});
+test('kienaide is a complete vertical slice rather than a short gauge demo',()=>{const src=fs.readFileSync('assets/app.js','utf8')+fs.readFileSync('assets/kienaide-core.js','utf8')+fs.readFileSync('assets/kienaide-audio.js','utf8');for(const snippet of ['JOURNEY=90','第一章　雪の路地','最終章　夜明け前','memory_collected','AudioContext','story-beat','s.memories===3'])assert.ok(src.includes(snippet),snippet)});
 test('runtime script parses',()=>{assert.equal(cp.spawnSync(process.execPath,['--check','assets/app.js']).status,0)});
 test('workflow verifies before deploy',()=>{const w=fs.readFileSync('.github/workflows/pages.yml','utf8');assert.ok(w.includes('needs: verify'));assert.ok(w.includes('deploy-pages@v4'))});
 
@@ -14,33 +14,25 @@ test('GitHub Pages deployment sets the canonical custom origin for social previe
 
 test('every game has public microgame script in generated page contract',()=>{const s=fs.readFileSync('scripts/build.mjs','utf8');assert.ok(s.includes("'microgames.js'"));assert.ok(s.includes('assets/microgames.js'))});
 
-test('four separate illustrated Kienaide chapter SVG assets ship in the build',()=>{
- const names=['snow-street','wind-tunnel','frozen-bridge','dawn-village'];
- const build=fs.readFileSync('scripts/build.mjs','utf8');
- const app=fs.readFileSync('assets/app.js','utf8');
- for(const name of names){
-  const path='assets/kienaide-'+name+'.svg';
-  const art=fs.readFileSync(path,'utf8');
-  assert.ok(art.includes('<svg'),path);
-  assert.ok(art.length>3000,path+' must be a real visual layer');
-  assert.ok(build.includes("'"+name+"'"),name+' not built');
-  assert.ok(app.includes("'"+name+"'"),name+' not rendered');
+test('four separate layered Kienaide chapters ship in the build',()=>{
+ const build=fs.readFileSync('scripts/build.mjs','utf8'),view=fs.readFileSync('assets/kienaide-view.js','utf8');
+ assert.ok(build.includes("path.join(root,'assets','kienaide')"),'layer folder is copied');
+ const sizes=[];
+ for(const c of [1,2,3,4]){
+  for(const layer of ['sky','far','mid','fore','lights']){const art=fs.readFileSync('assets/kienaide/ch'+c+'-'+layer+'.svg','utf8');assert.ok(art.includes('<svg')&&art.includes('</svg>'),c+layer)}
+  sizes.push(fs.readFileSync('assets/kienaide/ch'+c+'-mid.svg','utf8'));
  }
- assert.ok(app.includes('ctx.drawImage(scene,0,0,360,400)'));
+ assert.equal(new Set(sizes).size,4,'every chapter has its own composition, not a recolour');
+ for(const s of sizes)assert.ok(s.length>3000,'mid layers carry real detail');
+ assert.ok(view.includes("const CHAPTER_KEYS=['ch1','ch2','ch3','ch4']"));
+ const manifest=JSON.parse(fs.readFileSync('assets/kienaide/manifest.json','utf8'));
+ assert.equal(manifest.generator,'scripts/art/kienaide-art.mjs','layers can be regenerated');
 });
-
-test('the lead character and flame sprite are built as separately replaceable assets',()=>{
- const build=fs.readFileSync('scripts/build.mjs','utf8');
- const app=fs.readFileSync('assets/app.js','utf8');
- for(const name of ['hero','flame']){
-  const art=fs.readFileSync('assets/kienaide-'+name+'.svg','utf8');
-  assert.ok(art.includes('<svg')&&art.includes('</svg>'),name);
-  assert.ok(art.length>1200,name);
-  assert.ok(build.includes("'"+name+"'"),name+' not included in build');
- }
- assert.ok(app.includes('ctx.drawImage(characterArt.hero,0,0,360,400)'));
- assert.ok(app.includes('ctx.drawImage(characterArt.flame'));
- assert.ok(app.includes('if(heroReady)')&&app.includes('if(flameReady)'));
+test('the lead character, hands, rim light and flame are separately replaceable',()=>{
+ const view=fs.readFileSync('assets/kienaide-view.js','utf8');
+ for(const name of ['hero-body','hero-hands-hold','hero-hands-shield','hero-rim']){const art=fs.readFileSync('assets/kienaide/'+name+'.svg','utf8');assert.ok(art.includes('<svg')&&art.includes('</svg>')&&art.length>300,name)}
+ assert.ok(view.includes("raster(st.shield?'hero-hands-shield':'hero-hands-hold'"),'hands change with the shield gesture');
+ assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live, not painted');
 });
 
 test('optimized playable Kienaide v3 images remain valid WebP binaries',()=>{

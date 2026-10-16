@@ -1,0 +1,108 @@
+// Behavioural contract for 004「きえないで。」: rules are replayed in Node, input → outcome.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import '../assets/kienaide-core.js';
+const K=globalThis.KienaideCore;
+const DT=1/30;
+// Replays a whole night. policy(state,time,holding) → holding; collect=true taps every memory.
+function play(seed,policy,{collect=false,until=95}={}){
+ const s=K.create({seed}),log=[];let t=0,hold=false;
+ while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was}))log.push({...e,t});if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
+ return {s,log};
+}
+const tele=(s,t,h)=>(!h&&s.wind>.61)?true:(h&&(s.wind<.44||s.oxygen<28))?false:h;
+function delayed(lat){let want=false,since=0;return (s,t,h)=>{const w=tele(s,t,want);if(w!==want){want=w;since=t}return t-since>=lat?want:h}}
+
+test('same seed and same inputs always reach the same ending',()=>{
+ for(const seed of [1,7,99]){const a=play(seed,delayed(.6),{collect:true}),b=play(seed,delayed(.6),{collect:true});assert.equal(a.s.ended,b.s.ended);assert.equal(a.s.flame,b.s.flame)}
+});
+test('the five endings are reachable by distinct play styles',()=>{
+ assert.equal(play(3,()=>false).s.ended,'blown','never protecting lets the wind take the flame');
+ assert.equal(play(3,()=>true).s.ended,'smother','protecting forever uses up the breath');
+ assert.equal(play(3,tele).s.ended,'survive','reading the wind without memories survives');
+ assert.equal(play(1,tele,{collect:true}).s.ended,'dawn','memories + a bright flame reach おかえり');
+ const d=delayed(.6),wish=play(2,(s,t,h)=>s.finalePhase==='silence'?true:d(s,t,h),{collect:true});
+ assert.equal(wish.s.memories,3);assert.equal(wish.s.ended,'wish','memories without the window reply stay わすれない');
+});
+test('ending resolution is the single gallery source of truth',()=>{
+ assert.equal(K.arrivalEnding({memories:3,flame:68}),'dawn');
+ assert.equal(K.arrivalEnding({memories:3,flame:67}),'wish');
+ assert.equal(K.arrivalEnding({memories:2,flame:100}),'survive');
+});
+test('finale phases follow the contract timing and storm strength',()=>{
+ assert.deepEqual([79.9,80,81.9,82,86.9,87,88.4,88.5].map(K.finalePhaseAt),['approach','gust-warning','gust-warning','gust-active','gust-active','silence','silence','window-reply']);
+ const s=K.create({seed:4});K.step(s,84,DT,{shield:true});assert.equal(s.wind,1.15);
+ const q=K.create({seed:4});K.step(q,87.5,DT,{shield:false});assert.ok(q.wind<.1,'silence drops the wind');
+});
+test('finale input paths: no input / hold all / alternate produce explainable differences',()=>{
+ const run=policy=>{const s=K.create({seed:5});Object.assign(s,{flame:60,oxygen:90,memories:3});let h=false;for(let t=79;t<90&&!s.ended;t+=DT){const w=h;h=policy(t);K.step(s,t,DT,{shield:h,wasShield:w})}return s};
+ const none=run(()=>false),all=run(()=>true),alt=run(t=>t>=81.5&&t<87);
+ assert.equal(none.ended,'blown','an unprotected flame does not survive the last gust');
+ assert.ok(all.gustShield>4&&all.silenceRelease===0,'holding through silence never shows the window the flame');
+ assert.ok(['faint','dark'].includes(all.replyLevel));
+ assert.equal(alt.replyLevel,'bright','guard the gust, then open the hands in the silence');
+ const guardedOnly=run(t=>t>=81.5);
+ assert.equal(guardedOnly.replyLevel,'faint');
+ assert.ok(alt.flame>guardedOnly.flame+8,'opening the hands returns more light: '+alt.flame+' vs '+guardedOnly.flame);
+ assert.ok(all.oxygen<alt.oxygen-40,'holding the whole time costs the breath');
+ assert.ok(alt.gustShield>=2.5&&alt.silenceRelease>=.45);
+});
+test('a dead flame never gets a rescue reply',()=>{
+ const s=K.create({seed:6});Object.assign(s,{flame:0.01,oxygen:90,memories:3,silenceRelease:1,gustShield:5});
+ K.step(s,88.49,DT,{shield:false});
+ assert.notEqual(s.replyLevel,'bright');
+});
+test("near-extinction recovery comes from the player's timely release, not RNG",()=>{
+ const eligible=K.canTriggerMiracle,base={rescue:false,memories:2,flame:21,oxygen:51,shield:false,wind:.29,releaseAt:78.5};
+ assert.equal(eligible(base,79),true);
+ assert.equal(eligible({...base,releaseAt:60},79),false,'old release does not count');
+ assert.equal(eligible({...base,shield:true},79),false,'cannot trigger while protected');
+ assert.equal(eligible({...base,memories:1},79),false,'player must gather memories');
+ assert.equal(eligible({...base,oxygen:12},79),false,'must leave oxygen');
+ assert.equal(eligible({...base,wind:.9},79),false,'release must meet a lull');
+ assert.equal(eligible({...base,flame:60},79),false,'needs a real near miss');
+ assert.equal(eligible({...base,rescue:true},79),false,'once per play');
+ assert.equal(eligible(base,40),false,'no arbitrary early shortcut');
+ const s=K.create({seed:2});Object.assign(s,{flame:20,oxygen:60,memories:2});
+ K.step(s,75,DT,{shield:true,wasShield:false});K.step(s,75.1,DT,{shield:false,wasShield:true});
+ assert.equal(s.releaseAt,75.1,'releasing the button records the moment');
+});
+test('chapters change play conditions: tunnel shelter, bridge exposure, foreshadowed rescue',()=>{
+ assert.deepEqual([0,19.9,20,44.9,45,70].map(K.chapterAt),[0,0,1,1,2,3]);
+ const shield=(ch,t)=>{const s=K.create({seed:9});s.events=[];s.chapter=ch;K.step(s,t,1,{shield:true});return 100-s.oxygen};
+ assert.ok(shield(2,50)>shield(0,10)-0.5,'the bridge costs extra breath when protecting');
+ const tunnel=play(9,tele,{until:46});assert.ok(tunnel.log.some(e=>e.type==='shelter'),'the tunnel offers a shelter');
+ const near=K.create({seed:9});Object.assign(near,{flame:30,memories:2});const ev=K.step(near,72,DT,{shield:false});
+ assert.ok(ev.some(e=>e.type==='foreshadow'));
+});
+test('small events: every kind once per run, seeded order, no kind dominating the opening',()=>{
+ const firsts={};
+ for(let seed=1;seed<=400;seed++){
+  const list=K.eventSchedule(seed);
+  assert.deepEqual(list.map(e=>e.kind).sort(),Object.keys(K.EVENT_KINDS).sort());
+  for(let i=1;i<list.length;i++)assert.ok(list[i].warnAt>list[i-1].end,'events never overlap');
+  assert.ok(list.every(e=>e.end<80),'events stay clear of the finale');
+  firsts[list[0].kind]=(firsts[list[0].kind]||0)+1;
+ }
+ for(const n of Object.values(firsts))assert.ok(n>60&&n<140,'opening event is balanced: '+JSON.stringify(firsts));
+});
+test('events have real effects on the rules',()=>{
+ const at=kind=>{const s=K.create({seed:3});const e=s.events.find(x=>x.kind===kind);s.chapter=K.chapterAt(e.at+.5);return {s,t:e.at+.5}};
+ {const {s,t}=at('gust');K.step(s,t,DT,{shield:false});assert.ok(s.wind>=.6,'gusts raise the wind')}
+ {const {s,t}=at('lull');const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;K.step(s,t,DT,{});K.step(b,t,DT,{});assert.ok(s.wind<b.wind,'lulls calm the wind')}
+ {const {s,t}=at('eddy');s.oxygen=80;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.oxygen=80;K.step(s,t,1,{shield:true});K.step(b,t,1,{shield:true});assert.ok(s.oxygen<b.oxygen,'eddies make holding cost more breath')}
+ {const {s,t}=at('lantern');s.flame=50;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.flame=50;K.step(s,t,1,{});K.step(b,t,1,{});if(b.wind<=.5)assert.ok(s.flame>b.flame,'a neighbour lantern warms the flame')}
+});
+test('memories: seeded positions in reach, collected only while shown, and once',()=>{
+ for(let seed=1;seed<50;seed++)for(const m of K.memorySlots(seed)){assert.ok(m.u>=.2&&m.u<=.8);assert.ok(m.y>150&&m.y<300)}
+ const s=K.create({seed:4});K.step(s,s.slots[0].at+.2,DT,{});
+ assert.ok(s.mote);assert.equal(K.collect(s,s.mote.id),true);assert.equal(s.memories,1);
+ assert.equal(K.collect(s,s.slots[0].id),false,'no double collection');
+});
+test('flame personality follows state and shows nothing when out',()=>{
+ assert.equal(K.flameExpression({flame:0}),'out');
+ assert.equal(K.flameExpression({flame:50,rescue:true}),'hope');
+ assert.equal(K.flameExpression({flame:50,oxygen:10}),'suffocating');
+ assert.equal(K.flameExpression({flame:20,oxygen:80}),'afraid');
+ assert.equal(K.flameExpression({flame:50,oxygen:80,shield:true}),'comfort');
+});

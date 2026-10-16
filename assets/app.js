@@ -89,65 +89,28 @@ if(!game){
  return;
 }
 const candle=slug==='kienaide';
-root.innerHTML=top()+'<main class="game-shell '+game.theme+'" style="--tone:'+esc(game.accent||'#e9a76f')+'"><div class="game-heading"><div class="label">EMOTION '+game.number+' <span>/ '+game.emotion+'</span></div><h1>'+game.title+'</h1><p>'+game.subtitle+'</p></div><div class="hud"><div><small>'+(candle?'LIGHT':'RECORD')+'</small><strong id="record">—</strong></div><div><small>'+(candle?'MEMORY':'BEST')+'</small><strong id="best">'+(candle?'0 / 3':'—')+'</strong></div><div><small>'+(candle?'DAWN':'TIME')+'</small><strong id="timer">'+(candle?'01:30':'00:00')+'</strong></div></div><div class="collect-bar"><span id="collection-progress" aria-live="polite"></span><button id="open-collection" type="button">結末図鑑を見る ↗</button></div><div class="arena"><canvas id="stage" width="360" height="400" aria-label="'+game.title+' のゲーム画面"></canvas>'+(candle?'<div class="story-beat" id="story-beat" role="status" aria-live="polite"><small>第一章　雪の路地</small><strong>窓の灯りが、帰り道の目印だった。</strong></div><button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">音 ON</button>':'')+'<div class="curtain" id="curtain"><span class="eyebrow" id="curtain-kicker">'+(candle?'A SHORT NIGHT JOURNEY':'ONE IDEA GAME')+'</span><h2 id="curtain-title">'+game.title+'</h2><p id="curtain-description">'+(candle?'吹雪の町を歩き、たったひとつの灯りを家まで届ける。風の線が強くなったら長押しでかばい、凪いだら離して呼吸を戻そう。':game.mechanic)+'</p><div class="discovery-result" id="discovery-result" role="status" aria-live="polite" hidden><span class="discovery-glyph" aria-hidden="true">✦</span><span class="discovery-info"><strong id="discovery-state">NEW ENDING</strong><small id="discovery-counter"></small><small id="discovery-milestone"></small></span><span class="discovery-sparks" aria-hidden="true">✧ ✦ ✧</span></div><button class="btn" id="play">'+(candle?'夜を歩く →':'プレイ開始 →')+'</button><button class="share-btn" id="share" hidden>結果をXで共有 ↗</button>'+(candle?'<button class="moment-save" id="moment-save" type="button" hidden>結末カードを保存・共有 ↗</button>':'')+'<a class="related" id="related" href="'+('../'+games[(games.findIndex(g=>g.slug===slug)+1)%games.length].slug+'/')+'" hidden>次のゲームを遊ぶ →</a></div><section class="collection-panel" id="collection-panel" hidden role="dialog" aria-modal="true" aria-label="結末図鑑"><div class="collection-head"><strong>結末図鑑</strong><button id="close-collection" type="button">閉じる ✕</button></div><p>予想外の操作にも、結末が隠れている。</p><div class="collection-track" role="progressbar" aria-label="結末の回収率" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><span id="collection-track-fill"></span></div><ol id="collection-list"></ol><div id="collection-awards"></div></section></div><div class="play-controls"><p id="hint">'+(slug==='girigiri'?'長押しで注ぐ。離すと落下中の水が残る。':slug==='ato-hitotsu'?'タイミングよく落として高く積もう。':candle?'風が強まったら長押し。凪いだら離して、息を戻す。':window.EmotionMissions?.endings[slug]?game.mechanic:'指を離したら扉が開いてしまう。')+'</p><button class="action" id="action" disabled>'+(slug==='girigiri'?'長押しで注ぐ':slug==='ato-hitotsu'?'ここで落とす！':candle?'長押しで灯りをかばう':window.EmotionMissions?.endings[slug]?({timing:'ここで止める！',balance:'長押しで調節',rhythm:'リズムをタップ！',choice:'左を選ぶ（右は画面）'}[game.theme]):'扉を押さえ続ける')+'</button><div class="controls-bottom"><button id="reset">最初から</button><a href="../">ゲーム一覧へ</a><a href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">新作を見る ↗</a></div></div></main>';
+root.innerHTML=top()+'<main class="game-shell '+game.theme+'" style="--tone:'+esc(game.accent||'#e9a76f')+'"><div class="game-heading"><div class="label">EMOTION '+game.number+' <span>/ '+game.emotion+'</span></div><h1>'+game.title+'</h1><p>'+game.subtitle+'</p></div><div class="hud"><div><small>'+(candle?'LIGHT':'RECORD')+'</small><strong id="record">—</strong></div><div><small>'+(candle?'MEMORY':'BEST')+'</small><strong id="best">'+(candle?'0 / 3':'—')+'</strong></div><div><small>'+(candle?'DAWN':'TIME')+'</small><strong id="timer">'+(candle?'01:30':'00:00')+'</strong></div></div><div class="collect-bar"><span id="collection-progress" aria-live="polite"></span><button id="open-collection" type="button">結末図鑑を見る ↗</button></div><div class="arena"><canvas id="stage" width="360" height="400" aria-label="'+game.title+' のゲーム画面"></canvas>'+(candle?'<p class="sr-only" id="memory-live" aria-live="polite"></p><div class="story-beat" id="story-beat" role="status" aria-live="polite"><small>第一章　雪の路地</small><strong>窓の灯りが、帰り道の目印だった。</strong></div><button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">音 ON</button>':'')+'<div class="curtain" id="curtain"><span class="eyebrow" id="curtain-kicker">'+(candle?'A SHORT NIGHT JOURNEY':'ONE IDEA GAME')+'</span><h2 id="curtain-title">'+game.title+'</h2><p id="curtain-description">'+(candle?'吹雪の町を歩き、たったひとつの灯りを家まで届ける。風の線が強くなったら長押しでかばい、凪いだら離して呼吸を戻そう。':game.mechanic)+'</p><div class="discovery-result" id="discovery-result" role="status" aria-live="polite" hidden><span class="discovery-glyph" aria-hidden="true">✦</span><span class="discovery-info"><strong id="discovery-state">NEW ENDING</strong><small id="discovery-counter"></small><small id="discovery-milestone"></small></span><span class="discovery-sparks" aria-hidden="true">✧ ✦ ✧</span></div>'+(candle?'<p class="next-hint" id="next-hint" hidden></p>':'')+'<button class="btn" id="play">'+(candle?'夜を歩く →':'プレイ開始 →')+'</button><button class="share-btn" id="share" hidden>結果をXで共有 ↗</button>'+(candle?'<button class="moment-save" id="moment-save" type="button" hidden>結末カードを保存・共有 ↗</button>':'')+''+(candle?'<label class="volume-row">音量<input id="volume" type="range" min="0" max="100" step="5" aria-label="音量"></label>':'')+'<a class="related" id="related" href="'+('../'+games[(games.findIndex(g=>g.slug===slug)+1)%games.length].slug+'/')+'" hidden>次のゲームを遊ぶ →</a></div><section class="collection-panel" id="collection-panel" hidden role="dialog" aria-modal="true" aria-label="結末図鑑"><div class="collection-head"><strong>結末図鑑</strong><button id="close-collection" type="button">閉じる ✕</button></div><p>予想外の操作にも、結末が隠れている。</p><div class="collection-track" role="progressbar" aria-label="結末の回収率" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><span id="collection-track-fill"></span></div><ol id="collection-list"></ol><div id="collection-awards"></div></section></div><div class="play-controls"><p id="hint">'+(slug==='girigiri'?'長押しで注ぐ。離すと落下中の水が残る。':slug==='ato-hitotsu'?'タイミングよく落として高く積もう。':candle?'風が強まったら長押し。凪いだら離して、息を戻す。':window.EmotionMissions?.endings[slug]?game.mechanic:'指を離したら扉が開いてしまう。')+'</p><button class="action" id="action" disabled>'+(slug==='girigiri'?'長押しで注ぐ':slug==='ato-hitotsu'?'ここで落とす！':candle?'長押しで灯りをかばう':window.EmotionMissions?.endings[slug]?({timing:'ここで止める！',balance:'長押しで調節',rhythm:'リズムをタップ！',choice:'左を選ぶ（右は画面）'}[game.theme]):'扉を押さえ続ける')+'</button><div class="controls-bottom"><button id="reset">最初から</button><a href="../">ゲーム一覧へ</a><a href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">新作を見る ↗</a></div></div></main>';
 const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d'),curtain=document.getElementById('curtain'),action=document.getElementById('action');
 const $=id=>document.getElementById(id),record=$('record'),best=$('best'),timer=$('timer');
 let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
 try{high=Number(localStorage.getItem('emotion-v1-'+slug))||0}catch(_){}if(!candle)best.textContent=high?String(high):'—';
 const state={};
-const sceneNames=['snow-street','wind-tunnel','frozen-bridge','dawn-village'];
-const backdrops=candle?sceneNames.map(name=>{
- const img=new Image();
- img.src=base+'assets/kienaide-'+name+'.svg';
- return img;
-}):[];
-const characterArt=candle?Object.fromEntries(['hero','flame'].map(name=>{const img=new Image();img.src=base+'assets/kienaide-'+name+'.svg';return [name,img]})):null;
-const loaded=img=>!!(img?.complete&&img.naturalWidth>0);
-let audio=null,audioEnabled=true;
-function initCandleAudio(){
- if(!candle||audio)return;
- const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
- const ac=new AC(),master=ac.createGain();master.gain.value=.13;master.connect(ac.destination);
- const noise=ac.createBufferSource(),buffer=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate);
- const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
- noise.buffer=buffer;noise.loop=true;const filter=ac.createBiquadFilter(),windGain=ac.createGain();filter.type='lowpass';filter.frequency.value=950;windGain.gain.value=.02;noise.connect(filter).connect(windGain).connect(master);noise.start();
- const fireOsc=ac.createOscillator(),fireGain=ac.createGain(),fireFilter=ac.createBiquadFilter();
- fireOsc.type='triangle';fireOsc.frequency.value=210;fireFilter.type='lowpass';fireFilter.frequency.value=600;fireGain.gain.value=0;
- fireOsc.connect(fireFilter).connect(fireGain).connect(master);fireOsc.start();
- audio={ac,master,windGain,fireOsc,fireGain,fireFilter,lastPulse:0};
-}
-function candleTone(freq=620,duration=.22,volume=.18){
- if(!audio||!audioEnabled)return;const {ac,master}=audio,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(freq,ac.currentTime);g.gain.setValueAtTime(volume,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+duration);o.connect(g).connect(master);o.start();o.stop(ac.currentTime+duration);
-}
-function candleChord(){
- if(!audio||!audioEnabled)return;
- const {ac,master}=audio,now=ac.currentTime;
- for(const [i,freq] of [392,493.88,587.33,783.99].entries()){
-  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;
-  const start=now+i*.18;g.gain.setValueAtTime(.0001,start);g.gain.exponentialRampToValueAtTime(.085,start+.16);
-  g.gain.exponentialRampToValueAtTime(.0001,start+1.8);o.connect(g).connect(master);o.start(start);o.stop(start+1.9);
- }
-}
-function flameExpression(s){
- if(s.rescue)return 'hope';
- if((s.oxygen??100)<24)return 'suffocating';
- if((s.flame??72)<31)return 'afraid';
- if(s.shield)return 'comfort';
- if((s.wind??0)>.58)return 'afraid';
- return 'calm';
-}
+// 004 uses dedicated modules: rules (kienaide-core.js), layered art (kienaide-view.js), sound (kienaide-audio.js).
+const K=candle?window.KienaideCore:null,KV=candle?window.KienaideView.create(base):null,KA=candle?window.KienaideAudio.create():null;
+const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
+const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+let endingAt=0,runCount=0;
 function setStory(chapter,text){
- if(!candle)return;const el=$('story-beat');if(!el||state.story===chapter)return;state.story=chapter;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+chapter+'</small><strong>'+text+'</strong>';el.classList.add('show');candleTone(440+state.chapter*70,.45,.12);
+ if(!candle)return;const el=$('story-beat');if(!el||state.story===chapter)return;state.story=chapter;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+esc(text)+'</strong>';el.classList.add('show');
 }
 if(candle){
- const sound=$('sound-toggle');sound.addEventListener('click',()=>{initCandleAudio();audioEnabled=!audioEnabled;sound.setAttribute('aria-pressed',String(audioEnabled));sound.textContent=audioEnabled?'音 ON':'音 OFF';if(audio)audio.master.gain.value=audioEnabled ? .13 : 0});
-}
-
-function canTriggerMiracle(s,time){
- return !s.rescue && time>=70 && time<=89 &&
-   (s.memories||0)>=2 && s.flame>0 && s.flame<=29 && s.oxygen>=30 &&
-   !s.shield && time-s.releaseAt>=0 && time-s.releaseAt<=1.3 &&
-   s.wind<.46;
+ const sound=$('sound-toggle'),vol=$('volume');
+ const paint=()=>{sound.setAttribute('aria-pressed',String(!KA.muted));sound.textContent=KA.muted?'音 OFF':'音 ON';vol.value=String(Math.round((KA.muted?0:KA.volume)*100))};
+ sound.addEventListener('click',()=>{KA.init();KA.resume();KA.setMuted(!KA.muted);paint();mark('sound_toggle',{muted:KA.muted})});
+ vol.addEventListener('input',()=>{KA.init();KA.resume();KA.setVolume(Number(vol.value)/100);if(Number(vol.value)===0)KA.setMuted(true);paint()});
+ paint();
+ // Background tabs must not keep playing or double the timers when they come back.
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)KA.suspend();else if(mode==='play')KA.resume()});
 }
 if(candle){
  const save=$('moment-save');
@@ -161,7 +124,7 @@ if(candle){
   g.fillStyle='#d3c9ba';g.font='bold 27px system-ui,sans-serif';g.textAlign='center';g.fillText('BIRDMAN STUDIO   /   EMOTION GAMES',450,66);
   g.font='bold 67px system-ui,sans-serif';g.fillStyle='#ffe0a2';g.fillText('きえないで。',450,152);
   const box={x:90,y:208,w:720,h:800};
-  g.save();g.beginPath();g.roundRect(box.x,box.y,box.w,box.h,25);g.clip();g.drawImage(canvas,box.x,box.y,box.w,box.h);g.restore();
+  g.save();g.beginPath();g.roundRect(box.x,box.y,box.w,box.h,25);g.clip();{const cw=canvas.width,ch=canvas.height,k=Math.max(box.w/cw,box.h/ch),sw=box.w/k,sh=box.h/k;g.drawImage(canvas,(cw-sw)/2,(ch-sh)/2,sw,sh,box.x,box.y,box.w,box.h)}g.restore();
   g.strokeStyle='#b9a18b';g.lineWidth=3;g.strokeRect(box.x,box.y,box.w,box.h);
   g.fillStyle='#fff0d7';g.font='bold 35px system-ui,sans-serif';
   const ending=endingList.find(e=>e.id===lastEnding);
@@ -215,16 +178,17 @@ canvas.addEventListener('click',e=>{
  if(slug==='micha-dame'){if(!s.knocks||elapsed-s.knockTime>1.3)s.knocks=0;s.knocks++;s.knockTime=elapsed;if(s.knocks>=3)finish('knock',75)}
  if(state.micro){const box=canvas.getBoundingClientRect();const x=(e.clientX-box.left)*360/box.width,y=(e.clientY-box.top)*400/box.height;window.EmotionMissions.canvasTap(state.micro,x,y,elapsed,finish)}
  if(slug==='kienaide'){
-  const box=canvas.getBoundingClientRect(),x=(e.clientX-box.left)*360/box.width,y=(e.clientY-box.top)*400/box.height;
-  const mote=s.mote;if(!mote||mote.got||Math.hypot(x-mote.x,y-mote.y)>38)return;
-  mote.got=true;s.memoryGot.add(mote.id);s.memories++;s.storyPause=elapsed+4;best.textContent=s.memories+' / 3';candleTone(660+s.memories*120,.55,.2);mark('memory_collected',{memory_id:mote.id,count:s.memories});
-  setStory(['','記憶　赤いマフラー','記憶　ふたりの食卓','記憶　帰る約束'][s.memories],['','「寒い日は、半分こ」','「灯りがあれば、同じ場所」','「遅くなっても、帰っておいで」'][s.memories]);
+  const p=KV.toWorld(canvas,e.clientX,e.clientY),m=s.mote;
+  if(!m||Math.hypot(p.x-m.u*KV.view.W,p.y-m.y)>40)return;
+  if(!K.collect(s,m.id))return;
+  s.storyPause=elapsed+4;best.textContent=s.memories+' / 3';KA.cues.memory(s.memories);mark('memory_collected',{memory_id:m.id,count:s.memories});
+  setStory(m.title,m.line);
  }
 });
 
 function store(n){if(n<=high)return;high=n;if(!candle)best.textContent=String(high);try{localStorage.setItem('emotion-v1-'+slug,String(high))}catch(_){}}
-function display(title,description,kicker='YOUR RESULT'){mode='end';if(candle)document.body.classList.remove('kienaide-playing');down=false;$('collection-panel').hidden=true;action.disabled=true;curtain.classList.remove('hidden');$('curtain-kicker').textContent=kicker;$('curtain-title').textContent=title;$('curtain-description').textContent=description;$('play').textContent=candle?'もう一度、夜を歩く ↻':'もう一度遊ぶ ↻';$('share').hidden=false;$('related').hidden=false;if(candle){$('moment-save').hidden=false;$('story-beat').classList.remove('show');$('hint').textContent='夜の記憶は、結末図鑑に残った。';if(audio)audio.windGain.gain.setTargetAtTime(0,audio.ac.currentTime,.4)}answer=title;mark('game_complete',{score:points,ending_id:lastEnding,outcome:points>0?'success':'lose',memories:state.memories||0,chapter:state.chapter||0,miracle:!!state.rescue,lowest_flame:state.lowestFlame??null})}
-function run(){mode='play';if(candle)document.body.classList.add('kienaide-playing');curtain.classList.remove('found-new');$('discovery-result').hidden=true;down=false;elapsed=0;points=0;answer='';lastEnding='';$('collection-panel').hidden=true;record.textContent='0';action.disabled=false;curtain.classList.add('hidden');Object.keys(state).forEach(x=>delete state[x]);if(slug==='girigiri')Object.assign(state,{fill:0,drips:[],spawner:0,pour:false,stopping:null,spill:0,started:false});if(slug==='ato-hitotsu')Object.assign(state,{tower:[{x:72,y:340,w:216}],moving:{x:0,y:316,w:216},velocity:158,level:0,streak:0,lastDrop:-1});if(slug==='micha-dame')Object.assign(state,{hold:false,held:0,eyes:0,failed:false,knocks:0,knockTime:-1,started:false});if(slug==='kienaide'){initCandleAudio();audio?.ac.resume();$('moment-save').hidden=true;Object.assign(state,{shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:90,qaSpeed:new URLSearchParams(location.search).has('qa')?12:1,story:'',storyPause:0,shelterReady:true,shelterUntil:-1,bridgeChill:0,miracleHint:false,rescue:false,rescueAt:-1,releaseAt:-100,lowestFlame:72,peakWind:0});best.textContent='0 / 3';setStory('第一章　雪の路地','窓の灯りが、帰り道の目印だった。')}if(window.EmotionMissions?.endings[slug])state.micro=window.EmotionMissions.makeState(slug);mark('game_start');$('hint').textContent=state.micro?game.mechanic:(slug==='girigiri'?'注ぐのを止めるタイミングを見極めろ':slug==='ato-hitotsu'?'タップしてブロックを落とす':slug==='kienaide'?'風の線が濃くなったら長押し。凪いだら離す。':'長押しで扉を押さえろ')}
+function display(title,description,kicker='YOUR RESULT'){mode='end';if(candle)document.body.classList.remove('kienaide-playing');down=false;$('collection-panel').hidden=true;action.disabled=true;curtain.classList.remove('hidden');$('curtain-kicker').textContent=kicker;$('curtain-title').textContent=title;$('curtain-description').textContent=description;$('play').textContent=candle?'もう一度、夜を歩く ↻':'もう一度遊ぶ ↻';$('share').hidden=false;$('related').hidden=false;if(candle){$('moment-save').hidden=false;$('story-beat').classList.remove('show');$('hint').textContent='夜の記憶は、結末図鑑に残った。';candleEnding()}answer=title;mark('game_complete',{score:points,ending_id:lastEnding,outcome:points>0?'success':'lose',memories:state.memories||0,chapter:state.chapter||0,miracle:!!state.rescue,lowest_flame:state.lowestFlame??null})}
+function run(){mode='play';if(candle)document.body.classList.add('kienaide-playing');curtain.classList.remove('found-new');$('discovery-result').hidden=true;down=false;elapsed=0;points=0;answer='';lastEnding='';$('collection-panel').hidden=true;record.textContent='0';action.disabled=false;curtain.classList.add('hidden');Object.keys(state).forEach(x=>delete state[x]);if(slug==='girigiri')Object.assign(state,{fill:0,drips:[],spawner:0,pour:false,stopping:null,spill:0,started:false});if(slug==='ato-hitotsu')Object.assign(state,{tower:[{x:72,y:340,w:216}],moving:{x:0,y:316,w:216},velocity:158,level:0,streak:0,lastDrop:-1});if(slug==='micha-dame')Object.assign(state,{hold:false,held:0,eyes:0,failed:false,knocks:0,knockTime:-1,started:false});if(slug==='kienaide')startCandle();if(window.EmotionMissions?.endings[slug])state.micro=window.EmotionMissions.makeState(slug);mark('game_start');$('hint').textContent=state.micro?game.mechanic:(slug==='girigiri'?'注ぐのを止めるタイミングを見極めろ':slug==='ato-hitotsu'?'タップしてブロックを落とす':slug==='kienaide'?'風の線が濃くなったら長押し。凪いだら離す。':'長押しで扉を押さえろ')}
 function finish(id,n,description){
  if(mode!=='play')return;
  const ending=endingList.find(e=>e.id===id);if(!ending)throw Error('Unknown ending '+id);
@@ -239,40 +203,49 @@ function finish(id,n,description){
  curtain.classList.toggle('found-new',newly);
  if(milestone)mark('reward_unlocked',{tier:count===3?'three':'complete',found_count:count});
 }
-// The first journey starts with a short, skippable prologue. No autoplay audio is required.
+// The first journey starts with the prologue「最後の灯り」(about 19 s). It can be skipped at any time and
+// is skipped automatically on later plays. Audio starts only because the player pressed Play.
 const introKey='emotion-kienaide-intro-v1';
-let introTimer=null;
+let introRaf=0;
 function showKienaideIntro(){
  if(!candle)return run();
  let seen=false;try{seen=localStorage.getItem(introKey)==='1'}catch(_){}
  if(seen)return run();
- const overlay=document.createElement('div');
- overlay.id='kienaide-intro';
- overlay.setAttribute('role','dialog');overlay.setAttribute('aria-label','最後の灯り');
- Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'9999',background:'linear-gradient(160deg,#0b1528,#29364d 70%,#151d2d)',color:'#fff2d8',display:'grid',placeItems:'center',padding:'24px',textAlign:'center'});
- const scene=document.createElement('div');
- Object.assign(scene.style,{maxWidth:'360px',font:'500 19px/1.8 system-ui',whiteSpace:'pre-line'});
+ KA.init();KA.resume();
+ const overlay=document.createElement('div');overlay.id='kienaide-intro';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','導入　最後の灯り');
+ const stage=document.createElement('canvas');stage.setAttribute('aria-hidden','true');
+ const line=document.createElement('p');line.className='intro-line';line.setAttribute('aria-live','polite');
  const skip=document.createElement('button');skip.type='button';skip.textContent='スキップして遊ぶ';
- Object.assign(skip.style,{position:'absolute',right:'18px',bottom:'max(26px,env(safe-area-inset-bottom))',padding:'12px 18px',borderRadius:'22px',border:'1px solid #e0c99c',background:'#17263a',color:'#fff2d8',font:'600 14px system-ui'});
- overlay.append(scene,skip);document.body.append(overlay);
- const lines=['雪の夜。町の明かりが消えた。','暖炉には、小さな灯りがひとつ。','灯りは少女の手に飛び込み、遠い家を見つめた。','「……あそこに、帰りたいの？」','きえないで。'];
- let index=0;
- const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
- const advance=()=>{scene.textContent=lines[index++];if(index>=lines.length){clearInterval(introTimer);introTimer=setTimeout(done,reduced?600:2400)}};
- let finished=false;
- const done=()=>{if(finished)return;finished=true;clearTimeout(introTimer);clearInterval(introTimer);introTimer=null;overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}run()};
+ overlay.append(stage,line,skip);document.body.append(overlay);
+ const iv=window.KienaideView.create(base),g=stage.getContext('2d'),reduced=reducedMotion(),speed=qa?6:1;
+ let t0=0,finished=false,shown='';const voiced=[0,0];
+ const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:t0&&(performance.now()-t0)/1000*speed<iv.INTRO_LENGTH});run()};
  skip.addEventListener('click',done,{once:true});
- advance();if(index<lines.length)introTimer=setInterval(()=>{if(index<lines.length)advance()},reduced?650:3000);
+ overlay.addEventListener('keydown',e=>{if(e.key==='Escape')done()});
+ const loop=now=>{if(finished)return;if(!t0)t0=now;const t=(now-t0)/1000*speed;iv.resize(stage);iv.introFrame(g,t,{reduced});
+  const cur=[...iv.INTRO].reverse().find(l=>t>=l.at);if(cur&&cur.text!==shown){shown=cur.text;line.textContent=cur.text}
+  KA.ambient(t<11?.02:.32,t<8?Math.min(1,t/3)*.8:.4);if(!voiced[0]&&t>=5){voiced[0]=1;KA.cues.voice()}if(!voiced[1]&&t>=14.7){voiced[1]=1;KA.cues.voice()}
+  if(t>=iv.INTRO_LENGTH)return done();introRaf=requestAnimationFrame(loop)};
+ introRaf=requestAnimationFrame(loop);skip.focus({preventScroll:true});mark('intro_start');
 }
 $('play').addEventListener('click',()=>{if(mode==='end'){mark('game_retry');run()}else if(candle)showKienaideIntro();else run()});
 $('reset').addEventListener('click',()=>{if(mode!=='intro')mark('game_retry');run()});
 $('share').addEventListener('click',()=>share(points?points+'点':''));
-function holdRelease(){if(!down)return;down=false;if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;state.releaseAt=elapsed}if(state.micro)window.EmotionMissions.up(state.micro)}
-action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0)return;e.preventDefault();down=true;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide')state.shield=true;if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
+function holdRelease(){if(!down)return;down=false;if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
+action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0)return;e.preventDefault();down=true;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 action.addEventListener('pointerup',holdRelease);action.addEventListener('pointercancel',holdRelease);
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
 window.addEventListener('blur',holdRelease);document.addEventListener('visibilitychange',()=>{if(document.hidden)holdRelease()});
 action.addEventListener('contextmenu',e=>e.preventDefault());
+// Keyboard play for 004: hold Space/Enter on the button to shield, M (or Enter on the scene) to touch a memory.
+if(candle){
+ const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down){e.preventDefault();down=true;state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}};
+ const lift=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();holdRelease()}};
+ action.addEventListener('keydown',press);action.addEventListener('keyup',lift);
+ const touchMemory=()=>{const s=state,m=s.mote;if(mode!=='play'||!m||!K.collect(s,m.id))return;s.storyPause=elapsed+4;best.textContent=s.memories+' / 3';KA.cues.memory(s.memories);mark('memory_collected',{memory_id:m.id,count:s.memories,input:'key'});setStory(m.title,m.line)};
+ canvas.tabIndex=0;canvas.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();touchMemory()}});
+ document.addEventListener('keydown',e=>{if((e.key==='m'||e.key==='M')&&!e.repeat)touchMemory()});
+}
 function drop(){const s=state;if(s.level>=1&&s.lastDrop>=0&&elapsed-s.lastDrop<.38){finish('rush',s.level*10);return}s.lastDrop=elapsed;const a=s.moving,b=s.tower.at(-1),left=Math.max(a.x,b.x),right=Math.min(a.x+a.w,b.x+b.w),width=right-left;if(width<9){finish('collapse',state.level*10,'積めたのは '+state.level+' 個。もう一度挑戦。');return}state.streak=Math.abs(a.x-b.x)<5?state.streak+1:0;state.level++;state.tower.push({x:left,y:a.y,w:width});record.textContent=String(state.level);if(state.streak>=3){finish('precision',95);return}if(state.level>=10){finish('sky',100);return}state.moving={x:0,y:a.y-24,w:width};state.velocity=(158+state.level*28)*(state.level%2?-1:1);if(state.velocity<0)state.moving.x=360-width}
 function bg(color){ctx.fillStyle=color;ctx.fillRect(0,0,360,400)}
 function textAt(t,x,y,font,color,align='center'){ctx.textAlign=align;ctx.fillStyle=color;ctx.font=font;ctx.fillText(t,x,y)}
@@ -298,204 +271,70 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
  textAt('DO NOT LOOK',180,387,'11px system-ui','#9d899f');
  if(mode==='play'&&!s.started&&elapsed>=8){finish('ignore',40)}if(mode==='play'&&s.hold){s.held+=dt;record.textContent=s.held.toFixed(1)+'s';if(s.held>=12){finish('resist',100)}}}
 
-function drawCandle(dt){
- const s=state,shield=s.shield||false,step=dt*(s.qaSpeed||1),progress=Math.min(1,elapsed/(s.journey||90));
- const chapters=[
-  {at:0,label:'第一章　雪の路地',line:'窓の灯りが、帰り道の目印だった。'},
-  {at:20,label:'第二章　風のトンネル',line:'「灯りがあれば、きっと帰れる」'},
-  {at:45,label:'第三章　凍った橋',line:'向こう岸の窓に、小さな影が見えた。'},
-  {at:70,label:'最終章　夜明け前',line:'あと少し。名前を呼ぶ声がした。'}
- ];
- let chapter=0;for(let i=1;i<chapters.length;i++)if(elapsed>=chapters[i].at)chapter=i;
- if(mode==='play'&&chapter!==s.chapter){s.previousChapter=s.chapter;s.chapter=chapter;s.sceneChangedAt=elapsed;mark('chapter_reached',{chapter:chapter+1})}
- if(mode==='play'&&elapsed>(s.storyPause||0)&&!(s.finalePhase&&s.finalePhase!=='approach'))setStory(chapters[chapter].label,chapters[chapter].line);
- const gustWave=Math.pow((Math.sin(elapsed*(.42+chapter*.055)-.9)+1)/2,2.3);
- const crossWind=Math.pow((Math.sin(elapsed*.19+1.8)+1)/2,4);
- // Four chapters change play conditions, not just words: shelter, crosswind, cold and the last lull.
- const tunnelGust=chapter===1?Math.pow((Math.sin(elapsed*.83)+1)/2,6)*.24:0;
- const bridgeCold=chapter===2?.62:1;
- const baseWind=.12+gustWave*(.43+chapter*.105)+crossWind*.14+tunnelGust;
- // The last storm is deterministic and tied to the player's shielding decision.
-  const finaleTime=elapsed-80;
-  s.finalePhase=finaleTime<0?'approach':finaleTime<2?'gust-warning':finaleTime<7?'gust-active':finaleTime<8.5?'silence':'window-reply';
-  s.wind=s.finalePhase==='gust-active'?1.15:((s.finalePhase==='silence'||s.finalePhase==='window-reply')?.08:Math.min(1.15,baseWind));
-  if(mode==='play'&&s.finalePhase!==s.previousFinalePhase){
-   s.previousFinalePhase=s.finalePhase;
-   if(s.finalePhase==='gust-warning'){setStory('最後の風','風が変わる。次の一息に備えて。');s.storyPause=elapsed+2;mark('finale_warning',{});}
-   if(s.finalePhase==='gust-active'){setStory('最後の風','守るか、息を残すか。');s.storyPause=elapsed+5;mark('finale_gust',{});}
-   if(s.finalePhase==='silence'){setStory('静寂','風の音が、消えた。');s.storyPause=elapsed+1.5;mark('finale_silence',{flame:Math.round(s.flame),oxygen:Math.round(s.oxygen)});}
-   if(s.finalePhase==='window-reply'){setStory('窓の向こう',s.flame>0?'遠い窓が、かすかに光った。':'窓は、まだ暗い。');s.storyPause=elapsed+2;mark('finale_window',{flame:Math.round(s.flame)});}
-  }
- if(chapter===1&&s.shelterReady&&s.wind<.29&&!shield){
-  s.shelterReady=false;s.shelterUntil=elapsed+3.5;mark('shelter_discovered',{chapter:2});
-  setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3;
- }
- const sheltered=elapsed<s.shelterUntil;
- if(sheltered)s.wind*=.2;
- if(mode==='play'){
-  if(shield){s.oxygen=Math.max(0,s.oxygen-(4.5+s.wind*3.8+(chapter===2?1.2:0))*step);s.flame=Math.min(100,s.flame+(1.35-s.wind*.35)*step)}
-  else{s.oxygen=Math.min(100,s.oxygen+(sheltered?23:15)*step);s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:2.25-(chapter===2?.65:0))*step))}
-  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){
-   s.miracleHint=true;setStory('夜明け前　小さな予感','向こうの窓が、こちらの灯りを見ている。');
-   s.storyPause=elapsed+4;mark('rescue_foreshadowed',{flame:Math.round(s.flame)});
-  }
-  s.lowestFlame=Math.min(s.lowestFlame??100,s.flame);
-  s.peakWind=Math.max(s.peakWind||0,s.wind);
-  if(canTriggerMiracle(s,elapsed)){
-   s.rescue=true;s.rescueAt=elapsed;s.flame=Math.min(100,s.flame+24);
-   s.storyPause=elapsed+6;
-   setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');
-   candleChord();mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)});
-  }
-  const slots=[{id:'scarf',at:12,x:82,y:145},{id:'table',at:37,x:278,y:178},{id:'promise',at:62,x:92,y:213}];
-  const active=slots.find(m=>elapsed>=m.at&&elapsed<m.at+8&&!s.memoryGot.has(m.id));s.mote=active?{...active,got:false}:null;
-  if(audio&&audioEnabled){
-   const now=audio.ac.currentTime,emotion=flameExpression(s),quiet=s.finalePhase==='silence'||(s.rescue&&elapsed-s.rescueAt<.48);
-   audio.windGain.gain.setTargetAtTime(quiet?0:.02+s.wind*.13,now,.09);
-   audio.fireGain.gain.setTargetAtTime(quiet?0:emotion==='comfort'?.035:emotion==='afraid'?.012:.021,now,.14);
-   audio.fireOsc.frequency.setTargetAtTime(emotion==='afraid'?147:emotion==='hope'?310:emotion==='suffocating'?95:220,now,.15);
-   audio.fireFilter.frequency.setTargetAtTime(emotion==='suffocating'?220:emotion==='hope'?860:520,now,.18);
-   if(s.oxygen<24&&elapsed-audio.lastPulse>.75){audio.lastPulse=elapsed;candleTone(110,.16,.22)}
-  }
-  if(s.oxygen<=0){finish('smother',0);return}
-  if(s.flame<=0){finish('blown',0);return}
-  if(elapsed>=s.journey){timer.textContent='00:00';const score=Math.round(s.flame*.65+s.oxygen*.15+s.memories*7);finish(s.memories===3?(s.flame>=68?'dawn':'wish'):'survive',score);return}
-  record.textContent=Math.max(0,Math.round(s.flame))+'%';const remaining=Math.max(0,Math.ceil(s.journey-elapsed));timer.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
- }
- const wind=s.wind??.2,health=s.flame===undefined?72:s.flame;
- const scene=backdrops[chapter];
- const artReady=!!(scene?.complete&&scene.naturalWidth);
- const homeScale=.62+progress*.58,homeX=artReady&&chapter===3?253:270-progress*34,homeY=artReady&&chapter===3?266:236-progress*30;
- if(artReady){
-  ctx.drawImage(scene,0,0,360,400);
-  // Crossing into a new chapter briefly retains the previous one for a cinematic dissolve.
-  const transition=elapsed-(s.sceneChangedAt??-999);
-  const prev=backdrops[s.previousChapter];
-  if(transition>=0&&transition<1.35&&prev?.complete&&prev.naturalWidth&&s.previousChapter!==chapter){
-   ctx.save();ctx.globalAlpha=Math.max(0,1-transition/1.35);ctx.drawImage(prev,0,0,360,400);ctx.restore();
-  }
- }else{
- const horizon=ctx.createLinearGradient(0,0,0,400);
- horizon.addColorStop(0,`rgb(${Math.round(14+progress*58)},${Math.round(23+progress*45)},${Math.round(47+progress*43)})`);horizon.addColorStop(.72,`rgb(${Math.round(38+progress*92)},${Math.round(50+progress*58)},${Math.round(72+progress*48)})`);horizon.addColorStop(1,'#182334');ctx.fillStyle=horizon;ctx.fillRect(0,0,360,400);
- for(let i=0;i<22;i++){const x=(i*79+27+elapsed*(8+wind*28))%390-15,y=(i*53+13+Math.sin(i)*8)%255;ctx.fillStyle='rgba(239,242,249,'+(.22+wind*.34)+')';ctx.beginPath();ctx.arc(x,y,1+wind*1.2,0,7);ctx.fill()}
- // The destination grows closer in every chapter.
-
- ctx.save();ctx.translate(homeX,homeY);ctx.scale(homeScale,homeScale);ctx.fillStyle='#172233';ctx.fillRect(-34,-42,68,64);ctx.beginPath();ctx.moveTo(-42,-42);ctx.lineTo(0,-72);ctx.lineTo(42,-42);ctx.fill();ctx.fillStyle='#ffd58c';ctx.fillRect(7,-27,15,18);ctx.fillStyle='rgba(255,211,137,'+(s.rescue?'.55':'.16')+')';ctx.fillRect(s.rescue?-15:1,-33,s.rescue?53:27,s.rescue?50:30);ctx.restore();
-
- }
- if(artReady){
-  // Moving snow remains an independent foreground layer, even when the scenery is static.
-  for(let i=0;i<28;i++){
-   const xx=(i*67+elapsed*(9+wind*41))%387-15;
-   const yy=(i*59+Math.sin(i*4.3)*18+elapsed*(9+i%3*5))%419-10;
-   ctx.fillStyle='rgba(230,243,250,'+(.24+wind*.22)+')';
-   ctx.beginPath();ctx.arc(xx,yy,(i%4===0?1.9:1),0,Math.PI*2);ctx.fill();
-  }
- }
- if(s.rescue){
-  const since=elapsed-s.rescueAt,flare=Math.max(0,1-since/6);
-  const glow=ctx.createRadialGradient(homeX,homeY,0,homeX,homeY,flare*200+55);
-  glow.addColorStop(0,'rgba(255,230,156,'+(.4+flare*.5)+')');
-  glow.addColorStop(1,'rgba(255,184,91,0)');
-  ctx.fillStyle=glow;ctx.fillRect(0,20,360,320);
-  if(since>=0&&since<6){
-   for(let i=0;i<14;i++){const r=i*1.7+since*4,a=i*2.4+since*.8;
-    ctx.fillStyle='rgba(255,221,158,'+Math.max(0,.9-since*.13)+')';
-    ctx.fillRect(homeX+Math.cos(a)*r,homeY+Math.sin(a)*r,2.5,2.5)}
-   textAt('手を離したら、光が返ってきた。',180,94,'bold 15px system-ui','#ffe7af');
-  }
- }
- if(sheltered&&mode==='play'){
-  ctx.fillStyle='rgba(255,222,165,.12)';ctx.fillRect(0,92,360,245);
-  textAt('風をよけられる — 今のうちに息を戻す',180,114,'bold 11px system-ui','#ffe0ad');
- }
- if(chapter===2&&mode==='play'){
-  ctx.strokeStyle='rgba(191,234,255,.38)';ctx.lineWidth=2;
-  for(let k=0;k<6;k++){ctx.beginPath();ctx.moveTo(k*73-30,320);ctx.lineTo(k*73+26,291);ctx.stroke()}
- }
- if(!artReady){ctx.fillStyle='#142233';ctx.fillRect(0,318,360,82);ctx.fillStyle='#536277';ctx.beginPath();ctx.moveTo(0,331);ctx.lineTo(86,286);ctx.lineTo(151,326);ctx.lineTo(235,284);ctx.lineTo(360,329);ctx.lineTo(360,348);ctx.lineTo(0,348);ctx.fill()}
- ctx.strokeStyle='rgba(214,224,237,'+(.18+wind*.5)+')';ctx.lineWidth=1.5+wind*1.8;
- for(let i=0;i<7;i++){const y=96+i*31,x0=((elapsed*(86+wind*145)+i*93)%520)-135;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(x0+63,y-9-wind*8,x0+119,y);ctx.stroke()}
- const x=180+Math.sin(elapsed*5.1)*(shield?2:wind*15),fireHeight=Math.max(10,45*(health/100));
- const character=flameExpression(s),motionReduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches||false;
- const lightStrength=Math.min(1,health/100)*(s.rescue?1.25:1);
- // The flame is a real light source: its intensity changes the nearby traveller and the path.
- const floorLight=ctx.createRadialGradient(x,263,5,x,263,150);
- floorLight.addColorStop(0,'rgba(255,181,96,'+(.22*lightStrength)+')');
- floorLight.addColorStop(1,'rgba(255,170,87,0)');
- ctx.fillStyle=floorLight;ctx.fillRect(15,110,330,260);
- const halo=ctx.createRadialGradient(x,220,2,x,220,80+health*.45);halo.addColorStop(0,'rgba(255,218,148,'+(.48*lightStrength)+')');halo.addColorStop(1,'rgba(255,176,99,0)');ctx.fillStyle=halo;ctx.fillRect(35,80,290,290);
- // The illustrated character remains separate from the flame so each can respond independently.
- const heroReady=loaded(characterArt?.hero),flameReady=loaded(characterArt?.flame);
- if(heroReady){
-  ctx.save();
-  if(!motionReduced&&mode==='play')ctx.translate(0,Math.sin(elapsed*2.05)*.85);
-  ctx.drawImage(characterArt.hero,0,0,360,400);
-  ctx.restore();
-  // Animated firelight is cast on the clothing even though the painted base is static.
-  ctx.fillStyle='rgba(255,175,91,'+(.13*lightStrength)+')';
-  ctx.beginPath();ctx.ellipse(189,222,38,42,-.24,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,224,167,'+(.44*lightStrength)+')';
-  ctx.lineWidth=2.5;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(154,233);ctx.quadraticCurveTo(177,244,204,231);ctx.stroke();
- }else{
- // Traveller, coat, hands and candle. Layered fabric and scarf give the protagonist a readable silhouette.
- const faceBounce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?0:Math.sin(elapsed*1.9)*1.2;
- const litAmount=Math.min(1,health/82);
- ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(181,324,70,11,0,0,7);ctx.fill();
- ctx.fillStyle='#293c56';ctx.beginPath();ctx.moveTo(144,218);ctx.lineTo(126,285);ctx.lineTo(141,338);ctx.lineTo(224,338);ctx.lineTo(231,286);ctx.lineTo(216,212);ctx.closePath();ctx.fill();
- ctx.strokeStyle='#658197';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(148,239);ctx.lineTo(159,317);ctx.moveTo(212,239);ctx.lineTo(205,318);ctx.stroke();
- ctx.fillStyle='#9a6470';ctx.beginPath();ctx.moveTo(144,207);ctx.quadraticCurveTo(177,221,215,207);ctx.lineTo(222,231);ctx.quadraticCurveTo(188,241,151,230);ctx.closePath();ctx.fill();
- ctx.strokeStyle='rgba(253,196,137,'+(.22+litAmount*.28)+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(154,221);ctx.quadraticCurveTo(179,233,208,220);ctx.stroke();
- ctx.fillStyle='#20283a';ctx.beginPath();ctx.arc(180,170+faceBounce,29,0,7);ctx.fill();
- ctx.fillStyle='rgba(255,182,112,'+(.12+.36*lightStrength)+')';ctx.beginPath();ctx.arc(180,170,29,Math.PI*.15,Math.PI*.85);ctx.lineTo(180,170);ctx.fill();ctx.beginPath();ctx.moveTo(142,315);ctx.quadraticCurveTo(147,205,180,199);ctx.quadraticCurveTo(217,207,220,315);ctx.fill();
-
- }
- if(flameReady){
-  // The flame breathes with the world but keeps its base in the girl's hands.
-  const sway=motionReduced?0:Math.sin(elapsed*6.3)*Math.min(2.2,wind*2.4);
-  ctx.save();ctx.translate(x+sway,232);ctx.rotate(motionReduced?0:Math.sin(elapsed*4.6)*wind*.11);
-  ctx.drawImage(characterArt.flame,-27,-fireHeight*1.35,54,Math.max(15,fireHeight*1.55));
-  ctx.restore();
- }else{
- rr(162,229,36,86,6,'#e8d7c3');rr(167,237,8,68,4,'#fff0d8');ctx.fillStyle='#49363a';ctx.fillRect(179,216,3,18);
- ctx.beginPath();ctx.moveTo(x,235);ctx.bezierCurveTo(x-24,219,x-8,197-fireHeight/3,x+Math.sin(elapsed*2)*5,218-fireHeight);ctx.bezierCurveTo(x+23,198,x+17,227,x,235);ctx.fillStyle=health>14?'#ffad4c':'#93a0b7';ctx.fill();ctx.beginPath();ctx.moveTo(x,232);ctx.quadraticCurveTo(x-9,216,x,223-fireHeight*.3);ctx.quadraticCurveTo(x+9,220,x,232);ctx.fillStyle='#fff1bf';ctx.fill();
-
- }
- // Personality is revealed through small expressive eyes rather than a large mascot face.
- if(health>6){
-  const eyey=227-fireHeight*.43,blink=!motionReduced&&Math.sin(elapsed*1.9)>.993;
-  ctx.fillStyle=character==='suffocating'?'#687386':'#714631';
-  if(blink){ctx.fillRect(x-7,eyey,4,1.4);ctx.fillRect(x+3,eyey,4,1.4)}
-  else{ctx.beginPath();ctx.ellipse(x-5,eyey,1.65,character==='afraid'?2.5:1.8,0,0,7);ctx.ellipse(x+5,eyey,1.65,character==='afraid'?2.5:1.8,0,0,7);ctx.fill()}
-  ctx.strokeStyle='#81513b';ctx.lineWidth=1;
-  ctx.beginPath();
-  if(character==='afraid'||character==='suffocating')ctx.arc(x,eyey+7,2,0,Math.PI);
-  else ctx.arc(x,eyey+5,4,.15*Math.PI,.85*Math.PI);
-  ctx.stroke();
- }
- if(character==='hope'){
-  for(let i=0;i<7;i++){
-   const angle=i*2.4+elapsed*(motionReduced?0:1.1),radius=21+i*2;
-   ctx.fillStyle='rgba(255,235,180,.65)';ctx.fillRect(x+Math.cos(angle)*radius,215+Math.sin(angle)*radius,2.3,2.3);
-  }
- }
- if(shield){
-  // Cupping the flame reads as a gesture, rather than two abstract translucent bars.
-  const c=.3+.55*lightStrength;
-  ctx.fillStyle='rgba(232,167,128,'+c+')';
-  ctx.beginPath();ctx.ellipse(154,226,13,30,-.42,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(208,226,13,30,.42,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,222,179,'+(.34+.48*lightStrength)+')';ctx.lineWidth=3;
-  ctx.beginPath();ctx.moveTo(159,207);ctx.quadraticCurveTo(145,226,161,241);
-  ctx.moveTo(201,207);ctx.quadraticCurveTo(214,226,200,241);ctx.stroke();
- }
- if(s.mote){const m=s.mote,pulse=1+Math.sin(elapsed*5)*.18;ctx.save();ctx.translate(m.x,m.y);ctx.scale(pulse,pulse);const glow=ctx.createRadialGradient(0,0,1,0,0,31);glow.addColorStop(0,'rgba(255,235,180,.95)');glow.addColorStop(1,'rgba(255,193,104,0)');ctx.fillStyle=glow;ctx.fillRect(-34,-34,68,68);textAt('✦',0,7,'bold 24px system-ui','#fff0bf');ctx.restore();textAt('記憶にふれる',m.x,m.y+42,'bold 10px system-ui','#fff1cf')}
- const meter=(label,value,y,color)=>{textAt(label,24,y,'bold 10px system-ui','#e5e7ec','left');rr(24,y+8,132,7,4,'#263247');rr(24,y+8,132*Math.max(0,value)/100,7,4,color)};
- meter('灯り',health,18,'#ffb15b');meter('息',s.oxygen===undefined?100:s.oxygen,43,'#a4cee2');
- const pips=3;for(let i=0;i<pips;i++){ctx.strokeStyle='#eacb91';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(312+i*16,31,5,0,7);ctx.stroke();if(i<(s.memories||0)){ctx.fillStyle='#ffd98d';ctx.beginPath();ctx.arc(312+i*16,31,3.2,0,7);ctx.fill()}}
- const warning=wind>.61&&!shield?'風が来る — 長押し':'凪いでいる — 息を戻す';if(mode==='play')$('hint').textContent=shield?(wind<.44||s.oxygen<28?'風が弱まった — いま離して':'灯りをかばっている'):warning;textAt(shield?'手の中で守っている':warning,180,370,'bold 13px system-ui',wind>.61?'#ffd39a':'#d6e0eb');textAt('家まで '+Math.max(0,Math.ceil((1-progress)*100))+'m',180,390,'11px system-ui','#bac8d6');
+let lastShield=false;
+function startCandle(){
+ KA.init();KA.resume();runCount++;
+ const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
+ Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});lastShield=false;endingAt=0;
+ if(qa&&params.has('mem')){for(const m of state.slots.slice(0,Math.min(3,Number(params.get('mem'))||0)))state.memoryGot.add(m.id);state.memories=state.memoryGot.size}
+ if(qa&&params.has('t')){elapsed=Math.max(0,Math.min(89,Number(params.get('t'))||0));state.chapter=state.previousChapter=K.chapterAt(elapsed)}
+ $('moment-save').hidden=true;$('next-hint').hidden=true;delete canvas.dataset.ending;$('story-beat').hidden=false;curtain.classList.remove('tableau');best.textContent=state.memories+' / 3';
+ setStory(K.CHAPTERS[0].label,K.CHAPTERS[0].line);
 }
-function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;if(mode==='play'&&$('collection-panel').hidden){elapsed+=dt*(candle?(state.qaSpeed||1):1);if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide')drawCandle(dt);else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);raf=requestAnimationFrame(tick)}
+// Turn simulation events into story beats, sound and analytics.
+function candleEvents(list){
+ const s=state;
+ for(const e of list){
+  if(e.type==='chapter'){mark('chapter_reached',{chapter:e.chapter+1});KA.cues.chapter()}
+  if(e.type==='event'){mark('wind_event',{kind:e.event.kind});KA.cues.event(e.event.kind);if(e.event.kind==='gust'||e.event.kind==='eddy')navigator.vibrate?.(40);setStory(e.event.label,e.event.tip);s.storyPause=elapsed+3}
+  if(e.type==='shelter'){mark('shelter_discovered',{chapter:2});setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3}
+  if(e.type==='foreshadow'){setStory('夜明け前　小さな予感','向こうの窓が、こちらの灯りを見ている。');s.storyPause=elapsed+4;mark('rescue_foreshadowed',{flame:Math.round(s.flame)})}
+  if(e.type==='miracle'){s.storyPause=elapsed+6;setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');KA.cues.miracle();mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)})}
+  if(e.type==='finale'){
+   if(e.phase==='gust-warning'){setStory('最後の風','風が変わる。次の一息に備えて。');s.storyPause=elapsed+2;KA.cues.gustWarning();navigator.vibrate?.([30,60,30]);mark('finale_warning',{})}
+   if(e.phase==='gust-active'){setStory('最後の風','守るか、息を残すか。');s.storyPause=elapsed+5;mark('finale_gust',{})}
+   if(e.phase==='silence'){setStory('静寂','風の音が、消えた。手をひらいて。');s.storyPause=elapsed+1.5;mark('finale_silence',{flame:Math.round(s.flame),oxygen:Math.round(s.oxygen)})}
+  }
+  if(e.type==='reply'){const text={bright:'ひらいた手の灯りに、窓が光で答えた。',faint:'遠い窓が、かすかに光った。',dark:'窓は、まだ暗い。'}[e.level];setStory('窓の向こう',text);s.storyPause=elapsed+3;KA.cues.reply(e.level);mark('finale_window',{level:e.level,flame:Math.round(s.flame),gust_shield:+s.gustShield.toFixed(1),silence_release:+s.silenceRelease.toFixed(1)})}
+  if(e.type==='end'){timer.textContent=e.ending==='blown'||e.ending==='smother'?timer.textContent:'00:00';finish(e.ending,e.ending==='blown'||e.ending==='smother'?0:K.score(s));return}
+ }
+}
+function candleCaption(s){
+ const ev=s.event;
+ if(s.finalePhase==='gust-warning')return ['最後の風が来る — 長押しの準備',true];
+ if(s.finalePhase==='gust-active')return [s.shield?'かばっている — 耐えて':'大突風 — 長押しでかばって',true];
+ if(s.finalePhase==='silence')return [s.shield?'静かになった — いま離して':'手をひらいて、窓に灯りを見せて',false];
+ if(s.finalePhase==='window-reply')return [s.reply>0?'窓が答えている':'あと少し',false];
+ if(ev&&elapsed<ev.at)return [ev.tip,true];
+ if(s.shield)return [s.wind<.44||s.oxygen<28?'風が弱まった — いま離して':'灯りをかばっている',false];
+ if(ev&&(ev.kind==='lull'||ev.kind==='lantern'))return [ev.tip,false];
+ return s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
+}
+function drawCandle(dt){
+ const s=state;KV.resize(canvas);
+ if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
+ if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
+ const step=dt*(s.qaSpeed||1);
+ const events=K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield});lastShield=s.shield;
+ if(elapsed>(s.storyPause||0)&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
+ candleEvents(events);if(mode!=='play')return;
+ const [text,warn]=candleCaption(s);
+ $('hint').textContent=text;
+ record.textContent=Math.max(0,Math.round(s.flame))+'%';const remaining=Math.max(0,Math.ceil(s.journey-elapsed));timer.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
+ KA.update(s,elapsed,{playing:true,dt:step,ended:false});
+ KV.frame(ctx,s,elapsed,{reduced:reducedMotion(),playing:true,caption:text,warn,expression:K.flameExpression(s)});
+ // Test/QA hooks: plain data attributes, no globals.
+ const m=s.mote?KV.toCss(s.mote.u*KV.view.W,s.mote.y):null;
+ if(s.mote&&s.announced!==s.mote.id){s.announced=s.mote.id;$('memory-live').textContent='記憶が浮かんでいる。タップかMキーでふれる。'}canvas.dataset.chapter=String(s.chapter+1);canvas.dataset.quality=String(KV.perf.quality);canvas.dataset.phase=s.finalePhase;canvas.dataset.event=s.event&&elapsed>=s.event.warnAt?s.event.kind:'';canvas.dataset.mote=m?Math.round(m.x)+','+Math.round(m.y):'';canvas.dataset.reply=s.replyLevel||'';const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);
+}
+// Each ending plays its own short scene before the result card slides in.
+function candleEnding(){
+ const s=state,reduced=reducedMotion();endingAt=performance.now();curtain.classList.add('hidden','tableau');canvas.dataset.ending=lastEnding;$('story-beat').hidden=true;
+ KA.update(s,elapsed,{playing:false,dt:0,ended:true});KA.cues.ending(lastEnding);
+ const missing=endingList.filter(e=>!collected.includes(e.id));
+ $('next-hint').hidden=!missing.length;if(missing.length){const next=missing[(runCount+missing.length)%missing.length];$('next-hint').textContent='まだ見ぬ結末のヒント：'+next.hint}
+ const token=endingAt;setTimeout(()=>{if(mode==='end'&&endingAt===token)curtain.classList.remove('hidden')},reduced?500:2600);
+}
+function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;if(mode==='play'&&$('collection-panel').hidden){elapsed+=dt*(candle?(state.qaSpeed||1):1);if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide'){drawCandle(dt);if(mode==='play')KV.sample(dt*1000)}else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);raf=requestAnimationFrame(tick)}
 raf=requestAnimationFrame(tick);
 })();
