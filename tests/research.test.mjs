@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 
 const ctx={window:{}};
 vm.runInNewContext(fs.readFileSync('assets/microgames.js','utf8'),ctx,{timeout:2000});
@@ -50,8 +52,17 @@ test('legacy titles still use their existing engine',()=>{
 });
 test('research mode is explicit opt-in and exportable',()=>{
  const study=fs.readFileSync('assets/experiment.js','utf8');
- for(const needle of ["query.get('study')!=='1'","emotion-games-study-v1","study-export","duration_ms","entry.inputs=current.inputs","window.emotionTrack","answered:false","study-clear"])assert.ok(study.includes(needle),needle);
+ for(const needle of ["query.get('study')!=='1'","emotion-games-study-v1","version:2","study-export","duration_ms","entry.inputs=current.inputs","window.emotionTrack","answered:false","study-clear","attempt_index","understood","intensity","replay_reason","lowest_flame"])assert.ok(study.includes(needle),needle);
  for(const file of ['assets/pilots.js','assets/experiment.js']){
   const r=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
  }
+});
+test('study analyzer reports comprehension, intensity, replay intent and flagship loop',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'emotion-study-'));
+ const file=path.join(dir,'study.json');
+ fs.writeFileSync(file,JSON.stringify({version:2,records:[{game_id:'kienaide',completed:true,duration_ms:90000,inputs:12,attempt_index:1,felt:'切なさ',understood:'immediate',intensity:4,replay_reason:'other-ending',ending_id:'dawn',memories:3,miracle:true,lowest_flame:18}]}));
+ const result=spawnSync(process.execPath,['scripts/analyze-study.mjs',file],{encoding:'utf8'});
+ fs.rmSync(dir,{recursive:true,force:true});
+ assert.equal(result.status,0,result.stderr);
+ for(const text of ['full survey=1/1','immediate=100.0%','mean 4.0/5','other-ending 1','mean memories=3.0/3','miracle=100.0%'])assert.ok(result.stdout.includes(text),text+'\n'+result.stdout);
 });

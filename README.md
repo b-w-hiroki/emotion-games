@@ -76,4 +76,4 @@ npx serve dist
 - 残り12本：共通ルールを使う**未差別化の試作**。固有ルールの実装とQAが次段階
 - [仮説と測定・実験の限界](docs/RESEARCH.md)
 - 調査用URL：`https://play.birdman-studio.com/?study=1` から作品を選ぶ（一般ユーザーには強制しない）
-- 回答は端末内に保存。検証モードのトップでJSONを保存し、`node scripts/analyze-study.mjs path/to/emotion-games-study.json` で集計できる。外部自動送信はしない。
+- 回答は端末内に保存。検証モードのトップでJSONを保存し、`npm run study:analyze -- path/to/emotion-games-study.json` で集計できる。外部自動送信はしない。『きえないで。』の手順と合格基準は [初見プレイテスト](docs/KIENAIDE-PLAYTEST.md) を参照。

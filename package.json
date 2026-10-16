@@ -7,6 +7,8 @@
     "test": "node --test tests/*.test.mjs",
     "build": "node scripts/build.mjs",
     "verify": "npm test && npm run build && node scripts/check-build.mjs",
+    "study:analyze": "node scripts/analyze-study.mjs",
+    "qa:research": "node scripts/qa-research.mjs",
     "capture": "node scripts/capture-social.mjs"
   },
   "dependencies": {
