@@ -67,7 +67,7 @@ try {
   // A second run survives into the new event window and checks real-time visual feedback.
   await page.locator('#start').click();
   await page.locator('#hold').dispatchEvent('pointerdown',{pointerId:4});
-  await page.waitForTimeout(1850); // 12x QA: reaches the 22-second gust window
+  await page.waitForTimeout(2100); // 12x QA: reaches the 22-second gust window
   const eventState=await page.evaluate(()=>({
    cue:document.querySelector('#eventCue').textContent,
    shown:document.querySelector('#eventCue').classList.contains('visible'),
