@@ -399,7 +399,7 @@ function drawCandle(dt){
  floorLight.addColorStop(0,'rgba(255,181,96,'+(.22*lightStrength)+')');
  floorLight.addColorStop(1,'rgba(255,170,87,0)');
  ctx.fillStyle=floorLight;ctx.fillRect(15,110,330,260);
- const halo=ctx.createRadialGradient(x,220,2,x,220,80+health*.45);halo.addColorStop(0,'rgba(255,218,148,.48)');halo.addColorStop(1,'rgba(255,176,99,0)');ctx.fillStyle=halo;ctx.fillRect(35,80,290,290);
+ const halo=ctx.createRadialGradient(x,220,2,x,220,80+health*.45);halo.addColorStop(0,'rgba(255,218,148,'+(.48*lightStrength)+')');halo.addColorStop(1,'rgba(255,176,99,0)');ctx.fillStyle=halo;ctx.fillRect(35,80,290,290);
  // The illustrated character remains separate from the flame so each can respond independently.
  const heroReady=loaded(characterArt?.hero),flameReady=loaded(characterArt?.flame);
  if(heroReady){
@@ -408,9 +408,9 @@ function drawCandle(dt){
   ctx.drawImage(characterArt.hero,0,0,360,400);
   ctx.restore();
   // Animated firelight is cast on the clothing even though the painted base is static.
-  ctx.fillStyle='rgba(255,175,91,'+(.035+.13*lightStrength)+')';
+  ctx.fillStyle='rgba(255,175,91,'+(.13*lightStrength)+')';
   ctx.beginPath();ctx.ellipse(189,222,38,42,-.24,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,224,167,'+(.2+.44*lightStrength)+')';
+  ctx.strokeStyle='rgba(255,224,167,'+(.44*lightStrength)+')';
   ctx.lineWidth=2.5;ctx.lineCap='round';
   ctx.beginPath();ctx.moveTo(154,233);ctx.quadraticCurveTo(177,244,204,231);ctx.stroke();
  }else{
