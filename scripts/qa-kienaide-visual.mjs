@@ -116,6 +116,19 @@ try{
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();results.push('sound settings');
  }
+ // Keyboard: Space holds the shield, M touches a visible memory.
+ {
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=11.5');
+  await page.locator('#play').click();await page.locator('#action').focus();
+  await page.keyboard.down('Space');await page.waitForTimeout(300);
+  assert.ok((await page.locator('#hint').innerText()).match(/かば|離して/),'Space shields');
+  await page.keyboard.up('Space');
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote,null,{timeout:8000});
+  await page.keyboard.press('m');
+  assert.equal(await page.locator('#best').innerText(),'1 / 3','M collects the memory');
+  assert.ok((await page.locator('#memory-live').innerText()).includes('記憶'));
+  assert.deepEqual(errors,[]);await ctx.close();results.push('keyboard play');
+ }
  // Prologue frames, skip, reduced motion.
  for(const reduced of [false,true]){
   const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001',{intro:true,reduced});

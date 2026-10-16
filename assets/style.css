@@ -186,3 +186,5 @@ body[data-game=kienaide] .game-shell.ember .curtain.tableau>:first-child{margin-
 #kienaide-intro .intro-line{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #kienaide-intro button{position:absolute;right:16px;bottom:max(22px,env(safe-area-inset-bottom));min-height:44px;padding:10px 18px;border-radius:22px;border:1px solid #e0c99c;background:#17263acc;color:#fff2d8;font:600 14px system-ui,sans-serif}
 @media(max-height:700px){body[data-game=kienaide] .game-shell.ember .arena{min-height:236px}}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
+body[data-game=kienaide] #stage:focus-visible{outline:2px solid #ffd39a;outline-offset:-3px}
