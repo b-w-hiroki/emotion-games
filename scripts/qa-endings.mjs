@@ -139,6 +139,7 @@ try{
   const small=await browser.newContext({viewport:{width:360,height:640},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
   const page=await small.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'kienaide/');await page.locator('#play').click();
+  if(await page.locator('#kienaide-intro').count())await page.locator('#kienaide-intro button').click();
   await page.waitForTimeout(220);
   const fit=await page.evaluate(()=>{
    const action=document.querySelector('#action').getBoundingClientRect();
