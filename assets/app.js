@@ -283,7 +283,7 @@ function drawCandle(dt){
  ];
  let chapter=0;for(let i=1;i<chapters.length;i++)if(elapsed>=chapters[i].at)chapter=i;
  if(mode==='play'&&chapter!==s.chapter){s.previousChapter=s.chapter;s.chapter=chapter;s.sceneChangedAt=elapsed;mark('chapter_reached',{chapter:chapter+1})}
- if(mode==='play'&&elapsed>(s.storyPause||0))setStory(chapters[chapter].label,chapters[chapter].line);
+ if(mode==='play'&&elapsed>(s.storyPause||0)&&!(s.finalePhase&&s.finalePhase!=='approach'))setStory(chapters[chapter].label,chapters[chapter].line);
  const gustWave=Math.pow((Math.sin(elapsed*(.42+chapter*.055)-.9)+1)/2,2.3);
  const crossWind=Math.pow((Math.sin(elapsed*.19+1.8)+1)/2,4);
  // Four chapters change play conditions, not just words: shelter, crosswind, cold and the last lull.
