@@ -290,7 +290,17 @@ function drawCandle(dt){
  const tunnelGust=chapter===1?Math.pow((Math.sin(elapsed*.83)+1)/2,6)*.24:0;
  const bridgeCold=chapter===2?.62:1;
  const baseWind=.12+gustWave*(.43+chapter*.105)+crossWind*.14+tunnelGust;
- s.wind=Math.min(1.15,baseWind);
+ // The last storm is deterministic and tied to the player's shielding decision.
+  const finaleTime=elapsed-80;
+  s.finalePhase=finaleTime<0?'approach':finaleTime<2?'gust-warning':finaleTime<7?'gust-active':finaleTime<8.5?'silence':'window-reply';
+  s.wind=s.finalePhase==='gust-active'?1.15:s.finalePhase==='silence'||s.finalePhase==='window-reply'?.08:Math.min(1.15,baseWind);
+  if(mode==='play'&&s.finalePhase!==s.previousFinalePhase){
+   s.previousFinalePhase=s.finalePhase;
+   if(s.finalePhase==='gust-warning'){setStory('最後の風','風が止まった。次の一息に備えて。');s.storyPause=elapsed+2;mark('finale_warning',{});}
+   if(s.finalePhase==='gust-active'){setStory('最後の風','守るか、息を残すか。');s.storyPause=elapsed+5;mark('finale_gust',{});}
+   if(s.finalePhase==='silence'){setStory('静寂','風の音が、消えた。');s.storyPause=elapsed+1.5;mark('finale_silence',{flame:Math.round(s.flame),oxygen:Math.round(s.oxygen)});}
+   if(s.finalePhase==='window-reply'){setStory('窓の向こう','遠い窓が、かすかに光った。');s.storyPause=elapsed+2;mark('finale_window',{flame:Math.round(s.flame)});}
+  }
  if(chapter===1&&s.shelterReady&&s.wind<.29&&!shield){
   s.shelterReady=false;s.shelterUntil=elapsed+3.5;mark('shelter_discovered',{chapter:2});
   setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3;
