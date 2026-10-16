@@ -325,7 +325,7 @@ function drawCandle(dt){
   const slots=[{id:'scarf',at:12,x:82,y:145},{id:'table',at:37,x:278,y:178},{id:'promise',at:62,x:92,y:213}];
   const active=slots.find(m=>elapsed>=m.at&&elapsed<m.at+8&&!s.memoryGot.has(m.id));s.mote=active?{...active,got:false}:null;
   if(audio&&audioEnabled){
-   const now=audio.ac.currentTime,emotion=flameExpression(s),quiet=s.rescue&&elapsed-s.rescueAt<.48;
+   const now=audio.ac.currentTime,emotion=flameExpression(s),quiet=s.finalePhase==='silence'||(s.rescue&&elapsed-s.rescueAt<.48);
    audio.windGain.gain.setTargetAtTime(quiet?0:.02+s.wind*.13,now,.09);
    audio.fireGain.gain.setTargetAtTime(quiet?0:emotion==='comfort'?.035:emotion==='afraid'?.012:.021,now,.14);
    audio.fireOsc.frequency.setTargetAtTime(emotion==='afraid'?147:emotion==='hope'?310:emotion==='suffocating'?95:220,now,.15);
