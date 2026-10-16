@@ -5,6 +5,20 @@
 :root{font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;color:#f7efe5;background:#060e1e}*{box-sizing:border-box}html,body{margin:0;min-height:100%;overscroll-behavior:none}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3px solid #ffe9a3;outline-offset:3px}
 .phone{position:relative;max-width:470px;width:100%;height:100svh;min-height:550px;margin:auto;overflow:hidden;background:#101d32;isolation:isolate;box-shadow:0 15px 90px #000a}
 .bg{position:absolute;inset:0;background:url('../assets/kienaide-v3/snow-town.webp') center 57%/cover no-repeat;transform:scale(1.035);filter:brightness(.67) saturate(.9);transition:filter 2s,transform 10s;z-index:-5}
+.chapter-art{position:absolute;inset:-3%;z-index:-4;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.35s ease}
+.chapter-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.93;filter:contrast(1.1) saturate(.95)}
+.chapter-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#09132760,transparent 30%,#0b162950 72%,#061326c0)}
+.phone.scene-ready .chapter-art{opacity:1}
+.phone.scene-ready .bg{opacity:.38}
+.phone .bg{transition:filter 2s,transform 10s,opacity 1.3s}
+.chapter-art .scene-image{transition:transform 9s ease-out}
+.phone.chapter-0 .chapter-art .scene-image{transform:scale(1.02) translateY(0)}
+.phone.chapter-1 .chapter-art .scene-image{transform:scale(1.12) translateX(-3%)}
+.phone.chapter-2 .chapter-art .scene-image{transform:scale(1.18) translateX(3%)}
+.phone.chapter-3 .chapter-art .scene-image{transform:scale(1.06) translateY(-2%)}
+.phone.gust .chapter-art .scene-image{filter:brightness(.73) contrast(1.2)}
+.phone.tailwind .chapter-art .scene-image{filter:brightness(1.12) saturate(1.05)}
+@media(prefers-reduced-motion:reduce){.chapter-art,.chapter-art .scene-image,.phone .bg{transition:none}}
 .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(#020b1eaa 0%,transparent 34%,#08182a12 52%,#081022c9 100%)}
 .phone.chapter-1 .bg{filter:brightness(.47) saturate(.8) hue-rotate(5deg);transform:scale(1.09) translateX(6px)}.phone.chapter-2 .bg{filter:brightness(.53) saturate(.75) hue-rotate(13deg);transform:scale(1.15) translateY(6px)}.phone.chapter-3 .bg{filter:brightness(.72) saturate(1.03);transform:scale(1.19) translateY(-7px)}
 .ambient{position:absolute;inset:0;background:radial-gradient(circle at 51% 71%,rgba(255,178,86,var(--glow,.22)),transparent 30%);z-index:-2;pointer-events:none;transition:background .2s}
@@ -35,7 +49,7 @@
 @media(max-height:710px){.hero{height:68svh;bottom:12%}.chapter{top:calc(env(safe-area-inset-top) + 141px);width:137px}.hud{top:calc(env(safe-area-inset-top) + 64px)}.hint{bottom:calc(env(safe-area-inset-bottom) + 116px)}.hold{height:88px;bottom:calc(env(safe-area-inset-bottom) + 15px)}.top{top:calc(env(safe-area-inset-top) + 5px)}.title{font-size:25px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}}
 </style></head><body><main class="phone" id="scene" aria-label="きえないで。短編ゲーム">
-<div class="bg"></div><div class="ambient" id="ambient"></div><div class="snow" id="snow" aria-hidden="true"></div>
+<div class="bg"></div><div class="chapter-art" id="chapterArt" aria-hidden="true"><img class="scene-image" id="chapterImage" alt=""/></div><div class="ambient" id="ambient"></div><div class="snow" id="snow" aria-hidden="true"></div>
 <header class="top"><div><div class="title">きえないで。</div><div class="edition">A SHORT NIGHT JOURNEY</div></div><button class="iconbtn" id="audioBtn" aria-pressed="false" aria-label="音をオンにする">音 OFF</button></header>
 <div class="hud"><div class="stat"><b><span class="symbol">♨</span>灯り<span class="n" id="lampNum">72%</span></b><div class="bar"><i id="lampBar"></i></div></div><div class="stat breath"><b><span class="symbol">≋</span>息<span class="n" id="airNum">100%</span></b><div class="bar"><i id="airBar" style="width:100%"></i></div></div><div class="stat"><b><span class="symbol">✧</span>記憶</b><strong id="memCount">0 / 3</strong></div></div>
 <div class="chapter" id="chapter"><span class="small" id="chapterTitle">第一章　雪の路地</span><span class="line" id="chapterLine">窓の灯りが、帰り道の目印だった。</span></div>
@@ -57,6 +71,15 @@
 </main><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),scene=$('scene'),endings=[{id:'blown',title:'風にさらわれた。',desc:'消えたのは灯りだけだろうか。'},{id:'smother',title:'守りすぎた。',desc:'守る手の中で、息が尽きた。'},{id:'wish',title:'わすれない。',desc:'灯りは弱っても、記憶が道を照らした。'},{id:'survive',title:'まだ、ここに。',desc:'震える光を抱いて、家までたどり着いた。'},{id:'dawn',title:'おかえり。',desc:'最後に手放したとき、向こうの窓から光が返ってきた。'}];
+const chapterAssets=['snow-street','wind-tunnel','frozen-bridge','dawn-village'];
+const chapterImages=chapterAssets.map(name=>{const image=new Image();image.src='../assets/kienaide-'+name+'.svg';return image});
+let renderedChapter=-1;
+function showChapterArt(ch){
+ const img=chapterImages[ch];
+ if(!img)return;
+ const apply=()=>{if(!img.naturalWidth)return;if(s?.chapter!==ch)return;$('chapterImage').src=img.src;scene.classList.add('scene-ready');renderedChapter=ch};
+ if(img.complete)apply();else img.addEventListener('load',apply,{once:true});
+}
 const chapters=[{at:0,name:'第一章　雪の路地',line:'窓の灯りが、帰り道の目印だった。'},{at:20,name:'第二章　風のトンネル',line:'風に逆らわず、建物の陰でひと息。'},{at:45,name:'第三章　凍った橋',line:'あの窓に届けたい。あと少し。'},{at:70,name:'最終章　夜明け前',line:'守るだけでは、届かない。'}];
 const dynamicEvents=[
  {id:'gust',at:22,end:27,label:'突風！',tip:'いまは手で守る',wind:.38},
@@ -75,7 +98,7 @@ function note(f=550,d=.3){if(!audio||!audioEnabled)return;const {ctx,master}=aud
 $('audioBtn').onclick=()=>{initAudio();audioEnabled=!audioEnabled;audio?.ctx.resume();if(audio)audio.master.gain.value=audioEnabled ? .16 : 0;$('audioBtn').textContent=audioEnabled?'音 ON':'音 OFF';$('audioBtn').setAttribute('aria-pressed',String(audioEnabled));$('audioBtn').setAttribute('aria-label',audioEnabled?'音をオフにする':'音をオンにする')};
 function updateUI(){if(!s)return;const flame=Math.round(s.flame),oxy=Math.round(s.oxy);$('lampNum').textContent=flame+'%';$('airNum').textContent=oxy+'%';$('lampBar').style.width=flame+'%';$('airBar').style.width=oxy+'%';$('memCount').textContent=s.memories.length+' / 3';$('distance').textContent='家まで '+Math.max(0,Math.ceil(100-s.t/90*100))+'m';scene.style.setProperty('--glow',String(.05+s.flame/100*.4));scene.style.setProperty('--strength',String(Math.max(.16,s.flame/100)));scene.style.setProperty('--brightness',String(.62+s.flame/100*.48));const strength=Math.max(0,Math.min(1,s.flame/100));scene.style.setProperty('--flame-opacity',String(strength<=.01?0:Math.max(.15,strength)));scene.style.setProperty('--flame-scale',String(Math.max(.12,.48+strength*.65)));scene.classList.toggle('extinguished',s.flame<=0);scene.classList.toggle('faint',s.flame<27);scene.classList.toggle('protected',hold);const hint=hold?(s.oxy<30||s.wind<.44?'今、手を離して息を戻す':'手の中で守っている'):(s.wind>.56?'風が来る！ 長押しで守ろう':'凪いでいる。息を戻そう');$('hintText').textContent=hint; if(audio&&audioEnabled)audio.windGain.gain.setTargetAtTime(.02+s.wind*.12,audio.ctx.currentTime,.09)}
 function story(name,line){$('chapterTitle').textContent=name;$('chapterLine').textContent=line;const node=$('chapter');node.classList.remove('new');void node.offsetWidth;node.classList.add('new');note(470,.4)}
-function start(){initAudio();audio?.ctx.resume();window.clearTimeout(flashTimeout);$('memoryFlash').classList.remove('active');$('eventCue').classList.remove('visible');s={t:0,flame:72,oxy:100,wind:.15,chapter:0,memories:[],rescued:false,releaseAt:-100,shown:[],ending:null,eventId:null,shelterUsed:false,shelterUntil:0,peakWind:0};const qaEvent=speed>1?new URLSearchParams(location.search).get('qa_event'):null;if(qaEvent){const target=dynamicEvents.find(e=>e.id===qaEvent);if(target){s.t=target.at-.6;s.chapter=s.t>=70?3:s.t>=45?2:s.t>=20?1:0;scene.className='phone chapter-'+s.chapter}}hold=false;last=0;visibleMemory=null;scene.className='phone chapter-0';$('modal').hidden=true;$('hold').disabled=false;$('memory').hidden=true;story(chapters[0].name,chapters[0].line);cancelAnimationFrame(raf);raf=requestAnimationFrame(tick)}
+function start(){initAudio();audio?.ctx.resume();window.clearTimeout(flashTimeout);$('memoryFlash').classList.remove('active');$('eventCue').classList.remove('visible');s={t:0,flame:72,oxy:100,wind:.15,chapter:0,memories:[],rescued:false,releaseAt:-100,shown:[],ending:null,eventId:null,shelterUsed:false,shelterUntil:0,peakWind:0};const qaEvent=speed>1?new URLSearchParams(location.search).get('qa_event'):null;if(qaEvent){const target=dynamicEvents.find(e=>e.id===qaEvent);if(target){s.t=target.at-.6;s.chapter=s.t>=70?3:s.t>=45?2:s.t>=20?1:0;scene.className='phone chapter-'+s.chapter}}hold=false;last=0;visibleMemory=null;scene.className='phone chapter-'+s.chapter;showChapterArt(s.chapter);$('modal').hidden=true;$('hold').disabled=false;$('memory').hidden=true;story(chapters[0].name,chapters[0].line);cancelAnimationFrame(raf);raf=requestAnimationFrame(tick)}
 $('start').onclick=start;
 function release(){if(!hold)return;hold=false;if(s){s.releaseAt=s.t;$('hold').classList.remove('held')}}
 $('hold').addEventListener('pointerdown',e=>{if(!s||s.ending)return;e.preventDefault();hold=true;$('hold').classList.add('held');try{$('hold').setPointerCapture(e.pointerId)}catch(err){}});
@@ -83,7 +106,7 @@ $('hold').addEventListener('pointerdown',e=>{if(!s||s.ending)return;e.preventDef
 $('hold').addEventListener('contextmenu',e=>e.preventDefault());window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&s&&!s.ending){e.preventDefault();hold=true;$('hold').classList.add('held')}});window.addEventListener('keyup',e=>{if(e.code==='Space')release()});
 $('memory').onclick=()=>{if(!visibleMemory||!s||s.ending)return;const id=visibleMemory.id;if(!s.memories.includes(id)){s.memories.push(id);note(780,.3);const line=['あたたかなマフラーの記憶。','食卓に残る、誰かの笑顔。','「帰っておいで」という約束。'][s.memories.length-1];story('記憶が灯った。',line);$('memoryFlashText').textContent=line;$('memoryFlash').classList.add('active');window.clearTimeout(flashTimeout);flashTimeout=setTimeout(()=>$('memoryFlash').classList.remove('active'),reduce?300:1250);s.flame=Math.min(100,s.flame+3);}visibleMemory=null;$('memory').hidden=true};
 function tick(now){if(!s||s.ending)return;const dt=Math.min(.04,last?(now-last)/1000:0)*speed;last=now;s.t+=dt;
-const ch=s.t>=70?3:s.t>=45?2:s.t>=20?1:0;if(ch!==s.chapter){s.chapter=ch;scene.className='phone chapter-'+ch;story(chapters[ch].name,chapters[ch].line)}
+const ch=s.t>=70?3:s.t>=45?2:s.t>=20?1:0;if(ch!==s.chapter){s.chapter=ch;scene.className='phone chapter-'+ch;showChapterArt(ch);story(chapters[ch].name,chapters[ch].line)}
 const gust=Math.pow((Math.sin(s.t*(.42+ch*.055)-.9)+1)/2,2.3),cross=Math.pow((Math.sin(s.t*.19+1.8)+1)/2,4),tunnel=ch===1?Math.pow((Math.sin(s.t*.83)+1)/2,6)*.24:0;
 const event=eventAt(s.t),eventId=event?.id||null;
 if(eventId!==s.eventId){s.eventId=eventId;if(event){$('eventCue').innerHTML=event.label+'<small>'+event.tip+'</small>';$('eventCue').classList.add('visible');note(event.id==='tailwind'?660:220,.18)}else $('eventCue').classList.remove('visible')}

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 
 const root=path.resolve('dist');
-const mime={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.png':'image/png'};
+const mime={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml'};
 const srv=http.createServer((req,res)=>{
  const u=new URL(req.url,'http://localhost');
  if(!u.pathname.startsWith('/emotion-games/')){res.writeHead(404);return res.end('not found')}
@@ -25,7 +25,7 @@ try {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'?qa=1');
   const assets=await page.evaluate(async()=>{
-   const els=[...document.images];
+   const els=[...document.images].filter(img=>img.getAttribute('src'));
    await Promise.all(els.map(img=>img.decode().catch(()=>null)));
    return els.map(img=>({url:img.src.substring(img.src.lastIndexOf('/')+1),width:img.naturalWidth}));
   });
@@ -52,6 +52,9 @@ try {
     'chapter text must be clear of the face: '+JSON.stringify(sceneLayout));
   assert.ok(sceneLayout.chapter.top>=sceneLayout.hudBottom-4,
     'chapter text must not overlap HUD: '+JSON.stringify(sceneLayout));
+  await page.waitForFunction(()=>document.querySelector('#chapterImage').naturalWidth>0&&document.querySelector('#scene').classList.contains('scene-ready'),null,{timeout:5000});
+  const firstScene=await page.locator('#chapterImage').getAttribute('src');
+  assert.ok(firstScene.endsWith('kienaide-snow-street.svg'),firstScene);
   await page.screenshot({path:'artifacts/screenshots/kienaide-v3-playing-'+width+'.png'});
   // A legitimate unprotected run must end; it should never rely on a seeded fake ending.
   await page.waitForFunction(()=>!document.querySelector('#modal').hidden,null,{timeout:16000});
@@ -85,6 +88,10 @@ try {
    },id,{timeout:5000,polling:'raf'});
    const state=await page.evaluate(()=>({cue:document.querySelector('#eventCue').textContent,active:document.querySelector('#eventCue').classList.contains('visible')}));
    assert.ok(state.active&&state.cue.length>3,id+': '+JSON.stringify(state));
+   const expectedScene={gust:'wind-tunnel',tailwind:'wind-tunnel',vortex:'frozen-bridge','last-gust':'dawn-village'}[id];
+   await page.waitForFunction(expected=>document.querySelector('#chapterImage')?.getAttribute('src')?.endsWith('kienaide-'+expected+'.svg')&&document.querySelector('#chapterImage').naturalWidth>0,expectedScene,{timeout:5000});
+   const sceneReady=await page.locator('#scene').evaluate(el=>el.classList.contains('scene-ready'));
+   assert.ok(sceneReady,id+' must render a chapter-specific image');
    await page.screenshot({path:'artifacts/screenshots/kienaide-v3-'+id+'-'+width+'.png'});
   }
   assert.deepEqual(errors,[]);

@@ -66,3 +66,12 @@ test('Kienaide flame is independent from character art and extinguishes at zero'
   assert.ok(src.includes(marker),marker);
  }
 });
+
+test('the playable high-art preview uses distinct scenery for all four chapters',()=>{
+ const src=fs.readFileSync('previews/kienaide-v3.html','utf8');
+ const names=['snow-street','wind-tunnel','frozen-bridge','dawn-village'];
+ for(const name of names)assert.ok(src.includes("'"+name+"'"),name);
+ assert.ok(src.includes('function showChapterArt(ch)'));
+ assert.ok(src.includes('scene.classList.add(\'scene-ready\')'));
+ assert.ok(src.includes('prefers-reduced-motion:reduce'));
+});
