@@ -23,9 +23,29 @@ jobs:
       - run: node scripts/qa-20.mjs
       - run: node scripts/qa-research.mjs
       - run: node scripts/qa-art-preview.mjs
+      - run: node scripts/qa-kienaide-visual.mjs chromium
+      - run: node scripts/capture-kienaide-clip.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: emotion-games-social-qa
           path: artifacts/
+          retention-days: 30
+  webkit:
+    # Safari engine QA for 004: layout, audio-gesture start, prologue, all chapters and endings.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps webkit
+      - run: npm run build
+      - run: node scripts/qa-kienaide-visual.mjs webkit
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kienaide-webkit-qa
+          path: artifacts/kienaide/
           retention-days: 30

@@ -52,7 +52,9 @@ async function grab(slug,scenario){
    const score=Number(await page.locator('#record').innerText());
    if(score<1)throw new Error('ato-hitotsu: first block did not land');
   }else if(slug==='kienaide'){
-   await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(1600);await page.mouse.up();await page.waitForTimeout(200);
+   await page.mouse.move(x,y);await page.mouse.down();await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending,null,{timeout:20000});await page.mouse.up();
+   // The ending scene plays before the result card.
+   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:8000});
    if(!(await page.locator('#curtain-title').innerText()).includes('守りすぎた'))throw new Error('kienaide: all-hold ending missing');
   }else if(slug==='micha-dame'){
    await page.mouse.move(x,y);await page.mouse.down();await page.waitForTimeout(12450);await page.mouse.up();await page.waitForTimeout(300);

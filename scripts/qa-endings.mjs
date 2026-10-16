@@ -76,14 +76,12 @@ try{
  {
   const t=await pageFor('kienaide','?qa=1');
   assert.ok(await t.page.locator('#story-beat').isVisible());
-  const artLoaded=await t.page.evaluate(async()=>Promise.all(['snow-street','wind-tunnel','frozen-bridge','dawn-village'].map(name=>new Promise(ok=>{
-    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
-  }))));
-  assert.deepEqual(artLoaded,[true,true,true,true],'all chapter art must load at runtime');
-  const actors=await t.page.evaluate(async()=>Promise.all(['hero','flame'].map(name=>new Promise(ok=>{
-    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide-'+name+'.svg';
-  }))));
-  assert.deepEqual(actors,[true,true],'character layers should load without exceptions');
+  const layers=JSON.parse(fs.readFileSync('assets/kienaide/manifest.json','utf8')).files;
+  const artLoaded=await t.page.evaluate(async files=>Promise.all(files.map(name=>new Promise(ok=>{
+    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide/'+name;
+  }))),layers);
+  assert.equal(layers.length>=26,true,'every chapter needs sky/far/mid/fore/lights plus hero layers');
+  assert.deepEqual(artLoaded,layers.map(()=>true),'all chapter and character layers must load at runtime');
   await t.page.waitForTimeout(250);
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-illustrated-actors-390.png'});
   console.log('PASS: detailed player silhouette and flame image layers load in Chromium');
@@ -117,16 +115,17 @@ try{
  }
  {
   const t=await pageFor('kienaide','?qa=1');
-  const box=await t.page.locator('#action').boundingBox(),targets=[{remaining:78,x:82,y:145},{remaining:53,x:278,y:178},{remaining:28,x:92,y:213}];let holding=false;
-  for(let i=0;i<170&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
-   const hint=await t.page.locator('#hint').innerText(),clock=await t.page.locator('#timer').innerText(),remaining=Number(clock.split(':')[0])*60+Number(clock.split(':')[1]);
-   const target=targets.find(x=>!x.done&&remaining<=x.remaining&&remaining>=x.remaining-6);
-   if(target){if(holding){await t.page.mouse.up();holding=false}if(target===targets[0])await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'});await t.page.locator('#stage').click({position:{x:target.x,y:target.y}});target.done=true}
-   if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
-   if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
+  // Memories appear at seeded positions; the canvas exposes where the current one is drawn.
+  const box=await t.page.locator('#action').boundingBox(),stage=await t.page.locator('#stage').boundingBox();let holding=false,shot=false;
+  for(let i=0;i<220&&!await t.page.locator('#stage').getAttribute('data-ending');i++){
+   const hint=await t.page.locator('#hint').innerText(),mote=await t.page.locator('#stage').getAttribute('data-mote');
+   if(mote){if(holding){await t.page.mouse.up();holding=false}if(!shot){shot=true;await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'})}const [x,y]=mote.split(',').map(Number);await t.page.mouse.click(stage.x+x,stage.y+y);continue}
+   if(!holding&&(hint.includes('長押し')||hint.includes('かばって'))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
+   if(holding&&(hint.includes('離して')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
    await t.page.waitForTimeout(55);
   }
   if(holding)await t.page.mouse.up();
+  await t.page.waitForFunction(()=>!document.getElementById('curtain').classList.contains('hidden'));
   const title=await t.page.locator('#curtain-title').innerText();assert.ok(['わすれない。','おかえり。'].includes(title),title);
   assert.equal(await t.page.locator('#best').innerText(),'3 / 3');assert.deepEqual(t.errors,[]);
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-memories-result-390.png'});
