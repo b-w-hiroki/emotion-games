@@ -59,3 +59,10 @@ test('optimized playable Kienaide v3 images remain valid WebP binaries',()=>{
  assert.ok(preview.includes('kienaide-art-endings-v1'));
  assert.ok(build.includes("kienaide-preview"));
 });
+
+test('Kienaide flame is independent from character art and extinguishes at zero',()=>{
+ const src=fs.readFileSync('previews/kienaide-v3.html','utf8');
+ for(const marker of ['id="flameSprite"','class="hero-underlay"','mask-image:radial-gradient','--flame-opacity','scene.classList.toggle(\'extinguished\',s.flame<=0)']){
+  assert.ok(src.includes(marker),marker);
+ }
+});
