@@ -1,0 +1,45 @@
+{
+ "generator": "scripts/art/kienaide-art.mjs",
+ "viewBox": {
+  "background": [
+   480,
+   480
+  ],
+  "hero": [
+   220,
+   280
+  ]
+ },
+ "vanishingPoint": {
+  "x": 240,
+  "y": 252
+ },
+ "files": [
+  "ch1-far.svg",
+  "ch1-fore.svg",
+  "ch1-lights.svg",
+  "ch1-mid.svg",
+  "ch1-sky.svg",
+  "ch2-far.svg",
+  "ch2-fore.svg",
+  "ch2-lights.svg",
+  "ch2-mid.svg",
+  "ch2-sky.svg",
+  "ch3-far.svg",
+  "ch3-fore.svg",
+  "ch3-lights.svg",
+  "ch3-mid.svg",
+  "ch3-sky.svg",
+  "ch4-far.svg",
+  "ch4-fore.svg",
+  "ch4-lights.svg",
+  "ch4-mid.svg",
+  "ch4-sky.svg",
+  "hero-body.svg",
+  "hero-hands-hold.svg",
+  "hero-hands-shield.svg",
+  "hero-rim.svg",
+  "intro-lights.svg",
+  "intro-room.svg"
+ ]
+}
