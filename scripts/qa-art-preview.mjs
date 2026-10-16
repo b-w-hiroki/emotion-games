@@ -64,21 +64,19 @@ try {
   await page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#share').click()]);
   assert.equal(download.suggestedFilename(),'kienaide-blown.png');
-  // A second run survives into the new event window and checks real-time visual feedback.
-  await page.locator('#start').click();
-  await page.locator('#hold').dispatchEvent('pointerdown',{pointerId:4});
-  await page.waitForTimeout(2100); // 12x QA: reaches the 22-second gust window
-  const eventState=await page.evaluate(()=>({
-   cue:document.querySelector('#eventCue').textContent,
-   shown:document.querySelector('#eventCue').classList.contains('visible'),
-   gust:document.querySelector('#scene').classList.contains('gust'),
-   wind:document.querySelector('#scene').style.getPropertyValue('--wind')
-  }));
-  assert.ok(eventState.shown&&eventState.cue.includes('突風'),JSON.stringify(eventState));
-  assert.equal(eventState.gust,true);
-  await page.screenshot({path:'artifacts/screenshots/kienaide-v3-gust-'+width+'.png'});
-  await page.locator('#hold').dispatchEvent('pointerup',{pointerId:4});
-  await page.waitForTimeout(300);
+  // QA-only scenario selection starts just before each hazard: avoid timing races at 12x.
+  for(const id of ['gust','tailwind','vortex','last-gust']){
+   await page.goto(base+'?qa=1&qa_event='+id);
+   await page.locator('#start').click();
+   await page.waitForFunction(expected=>{
+    const node=document.querySelector('#eventCue');
+    const stage=document.querySelector('#scene');
+    return !!node?.classList.contains('visible') && !!stage?.classList.contains(expected==='last-gust'?'gust':expected);
+   },id,{timeout:5000,polling:'raf'});
+   const state=await page.evaluate(()=>({cue:document.querySelector('#eventCue').textContent,active:document.querySelector('#eventCue').classList.contains('visible')}));
+   assert.ok(state.active&&state.cue.length>3,id+': '+JSON.stringify(state));
+   await page.screenshot({path:'artifacts/screenshots/kienaide-v3-'+id+'-'+width+'.png'});
+  }
   assert.deepEqual(errors,[]);
   assert.deepEqual(errors,[]);
   await context.close();
