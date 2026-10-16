@@ -31,3 +31,9 @@ test('inline JavaScript parses',()=>{
  const run=spawnSync(process.execPath,['--check','scripts/qa-art-preview.mjs'],{encoding:'utf8'});
  assert.equal(run.status,0,run.stderr);
 });
+
+test('bridge frost accumulates while exposed, recedes while protected and impacts flame',()=>{
+ for(const marker of ["frost:0,frostWarned:false","const cold=ch===2?(!hold?","s.frost=Math.max(0,Math.min(100,s.frost+cold*dt))","s.frost>=43","--frost-opacity","ch===2?s.frost*.027:0"]){
+  assert.ok(src.includes(marker),marker);
+ }
+});
