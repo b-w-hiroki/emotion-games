@@ -293,7 +293,7 @@ function drawCandle(dt){
  // The last storm is deterministic and tied to the player's shielding decision.
   const finaleTime=elapsed-80;
   s.finalePhase=finaleTime<0?'approach':finaleTime<2?'gust-warning':finaleTime<7?'gust-active':finaleTime<8.5?'silence':'window-reply';
-  s.wind=s.finalePhase==='gust-active'?1.15:s.finalePhase==='silence'||s.finalePhase==='window-reply'?.08:Math.min(1.15,baseWind);
+  s.wind=s.finalePhase==='gust-active'?1.15:(s.finalePhase==='silence'||s.finalePhase==='window-reply'?.08:Math.min(1.15,baseWind));
   if(mode==='play'&&s.finalePhase!==s.previousFinalePhase){
    s.previousFinalePhase=s.finalePhase;
    if(s.finalePhase==='gust-warning'){setStory('最後の風','風が止まった。次の一息に備えて。');s.storyPause=elapsed+2;mark('finale_warning',{});}
