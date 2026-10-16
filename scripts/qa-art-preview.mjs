@@ -90,6 +90,11 @@ try {
    assert.ok(state.active&&state.cue.length>3,id+': '+JSON.stringify(state));
    const expectedScene={gust:'wind-tunnel',tailwind:'wind-tunnel',vortex:'frozen-bridge','last-gust':'dawn-village'}[id];
    await page.waitForFunction(expected=>document.querySelector('#chapterImage')?.getAttribute('src')?.endsWith('kienaide-'+expected+'.svg')&&document.querySelector('#chapterImage').naturalWidth>0,expectedScene,{timeout:5000});
+   if(id==='vortex'){
+    await page.waitForFunction(()=>parseFloat(getComputedStyle(document.querySelector('#frostOverlay')).opacity)>.01,null,{timeout:4000});
+    const frost=await page.locator('#scene').evaluate(el=>el.style.getPropertyValue('--frost-opacity'));
+    assert.ok(Number(frost)>0,'icy bridge exposure should appear without shelter: '+frost);
+   }
    const sceneReady=await page.locator('#scene').evaluate(el=>el.classList.contains('scene-ready'));
    assert.ok(sceneReady,id+' must render a chapter-specific image');
    await page.screenshot({path:'artifacts/screenshots/kienaide-v3-'+id+'-'+width+'.png'});
