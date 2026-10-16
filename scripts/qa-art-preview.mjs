@@ -56,6 +56,15 @@ try {
   // A legitimate unprotected run must end; it should never rely on a seeded fake ending.
   await page.waitForFunction(()=>!document.querySelector('#modal').hidden,null,{timeout:16000});
   assert.equal(await page.locator('#resultTitle').innerText(),'風にさらわれた。');
+  const separated=await page.evaluate(()=>{
+   const sprite=document.querySelector('#flameSprite'),hero=document.querySelector('#hero');
+   return {spriteLoaded:sprite.naturalWidth>0,masked:getComputedStyle(hero).maskImage!=='none',opacity:getComputedStyle(sprite).opacity,extinguished:document.querySelector('#scene').classList.contains('extinguished')};
+  });
+  assert.ok(separated.spriteLoaded&&separated.masked,'separate character and flame layers must load');
+  assert.ok(separated.extinguished,'failed ending must actually extinguish flame');
+  assert.ok(Number(separated.opacity)<.01,'flame sprite must vanish at zero flame');
+  await page.screenshot({path:'artifacts/screenshots/kienaide-extinguished-'+width+'.png'});
+
   assert.equal(await page.locator('#share').isVisible(),true);
   await page.locator('#galleryButton').click();
   assert.equal(await page.locator('#galleryList .item').count(),5);
