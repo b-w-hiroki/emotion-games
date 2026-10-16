@@ -13,6 +13,7 @@ try{
   const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+slug+'/'+query);await page.locator('#play').click();
+  if(slug==='kienaide'&&await page.locator('#kienaide-intro').count())await page.locator('#kienaide-intro button').click();
   return {ctx,page,errors};
  }
  async function check(obj,title,count=1){
