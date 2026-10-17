@@ -36,7 +36,7 @@ function create(opts={}){
  const seed=(opts.seed>>>0)||1;
  return {seed,shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:JOURNEY,
   story:'',storyPause:0,shelterReady:true,shelterUntil:-1,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
-  lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),
+  lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),eddyReleasedEvent:'',
   finalePhase:'approach',previousFinalePhase:'approach',gustShield:0,gustExposed:0,silenceRelease:0,reply:0,replyLevel:'',
   previousChapter:0,sceneChangedAt:-999,shieldTime:0,ended:''};
 }
@@ -81,7 +81,7 @@ function step(s,time,dt,input){
  s.event=ev;
  const live=ev&&time>=ev.at;
  if(live&&ev.kind==='gust')wind+=.55;
- if(live&&ev.kind==='eddy')wind=Math.max(wind,.5+Math.abs(Math.sin(time*7))*.35);
+ if(live&&ev.kind==='eddy')wind=s.eddyReleasedEvent===ev.id?Math.min(wind,.38):Math.max(wind,.5+Math.abs(Math.sin(time*7))*.35);
  if(live&&ev.kind==='lull')wind*=.3;
  // Finale: deterministic storm tied to the player's shielding decision.
  const phase=finalePhaseAt(time);s.finalePhase=phase;
@@ -111,7 +111,7 @@ function step(s,time,dt,input){
   const warm=live&&ev.kind==='lantern'?2.6:0;
   s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45:0)+warm)*dt));
  }
- if(!s.shield&&input.wasShield)s.releaseAt=time;
+ if(!s.shield&&input.wasShield){s.releaseAt=time;if(live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;}
  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){s.miracleHint=true;emit('foreshadow');}
  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,s.wind);
  if(canTriggerMiracle(s,time)){s.rescue=true;s.rescueAt=time;s.flame=Math.min(100,s.flame+24);emit('miracle');}
