@@ -17,3 +17,8 @@ test('existing ending flow, saves and accessibility hooks remain',()=>{
  assert.ok(app.includes("finish(e.ending,"));
  assert.match(app,/prefers-reduced-motion/);
 });
+test('every Kienaide ending explains both the consequence and the player condition',()=>{
+ for(const id of ['blown','smother','wish','survive','dawn'])assert.match(app,new RegExp(id+":\\{outcome:'[^']+',reason:'[^']+"),id);
+ for(const hook of ['ending-meaning','ending-outcome','ending-reason','renderCandleEndingMeaning()'])assert.ok(app.includes(hook),hook);
+ for(const fact of ['灯り 0%','息 0%','記憶 3 / 3','道の記憶を取りこぼした','ふたりで夜を越えた'])assert.ok(app.includes(fact),fact);
+});
