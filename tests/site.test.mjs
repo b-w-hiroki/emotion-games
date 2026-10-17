@@ -64,9 +64,13 @@ test('the handmade frost wash keeps the playable centre transparent',async()=>{
 
 test('Kienaide controls use live type instead of generated button lettering',()=>{
  const css=fs.readFileSync('assets/style.css','utf8');
+ const app=fs.readFileSync('assets/app.js','utf8'),view=fs.readFileSync('assets/kienaide-view.js','utf8');
  assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*hold-button\.webp/);
  assert.doesNotMatch(css,/\.btn\.art-start\{[^}]*start-button\.webp/);
  assert.match(css,/\.action\.art-hold\{[^}]*color:#fff0d2/);
+ assert.match(css,/\.action\.art-hold\{[^}]*min-height:112px/,'the primary input is a full thumb deck, not a thin pill');
+ assert.match(app,/class="action-cue"/,'the live cue belongs to the control surface');
+ assert.match(view,/dataset\.transition=changing\?'blizzard'/,'chapter art changes are masked by a staged transition');
 });
 
 test('character finishing does not add filters on every frame',()=>{
