@@ -38,6 +38,30 @@ test('the lead character poses, rim light and living flame are separately replac
  assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live from the flame spirit');
 });
 
+test('the handmade frost wash keeps the playable centre transparent',async()=>{
+ const {default:sharp}=await import('sharp');
+ const p='assets/kienaide/paint/frost-edge.webp',m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
+ assert.ok(fs.statSync(p).size>10000,'painted frost overlay ships');
+ assert.ok(m.generatedSources.includes('frost-edge'),'the overlay is reproducible from its source master');
+ const {data,info}=await sharp(p).ensureAlpha().resize(90,120).raw().toBuffer({resolveWithObject:true});let edge=0,centre=0,ne=0,nc=0;
+ for(let y=0;y<info.height;y++)for(let x=0;x<info.width;x++){const a=data[(y*info.width+x)*4+3],isCentre=x>22&&x<68&&y>24&&y<96;if(isCentre){centre+=a;nc++}else{edge+=a;ne++}}
+ assert.ok(centre/nc<8,'centre must remain readable ('+(centre/nc).toFixed(1)+')');
+ assert.ok(edge/ne>centre/nc+25,'frost belongs at the frame edge');
+});
+
+test('Kienaide controls use live type instead of generated button lettering',()=>{
+ const css=fs.readFileSync('assets/style.css','utf8');
+ assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*hold-button\.webp/);
+ assert.doesNotMatch(css,/\.btn\.art-start\{[^}]*start-button\.webp/);
+ assert.match(css,/\.action\.art-hold\{[^}]*color:#fff0d2/);
+});
+
+test('character finishing does not add filters on every frame',()=>{
+ const view=fs.readFileSync('assets/kienaide-view.js','utf8');
+ assert.doesNotMatch(view,/g\.filter=.*blur/,'WebKit must not run character filters during play');
+});
+
+
 test('optimized playable Kienaide v3 images remain valid WebP binaries',()=>{
  const names=['snow-town','traveller-flame','flame-spirit','hold-button','start-button','retry-button','gallery-button'];
  const build=fs.readFileSync('scripts/build.mjs','utf8');

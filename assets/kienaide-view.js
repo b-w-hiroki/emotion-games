@@ -18,7 +18,7 @@ function create(base){
  const imgs={},cache=new Map();let manifest=null,failed=0;
  const dir=base+'assets/kienaide/paint/';
  const names=[];for(const c of CH)for(const l of [...BANDS,'lights'])names.push(c+'-'+l);
- names.push('intro-room','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
+ names.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
  for(const n of names){const img=new Image();img.decoding='async';img.onerror=()=>{failed++};img.src=dir+n+'.webp';imgs[n]=img}
  fetch(dir+'manifest.json').then(r=>r.json()).then(m=>{manifest=m}).catch(()=>{failed++});
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
@@ -125,9 +125,9 @@ function create(base){
  function frost(ctx,st){
   const oxygen=Math.max(0,(42-(st.oxygen??100))/42),flame=Math.max(0,(32-(st.flame??100))/32),chapter=st.ci===2?.2:0,amount=Math.min(.78,chapter+oxygen*.46+flame*.34);
   if(amount<.08)return false;const W=view.W;ctx.save();
-  const edge=ctx.createRadialGradient(W/2,H*.52,Math.min(W,H)*.3,W/2,H*.52,Math.max(W,H)*.72);edge.addColorStop(.48,'rgba(215,231,248,0)');edge.addColorStop(1,'rgba(205,225,245,'+(amount*.38)+')');ctx.fillStyle=edge;ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(225,239,252,'+(amount*.34)+')';ctx.lineWidth=.7;
-  for(let i=0;i<10;i++){const left=i%2===0,x=left?0:W,y=22+(i*67)%430,len=(12+(i*11)%28)*amount,sgn=left?1:-1;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sgn*len,y+(i%3-1)*7);ctx.lineTo(x+sgn*len*.62,y-8);ctx.moveTo(x+sgn*len*.72,y+(i%3-1)*5);ctx.lineTo(x+sgn*len*.9,y+8);ctx.stroke()}
+  const edge=ctx.createRadialGradient(W/2,H*.52,Math.min(W,H)*.3,W/2,H*.52,Math.max(W,H)*.72);edge.addColorStop(.48,'rgba(215,231,248,0)');edge.addColorStop(1,'rgba(205,225,245,'+(amount*.22)+')');ctx.fillStyle=edge;ctx.fillRect(0,0,W,H);
+  if(ready('frost-edge')){ctx.globalCompositeOperation='screen';ctx.globalAlpha=amount*.5;ctx.drawImage(imgs['frost-edge'],0,0,W,H)}
+  else{ctx.strokeStyle='rgba(225,239,252,'+(amount*.28)+')';ctx.lineWidth=.7;for(let i=0;i<10;i++){const left=i%2===0,x=left?0:W,y=22+(i*67)%430,len=(12+(i*11)%28)*amount,sgn=left?1:-1;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sgn*len,y+(i%3-1)*7);ctx.lineTo(x+sgn*len*.62,y-8);ctx.stroke()}}
   ctx.restore();return true;
  }
  function cinematicGrade(ctx,ci,light,t,reduced){
