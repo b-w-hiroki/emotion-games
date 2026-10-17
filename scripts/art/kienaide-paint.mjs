@@ -11,6 +11,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const src = path.resolve('assets/kienaide/paint/src');
+const characterSrc = path.join(src, 'repaint-v2');
 const out = path.resolve('assets/kienaide/paint');
 const PW = 900, PH = 1200; // every chapter plate is normalised to 3:4
 const POSES = ['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
@@ -129,9 +130,10 @@ async function hero() {
   return { size: [outW, outH], flame, hands: { ...toOut(hands.x, hands.y), w: Math.round(hands.w * scale), h: Math.round(hands.h * scale) } };
 }
 
-// ChatGPT-painted additions are kept as high-quality WebP masters in paint/src. Character poses
-// share a fixed transparent 3:4 canvas instead of being individually trimmed: that preserves the
-// feet/ground line and keeps the kneeling ending physically shorter than the standing poses.
+// ChatGPT-painted additions are kept as high-quality masters in paint/src. Character repaint-v2
+// lives beside (rather than overwriting) the first pass, so the art direction remains reversible.
+// Poses share a fixed transparent 3:4 canvas instead of being individually trimmed: that preserves
+// the feet/ground line and keeps the kneeling ending physically shorter than the standing poses.
 async function additions(chapters) {
   const generated = [];
   const copy = async (sourceName, outputName, options = {}) => {
@@ -148,7 +150,13 @@ async function additions(chapters) {
   await sharp(path.join(src, 'frost-edge.png')).resize(PW, PH, { fit: 'fill' }).modulate({ saturation: .18, brightness: .82 }).blur(.45)
     .webp({ quality: 84, alphaQuality: 94 }).toFile(path.join(out, 'frost-edge.webp'));
   generated.push('frost-edge.webp');
-  for (const name of [...POSES, ...ENDINGS]) await copy(name, name, { width: PW, height: PH, quality: 90, alphaQuality: 96 });
+  for (const name of [...POSES, ...ENDINGS]) {
+    const input = path.join(characterSrc, name + '.png');
+    if (!fs.existsSync(input)) throw new Error('missing character repaint source: ' + input);
+    await sharp(input).resize(PW, PH, { fit: 'fill' })
+      .webp({ quality: 90, alphaQuality: 96 }).toFile(path.join(out, name + '.webp'));
+    generated.push(name + '.webp');
+  }
   for (const name of FLAMES) await copy(name, name, { width: 384, height: 384, quality: 92, alphaQuality: 98 });
   for (const chapter of Object.keys(chapters)) {
     fs.copyFileSync(path.join(out, chapter + '-fore.webp'), path.join(out, chapter + '-basefore.webp'));
@@ -168,6 +176,8 @@ const traveller = await hero();
 await sharp('assets/kienaide-v3/flame-spirit.webp').webp({ quality: 92, alphaQuality: 92 }).toFile(path.join(out, 'flame.webp'));
 const generated = await additions(chapters);
 const manifest = { generator: 'scripts/art/kienaide-paint.mjs', artBible: ['assets/kienaide-v3/snow-town.webp', 'assets/kienaide-v3/traveller-flame.webp', 'assets/kienaide-v3/flame-spirit.webp'],
+  characterArtVersion: 'repaint-v2',
+  characterSources: [...POSES, ...ENDINGS].map(name => `repaint-v2/${name}.png`),
   generatedSources: ['intro-room', 'frost-edge', ...POSES, ...ENDINGS, ...FLAMES, ...Object.keys(chapters).map(c => 'fore-' + c)],
   plate: [PW, PH], chapters, traveller, generated, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');

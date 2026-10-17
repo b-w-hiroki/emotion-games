@@ -38,6 +38,19 @@ test('the lead character poses, rim light and living flame are separately replac
  assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live from the flame spirit');
 });
 
+test('every character state uses the restrained gouache repaint source set',async()=>{
+ const {default:sharp}=await import('sharp');
+ const m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
+ assert.equal(m.characterArtVersion,'repaint-v2');
+ assert.equal(m.characterSources.length,13,'all gameplay and ending poses are covered');
+ for(const source of m.characterSources){
+  const p='assets/kienaide/paint/src/'+source,meta=await sharp(p).metadata();
+  assert.equal(meta.format,'png',source+' stays as a lossless source master');
+  assert.ok(meta.hasAlpha,source+' must preserve transparency');
+  assert.ok(Math.abs(meta.width/meta.height-.75)<.01,source+' must remain a 3:4 sprite');
+ }
+});
+
 test('the handmade frost wash keeps the playable centre transparent',async()=>{
  const {default:sharp}=await import('sharp');
  const p='assets/kienaide/paint/frost-edge.webp',m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
