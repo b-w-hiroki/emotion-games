@@ -330,10 +330,11 @@ function candleCaption(s){
  if(s.finalePhase==='window-reply')return [s.reply>0?'窓が答えている':'あと少し',false];
  if(ev&&elapsed<ev.at)return [ev.tip,true];
  if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['渦がほどけた — いま離して',false];
+ if(ev?.kind==='eddy'&&s.eddyReleasedEvent===ev.id)return ['渦の隙間 — 息を整える',false];
  if(ev?.kind==='eddy'&&!s.shield&&elapsed>=ev.at)return ['渦風 — 一瞬かばって',true];
  if(s.shield)return [s.wind<.44||s.oxygen<28?'風が弱まった — いま離して':'灯りをかばっている',false];
  if(ev&&(ev.kind==='lull'||ev.kind==='lantern'))return [ev.tip,false];
- return s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
+ return s.wind>.5&&s.flame<60&&s.memories===2?['風が来る — 長押し',true]:s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
 }
 function drawCandle(dt){
  const s=state;KV.resize(canvas);
