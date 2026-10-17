@@ -32,6 +32,8 @@ try{
    await page.locator('#play').click();
    await page.waitForFunction(n=>document.querySelector('#stage').dataset.chapter===String(n),i,{timeout:5000});
    await page.waitForTimeout(500);
+   const pose=await page.locator('#stage').getAttribute('data-pose');
+   assert.ok(pose&&pose.startsWith('hero-'),'chapter must select a playable hero pose: '+pose);
    const l=await layout(page,size);
    assert.ok(l.fits,'hold button must be on screen '+tag+' '+JSON.stringify(l));
    assert.ok(l.scrollW<=l.vw+1,'no horizontal scroll '+tag);
@@ -46,6 +48,7 @@ try{
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=30');
    await page.locator('#play').click();await page.waitForTimeout(300);
    const b=await page.locator('#action').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.waitForTimeout(400);
+   assert.equal(await page.locator('#stage').getAttribute('data-pose'),'hero-shield','holding must replace the full body with the shielding pose');
    await page.screenshot({path:path.join(out,`${engine}-${tag}-shield.png`)});
    assert.equal(await page.locator('#hint').innerText().then(x=>x.includes('かば')||x.includes('離して')),true);
    await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();done('shield '+tag);
@@ -99,6 +102,7 @@ try{
   const got=await page.locator('#stage').getAttribute('data-ending');
   assert.equal(got,id,'route for '+id+' reached '+got);
   await page.waitForTimeout(1500);
+  assert.equal(await page.locator('#stage').getAttribute('data-pose'),'end-'+id,'ending must use its dedicated character painting');
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-scene.png`)});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
   await page.waitForTimeout(400);
