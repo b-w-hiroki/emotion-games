@@ -22,6 +22,12 @@ function create(base){
  for(const n of names){const img=new Image();img.decoding='async';img.onerror=()=>{failed++};img.src=dir+n+'.webp';imgs[n]=img}
  fetch(dir+'manifest.json').then(r=>r.json()).then(m=>{manifest=m}).catch(()=>{failed++});
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
+ // A fixed paper grain helps separately generated paintings sit inside the same film.
+ // It is deterministic (no digital sparkle); only the tile offset drifts slightly.
+ const grain=document.createElement('canvas');grain.width=grain.height=64;
+ const grainCtx=grain.getContext('2d'),grainData=grainCtx.createImageData(64,64);let grainSeed=90421;
+ for(let i=0;i<grainData.data.length;i+=4){grainSeed=(grainSeed*1664525+1013904223)>>>0;const v=112+(grainSeed>>>24)%96;grainData.data[i]=v;grainData.data[i+1]=v+3;grainData.data[i+2]=v+8;grainData.data[i+3]=34}
+ grainCtx.putImageData(grainData,0,0);
  // Tinted copies (rim light) are made once per colour.
  function tinted(n,color){const key='tint|'+n+'|'+color;if(cache.has(key))return cache.get(key);if(!ready(n))return null;const i=imgs[n],c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;const g=c.getContext('2d');g.drawImage(i,0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);cache.set(key,c);return c}
  // Adaptive resolution: if frames stay slow, render fewer pixels instead of dropping frames.
@@ -80,13 +86,17 @@ function create(base){
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();
  }
  // ---------- weather ----------
- const flakes=Array.from({length:110},(_,i)=>({x:(i*97.13)%1,y:(i*57.31)%1,d:i%3,s:.6+((i*13)%7)/7}));
- function snow(ctx,t,wind,reduced,dir=1){
-  const W=view.W,n=reduced?40:flakes.length;
-  for(let i=0;i<n;i++){const f=flakes[i],speed=(14+f.d*18)*(reduced?.4:1),drift=(10+wind*130)*(1+f.d*.6)*(reduced?.3:1)*dir;
-   const x=((f.x*W+t*drift)%(W+20)+W+20)%(W+20)-10,y=((f.y*H+t*speed*f.s)%(H+10)+H+10)%(H+10)-5;
-   const r=.6+f.d*.8;ctx.fillStyle='rgba(232,240,252,'+(.28+f.d*.22)+')';ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fill();
-   if(f.d===2){ctx.fillStyle='rgba(232,240,252,.08)';ctx.beginPath();ctx.arc(x,y,r*3,0,6.283);ctx.fill()}}
+ const flakes=Array.from({length:144},(_,i)=>({x:(i*97.13)%1,y:(i*57.31)%1,d:i%4,s:.6+((i*13)%7)/7}));
+ function snow(ctx,t,wind,reduced,dir=1,layer='front'){
+  const W=view.W,n=reduced?64:flakes.length;ctx.save();ctx.lineCap='round';
+  for(let i=0;i<n;i++){const f=flakes[i],front=f.d>=2;if((layer==='back'&&front)||(layer==='front'&&!front))continue;
+   const speed=(10+f.d*15)*(reduced?.25:1),drift=(7+wind*135)*(1+f.d*.48)*(reduced?.2:1)*dir;
+   const x=((f.x*W+t*drift)%(W+34)+W+34)%(W+34)-17,y=((f.y*H+t*speed*f.s)%(H+18)+H+18)%(H+18)-9;
+   const r=.45+f.d*.62,alpha=.16+f.d*.11;
+   if(f.d===3&&wind>.42&&!reduced){ctx.strokeStyle='rgba(236,243,252,'+Math.min(.52,alpha+wind*.12)+')';ctx.lineWidth=r*.62;ctx.beginPath();ctx.moveTo(x-r*4*dir,y-r*.9);ctx.lineTo(x+r*2*dir,y+r*.25);ctx.stroke()}
+   else{ctx.fillStyle='rgba(236,243,252,'+alpha+')';ctx.beginPath();ctx.ellipse(x,y,r*(f.d===3?1.45:1),r,0,0,6.283);ctx.fill()}
+   if(f.d===3){ctx.fillStyle='rgba(225,235,250,.055)';ctx.beginPath();ctx.arc(x,y,r*3.8,0,6.283);ctx.fill()}}
+  ctx.restore();
  }
  function windLines(ctx,t,wind,warn,reduced){
   const W=view.W,strength=Math.max(0,wind-.25)+warn*.5;if(strength<=0)return;
@@ -96,6 +106,37 @@ function create(base){
    g.addColorStop(0,'rgba(210,225,245,0)');g.addColorStop(.5,'rgba(220,232,248,'+Math.min(.45,.08+strength*.38)+')');g.addColorStop(1,'rgba(210,225,245,0)');
    ctx.strokeStyle=g;ctx.lineWidth=1+strength*2.4;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(x0+len*.5,y-6-strength*10,x0+len,y);ctx.stroke()}
   ctx.restore();
+ }
+ function breath(ctx,st){
+  const cold=st.ci===2?.9:st.ci===3?.45:.28,need=Math.max(0,(48-(st.oxygen??100))/48),amount=Math.min(1,cold+need*.55);
+  if(amount<.2)return false;const b=heroBox(),phase=st.reduced?.68:((st.t*.42)%1),visible=Math.sin(Math.PI*Math.min(1,phase*1.7));if(visible<.08)return false;
+  const x=b.x+b.w*.59,y=b.y+b.h*.205+(st.bob||0),wind=st.wind??.2;
+  ctx.save();ctx.globalCompositeOperation='screen';
+  for(let i=0;i<(st.reduced?2:4);i++){const q=Math.max(0,Math.min(1,phase+i*.13)),dx=q*(17+wind*32),dy=-q*(5+i*2),r=3+q*9+i;
+   const g=ctx.createRadialGradient(x+dx,y+dy,0,x+dx,y+dy,r);g.addColorStop(0,'rgba(225,235,248,'+(.15*amount*visible)+')');g.addColorStop(1,'rgba(205,220,240,0)');ctx.fillStyle=g;ctx.fillRect(x+dx-r,y+dy-r,r*2,r*2)}
+  ctx.restore();return true;
+ }
+ function embers(ctx,st){
+  if(!(st.flame>0)||st.reduced)return false;const a=flameAnchor(),energy=Math.min(1,st.flame/70)*(st.shield?.55:Math.min(1,.2+(st.wind||0)));
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<7;i++){const age=((st.t*.42+i*.173)%1),curl=Math.sin(st.t*2.1+i*2.7);const x=a.x+curl*(5+age*10)+(st.wind||0)*age*15,y=a.y+(st.bob||0)-8-age*(22+i*2);ctx.globalAlpha=(1-age)*energy;ctx.fillStyle=i%3?'#ffc477':'#fff0b4';ctx.fillRect(x,y,i%3?1.4:2,i%3?2.6:2)}
+  ctx.restore();return true;
+ }
+ function frost(ctx,st){
+  const oxygen=Math.max(0,(42-(st.oxygen??100))/42),flame=Math.max(0,(32-(st.flame??100))/32),chapter=st.ci===2?.2:0,amount=Math.min(.78,chapter+oxygen*.46+flame*.34);
+  if(amount<.08)return false;const W=view.W;ctx.save();
+  const edge=ctx.createRadialGradient(W/2,H*.52,Math.min(W,H)*.3,W/2,H*.52,Math.max(W,H)*.72);edge.addColorStop(.48,'rgba(215,231,248,0)');edge.addColorStop(1,'rgba(205,225,245,'+(amount*.38)+')');ctx.fillStyle=edge;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(225,239,252,'+(amount*.34)+')';ctx.lineWidth=.7;
+  for(let i=0;i<10;i++){const left=i%2===0,x=left?0:W,y=22+(i*67)%430,len=(12+(i*11)%28)*amount,sgn=left?1:-1;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sgn*len,y+(i%3-1)*7);ctx.lineTo(x+sgn*len*.62,y-8);ctx.moveTo(x+sgn*len*.72,y+(i%3-1)*5);ctx.lineTo(x+sgn*len*.9,y+8);ctx.stroke()}
+  ctx.restore();return true;
+ }
+ function cinematicGrade(ctx,ci,light,t,reduced){
+  const W=view.W;ctx.save();ctx.globalCompositeOperation='soft-light';
+  const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,['rgba(26,36,76,.36)','rgba(20,31,70,.4)','rgba(21,29,72,.48)','rgba(48,38,82,.32)'][ci]||'rgba(24,32,70,.35)');g.addColorStop(.58,'rgba(18,25,58,.11)');g.addColorStop(1,'rgba(102,73,116,.18)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();
+  if(light>0){const a=flameAnchor(),flicker=reduced?1:.96+Math.sin(t*7.3)*.025;ctx.save();ctx.globalCompositeOperation='screen';const warm=ctx.createRadialGradient(a.x,a.y,2,a.x,a.y,70+light*65);warm.addColorStop(0,'rgba(255,173,90,'+(.055*light*flicker)+')');warm.addColorStop(1,'rgba(255,150,70,0)');ctx.fillStyle=warm;ctx.fillRect(a.x-150,a.y-150,300,300);ctx.restore()}
+ }
+ function paperGrain(ctx,t,reduced){
+  const W=view.W;ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.15;const p=ctx.createPattern(grain,'repeat'),d=reduced?0:Math.floor(t*3)%64;ctx.translate(d,d*.5);ctx.fillStyle=p;ctx.fillRect(-64,-64,W+128,H+128);ctx.restore();
  }
  // ---------- traveller ----------
  // The traveller is the emotional focal point, not a small marker inside a background plate.
@@ -243,6 +284,7 @@ function create(base){
   const lightAlpha=ci===3?.25+.75*reply:1;
   if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
   if(since>=0&&since<1.35&&s.previousChapter!==ci)drawPlate(ctx,s.previousChapter,{...cam,p:1},1-since/1.35,1,['sky','far','mid']);
+  snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
   if(ci===3)dawnGrade(ctx,Math.max(0,(t-70)/20)*.6);
   const a=flameAnchor();
   const bob=drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing});
@@ -260,8 +302,13 @@ function create(base){
   // Hands over the flame while shielding, so the gesture visibly closes around it.
   if(s.shield&&!ready('hero-shield'))drawHands(ctx,{shield:true,light,bob});
   drawPlate(ctx,ci,cam,1,0,['fore']);
-  snow(ctx,t,quiet?.02:wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1);
+  cinematicGrade(ctx,ci,light,t,reduced);
+  const hasBreath=breath(ctx,{...s,t,ci,reduced,bob,wind});
+  const hasEmbers=embers(ctx,{...s,t,reduced,bob,wind});
+  snow(ctx,t,quiet?.02:wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'front');
   windLines(ctx,t,quiet?0:wind,warn,reduced);
+  const hasFrost=frost(ctx,{...s,ci});paperGrain(ctx,t,reduced);
+  ctx.canvas.dataset.vfx=['grade','grain','snow-depth',hasBreath&&'breath',hasEmbers&&'embers',hasFrost&&'frost'].filter(Boolean).join(' ');
   if(s.mote)memoryMote(ctx,s.mote,t,reduced);
   memoryFlight(ctx,s,t);
   if(ci===1&&t<s.shelterUntil){ctx.fillStyle='rgba(255,222,165,.07)';ctx.fillRect(0,90,W,300);caption(ctx,'風をよけられる — 今のうちに息を戻す','',false)}
@@ -277,6 +324,7 @@ function create(base){
   const k=Math.min(1,te/2.4),a=flameAnchor();
   const lightAlpha=ci===3?(ending==='dawn'?1:ending==='survive'?.5:.3):1;
   if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
+  snow(ctx,te,ending==='blown'?.9:ending==='smother'?.15:.05,reduced,1,'back');
   const flame=ending==='dawn'?92:ending==='survive'?24+Math.sin(te*6)*4:ending==='smother'?Math.max(0,30*(1-te/1.6)):0;
   const bob=drawTraveller(ctx,{t:te,ci,pose:'end-'+ending,shield:false,wind:ending==='blown'?.9:.1,reduced,light:flame/100,walking:false});
   if(ending==='dawn'){dawnGrade(ctx,.6+.4*k);const w=windowGlow(ctx,cam,.7+k*.5);beam(ctx,w,a,k);vignette(ctx,1,a)}
@@ -297,8 +345,10 @@ function create(base){
   }
   if(ending==='smother'&&te<2){ctx.save();ctx.globalCompositeOperation='lighter';for(let i=0;i<6;i++){const q=te/2,x=a.x+Math.sin(i*1.7)*16*q,y=a.y-q*40-i*4;ctx.fillStyle='rgba(255,170,100,'+(.7*(1-q))+')';ctx.fillRect(x,y,2,2)}ctx.restore()}
   drawPlate(ctx,ci,cam,1,0,['fore']);
-  snow(ctx,te,ending==='blown'?.9:ending==='smother'?.15:.05,reduced);
+  cinematicGrade(ctx,ci,flame/100,te,reduced);breath(ctx,{t:te,ci,oxygen:s.oxygen,wind:ending==='blown'?.9:.05,reduced,bob});embers(ctx,{t:te,flame,wind:ending==='blown'?.9:.05,reduced,bob});
+  snow(ctx,te,ending==='blown'?.9:ending==='smother'?.15:.05,reduced,1,'front');
   if(ending==='blown')windLines(ctx,te,.9,0,reduced);
+  frost(ctx,{ci,oxygen:s.oxygen,flame});paperGrain(ctx,te,reduced);ctx.canvas.dataset.vfx='grade grain snow-depth ending';
   end(ctx);
  }
  // ---------- prologue「最後の灯り」 ----------
@@ -324,18 +374,20 @@ function create(base){
    const a=flameAnchor();
    if(t>=3.2&&t<8)drawFlame(ctx,{t,flame:Math.min(32,(t-3.2)*16),wind:.05,reduced,expression:t<5.5?'afraid':'calm',scale:.7},lamp);
    if(t>=8){const q=ease((t-8)/1.6),x=lamp.x+(a.x-lamp.x)*q,y=lamp.y+(a.y-lamp.y)*q-Math.sin(q*Math.PI)*70;drawFlame(ctx,{t,flame:32,wind:.1,reduced,expression:'calm',scale:.7+.3*q},{x,y})}
+   cinematicGrade(ctx,0,.32,t,reduced);paperGrain(ctx,t,reduced);ctx.canvas.dataset.vfx='grade grain intro';
    ctx.fillStyle='rgba(4,7,15,'+(t<1.5?(1.5-t)/1.5*.85:0)+')';ctx.fillRect(0,0,W,H);
   }else{
    // The distant window, a figure in it for a heartbeat, then the road home and the title.
    const q=reduced?1:ease((t-11)/3),ci=t<16?3:0,cam={p:t<16?.3+q*.3:ease((t-16)/3)*.3,sway:0};
    drawPlate(ctx,ci,cam,1,ci===3?.45:1,['sky','far','mid']);
+   snow(ctx,t,.25,reduced,1,'back');
    if(ci===3){const w=windowGlow(ctx,cam,.35);if(t>12.4&&t<13.3){ctx.fillStyle='rgba(28,24,40,.8)';ctx.beginPath();ctx.ellipse(w.x+2*w.z,w.y,6*w.z,13*w.z,0,0,6.283);ctx.fill()}}
    const nod=t>14.6&&t<15.6&&!reduced?Math.sin((t-14.6)*Math.PI*2)*3:0;
    const bob=drawTraveller(ctx,{t,ci,shield:false,wind:.2,reduced,walking:t>=16});
    vignette(ctx,.55,flameAnchor());drawFirelight(ctx,{light:.34,bob});
    drawFlame(ctx,{t,flame:34,wind:.15,reduced,expression:'calm',hope:t>14.6&&t<16,bob:bob+nod,lookAt:t<16?1:0});
    drawPlate(ctx,ci,cam,1,0,['fore']);
-   snow(ctx,t,.25,reduced);
+   cinematicGrade(ctx,ci,.34,t,reduced);breath(ctx,{t,ci,oxygen:80,wind:.15,reduced,bob});embers(ctx,{t,flame:34,wind:.15,reduced,bob});snow(ctx,t,.25,reduced,1,'front');paperGrain(ctx,t,reduced);ctx.canvas.dataset.vfx='grade grain snow-depth breath intro';
    if(t<11.8){ctx.fillStyle='rgba(4,7,15,'+(1-(t-11)/.8)+')';ctx.fillRect(0,0,W,H)}
   }
   const line=[...INTRO].reverse().find(l=>t>=l.at);
