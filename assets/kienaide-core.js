@@ -111,7 +111,8 @@ function step(s,time,dt,input){
   const warm=live&&ev.kind==='lantern'?2.6:0;
   s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45:0)+warm)*dt));
  }
- if(!s.shield&&input.wasShield){s.releaseAt=time;if(live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;}
+ if(!s.shield&&input.wasShield)s.releaseAt=time;
+ if(!s.shield&&input.wasShield&&live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;
  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){s.miracleHint=true;emit('foreshadow');}
  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,s.wind);
  if(canTriggerMiracle(s,time)){s.rescue=true;s.rescueAt=time;s.flame=Math.min(100,s.flame+24);emit('miracle');}
