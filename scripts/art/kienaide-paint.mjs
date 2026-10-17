@@ -144,6 +144,10 @@ async function additions(chapters) {
   };
 
   await copy('intro-room', 'intro-room', { width: PW, height: PH, quality: 91 });
+  // Desaturate and soften the transparent frost wash so cyan edge contamination never reaches play.
+  await sharp(path.join(src, 'frost-edge.png')).resize(PW, PH, { fit: 'fill' }).modulate({ saturation: .18, brightness: .82 }).blur(.45)
+    .webp({ quality: 84, alphaQuality: 94 }).toFile(path.join(out, 'frost-edge.webp'));
+  generated.push('frost-edge.webp');
   for (const name of [...POSES, ...ENDINGS]) await copy(name, name, { width: PW, height: PH, quality: 90, alphaQuality: 96 });
   for (const name of FLAMES) await copy(name, name, { width: 384, height: 384, quality: 92, alphaQuality: 98 });
   for (const chapter of Object.keys(chapters)) {
@@ -164,7 +168,7 @@ const traveller = await hero();
 await sharp('assets/kienaide-v3/flame-spirit.webp').webp({ quality: 92, alphaQuality: 92 }).toFile(path.join(out, 'flame.webp'));
 const generated = await additions(chapters);
 const manifest = { generator: 'scripts/art/kienaide-paint.mjs', artBible: ['assets/kienaide-v3/snow-town.webp', 'assets/kienaide-v3/traveller-flame.webp', 'assets/kienaide-v3/flame-spirit.webp'],
-  generatedSources: ['intro-room', ...POSES, ...ENDINGS, ...FLAMES, ...Object.keys(chapters).map(c => 'fore-' + c)],
+  generatedSources: ['intro-room', 'frost-edge', ...POSES, ...ENDINGS, ...FLAMES, ...Object.keys(chapters).map(c => 'fore-' + c)],
   plate: [PW, PH], chapters, traveller, generated, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
 console.log('painted layers:', manifest.files.length, JSON.stringify(traveller));

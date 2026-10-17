@@ -57,4 +57,5 @@ test('cinematic VFX are layered around the subject and respond to the game state
  assert.match(view,/const oxygen=Math\.max\(0,\(42-\(st\.oxygen\?\?100\)\)\/42\)/,'frost responds to low oxygen');
  assert.match(view,/st\.shield\?\.55/,'shielding changes the ember behaviour');
  assert.ok(view.includes("ctx.canvas.dataset.vfx=['grade','grain','snow-depth'"),'runtime exposes the active VFX stack for browser QA');
+ assert.ok(view.includes("ready('frost-edge')"),'hand-painted frost texture replaces the procedural border when loaded');
 });

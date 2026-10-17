@@ -190,13 +190,13 @@ body[data-game=kienaide] .game-shell.ember .curtain.tableau>:first-child{margin-
 @media(max-height:700px){body[data-game=kienaide] .game-shell.ember .arena{min-height:236px}}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 body[data-game=kienaide] #stage:focus-visible{outline:2px solid #ffd39a;outline-offset:-3px}
-/* Art-bible buttons (assets/kienaide-v3). The label stays in the DOM for screen readers and tests;
-   the painted button carries the same words. */
-body[data-game=kienaide] .game-shell.ember .action.art-hold{background:url(../assets/kienaide-v3/hold-button.webp) center/100% 100% no-repeat;color:transparent;text-shadow:none;border:0;box-shadow:0 10px 28px #0008;min-height:clamp(64px,13vw,88px);aspect-ratio:1346/380;width:min(100%,430px);margin-inline:auto;display:block;padding:0}
-body[data-game=kienaide] .game-shell.ember .action.art-hold:disabled{filter:saturate(.6) brightness(.7)}
-body[data-game=kienaide] .game-shell.ember .action.art-hold:active{transform:scale(.985);filter:brightness(1.1)}
+/* Live-type controls stay legible and avoid the over-rendered lettering of the original bitmap UI. */
+body[data-game=kienaide] .game-shell.ember .action.art-hold{background:#111d30;color:#fff0d2;text-shadow:none;border:1px solid #d9b875;border-radius:999px;box-shadow:0 5px 14px #0008;min-height:68px;width:min(100%,430px);margin-inline:auto;display:flex;align-items:center;justify-content:center;gap:13px;padding:0 24px;font-size:clamp(18px,5vw,24px);letter-spacing:.035em}
+body[data-game=kienaide] .game-shell.ember .action.art-hold::before{content:'';width:25px;height:25px;border:2px solid #f4d392;border-radius:50%;box-shadow:inset 0 0 0 7px #111d30;flex:0 0 auto}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:disabled{filter:saturate(.55) brightness(.68)}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:active{transform:scale(.985);background:#1c2d45;box-shadow:inset 0 2px 8px #0008}
 body[data-game=kienaide] .game-shell.ember .action.art-hold:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
-body[data-game=kienaide] .curtain .btn.art-start{background:url(../assets/kienaide-v3/start-button.webp) center/100% 100% no-repeat;color:transparent;text-shadow:none;border:0;box-shadow:none;aspect-ratio:698/269;width:min(78%,300px);min-height:0;height:auto;padding:0}
+body[data-game=kienaide] .curtain .btn.art-start{background:#101d31e8;color:#fff0d2;text-shadow:0 1px 8px #000;border:1px solid #dfbf83;border-radius:999px;box-shadow:inset 0 1px 0 #fff3d633,0 10px 35px #0009;width:min(78%,300px);min-height:58px;height:auto;padding:12px 24px;font-size:18px;letter-spacing:.08em}
 body[data-game=kienaide] .curtain .btn.art-start:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
 
 /* 004 immersive mobile layout: the illustration is the interface. Site chrome and duplicate

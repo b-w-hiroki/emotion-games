@@ -7,6 +7,7 @@
  ],
  "generatedSources": [
   "intro-room",
+  "frost-edge",
   "hero-shield",
   "hero-blink",
   "hero-walk",
@@ -174,6 +175,7 @@
  },
  "generated": [
   "intro-room.webp",
+  "frost-edge.webp",
   "hero-shield.webp",
   "hero-blink.webp",
   "hero-walk.webp",
@@ -233,6 +235,7 @@
   "flame-hope.webp",
   "flame-suffocating.webp",
   "flame.webp",
+  "frost-edge.webp",
   "hero-blink.webp",
   "hero-body.webp",
   "hero-brace.webp",
