@@ -21,7 +21,7 @@ async function open(size,query,{intro=false,reduced=false}={}){
 }
 async function layout(page,size){
  return page.evaluate(({h})=>{const a=document.querySelector('#action').getBoundingClientRect(),st=document.querySelector('#stage').getBoundingClientRect(),hud=document.querySelector('.hud').getBoundingClientRect();
-  return {actionBottom:a.bottom,actionTop:a.top,stageTop:st.top,stageBottom:st.bottom,stageH:st.height,stageW:st.width,hudDisplay:getComputedStyle(document.querySelector('.hud')).display,topDisplay:getComputedStyle(document.querySelector('.top')).display,hudBottom:hud.bottom,scrollW:document.documentElement.scrollWidth,vw:innerWidth,fits:a.bottom<=h+1}},{h:size.height});
+  return {actionBottom:a.bottom,actionTop:a.top,actionH:a.height,stageTop:st.top,stageBottom:st.bottom,stageH:st.height,stageW:st.width,hudDisplay:getComputedStyle(document.querySelector('.hud')).display,topDisplay:getComputedStyle(document.querySelector('.top')).display,hudBottom:hud.bottom,scrollW:document.documentElement.scrollWidth,vw:innerWidth,fits:a.bottom<=h+1}},{h:size.height});
 }
 try{
  for(const size of sizes){
@@ -43,6 +43,7 @@ try{
    assert.ok(l.fits,'hold button must be on screen '+tag+' '+JSON.stringify(l));
    assert.ok(l.scrollW<=l.vw+1,'no horizontal scroll '+tag);
    assert.ok(l.actionTop>=l.stageTop&&l.actionBottom<=l.stageBottom+1,'hold button must sit inside the scene '+tag+' '+JSON.stringify(l));
+   assert.ok(l.actionH>=90,'primary action must be a substantial thumb deck '+tag+' '+JSON.stringify(l));
    assert.ok(l.stageH>=size.height*.98,'arena should fill the screen ('+l.stageH+'px) '+tag);
    assert.ok(l.stageW>=size.width-1,'arena should fill the screen width ('+l.stageW+'px) '+tag);
    assert.equal(l.hudDisplay,'none','duplicate outer HUD must be hidden '+tag);
@@ -51,12 +52,23 @@ try{
    await page.screenshot({path:path.join(out,`${engine}-${tag}-chapter${i}.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('chapter '+i+' '+tag);
   }
+ // Chapter changes are masked by a short blizzard passage rather than a naked image swap.
+ if(size.width===390){
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=.5&t=19.8');
+  await page.locator('#play').click();
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.transition==='blizzard',{timeout:4000});
+  await page.waitForTimeout(1800);
+  assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
+  await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
+  assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
+ }
   // Shielding pose and flame light under a held button.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=30');
    await page.locator('#play').click();await page.waitForTimeout(300);
    const b=await page.locator('#action').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.waitForTimeout(400);
    assert.equal(await page.locator('#stage').getAttribute('data-pose'),'hero-shield','holding must replace the full body with the shielding pose');
+   assert.ok(await page.locator('#action').evaluate(el=>el.classList.contains('is-held')),'control deck must visibly react to the held state');
    await page.screenshot({path:path.join(out,`${engine}-${tag}-shield.png`)});
    assert.equal(await page.locator('#hint').innerText().then(x=>x.includes('かば')||x.includes('離して')),true);
    await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();done('shield '+tag);

@@ -260,16 +260,20 @@ function create(base){
  }
  function hud(ctx,s){
   const u=Math.min(1,view.W/300),panelW=166*u,panelH=58*u,x0=8*u,y0=10*u;
-  ctx.save();ctx.fillStyle='rgba(5,10,22,.64)';ctx.beginPath();ctx.roundRect(x0,y0,panelW,panelH,10*u);ctx.fill();ctx.restore();
-  const meter=(label,value,y,color)=>{ctx.fillStyle='#f2f4f7';ctx.font='bold '+(11*u)+'px system-ui,sans-serif';ctx.textAlign='left';ctx.fillText(label,16*u,y*u);ctx.fillStyle='rgba(20,30,46,.86)';ctx.beginPath();ctx.roundRect(46*u,(y-8)*u,118*u,8*u,4*u);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(46*u,(y-8)*u,118*u*Math.max(0,Math.min(100,value))/100,8*u,4*u);ctx.fill()};
+  const meter=(label,value,y,color)=>{ctx.save();ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=5*u;ctx.fillStyle='#f2f4f7';ctx.font='bold '+(11*u)+'px system-ui,sans-serif';ctx.textAlign='left';ctx.fillText(label,16*u,y*u);ctx.restore();ctx.fillStyle='rgba(7,13,25,.62)';ctx.beginPath();ctx.roundRect(46*u,(y-8)*u,118*u,8*u,4*u);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(46*u,(y-8)*u,118*u*Math.max(0,Math.min(100,value))/100,8*u,4*u);ctx.fill()};
   meter('灯り',s.flame,24,'#ffb15b');meter('息',s.oxygen,42,s.oxygen<28?'#e98a8a':'#a4cee2');
   for(let i=0;i<3;i++){const x=(24+i*16)*u,y=58*u;ctx.strokeStyle='#eacb91';ctx.lineWidth=1.5*u;ctx.beginPath();ctx.arc(x,y,5*u,0,6.283);ctx.stroke();if(i<s.memories){ctx.fillStyle='#ffd98d';ctx.beginPath();ctx.arc(x,y,3.2*u,0,6.283);ctx.fill()}}
  }
  function caption(ctx,text,sub,warn){
   const W=view.W,u=Math.min(1,W/300);ctx.save();ctx.textAlign='center';
-  const g=ctx.createLinearGradient(0,H-152,0,H-52);g.addColorStop(0,'rgba(4,8,18,0)');g.addColorStop(1,'rgba(4,8,18,.78)');ctx.fillStyle=g;ctx.fillRect(0,H-152,W,100);
-  ctx.font='bold '+(17*u)+'px system-ui,sans-serif';ctx.fillStyle=warn?'#ffd39a':'#f1f4f8';ctx.shadowColor='#000';ctx.shadowBlur=8*u;ctx.fillText(text,W/2,H-96);
-  if(sub){ctx.font=(12*u)+'px system-ui,sans-serif';ctx.fillStyle='#d0dae5';ctx.fillText(sub,W/2,H-75)}ctx.restore();
+  ctx.font='600 '+(11*u)+'px system-ui,sans-serif';ctx.fillStyle='#e6eaf0';ctx.shadowColor='#03060c';ctx.shadowBlur=9*u;
+  if(sub)ctx.fillText(sub,W/2,H-82);ctx.restore();
+ }
+ function chapterVeil(ctx,q,reduced){
+  if(q<=0||q>=1)return;const W=view.W,peak=1-Math.abs(q*2-1),dir=q<.5?q*2:(1-q)*2;
+  ctx.save();const g=ctx.createLinearGradient(0,0,W,0);g.addColorStop(0,'rgba(8,15,31,'+(.18+.76*peak)+')');g.addColorStop(.48,'rgba(157,177,207,'+(.1+.78*peak)+')');g.addColorStop(1,'rgba(7,12,26,'+(.22+.74*peak)+')');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(!reduced){ctx.strokeStyle='rgba(226,235,247,'+(.12+.34*peak)+')';ctx.lineWidth=1.2;ctx.lineCap='round';for(let i=0;i<18;i++){const y=(i*31+(q*190))%(H+30)-15,x=((i*79+q*W*2.2)%(W+120))-60;ctx.beginPath();ctx.moveTo(x-45*dir,y+8);ctx.lineTo(x+58*dir,y-5);ctx.stroke()}}
+  ctx.restore();
  }
  // ---------- one gameplay frame ----------
  function frame(ctx,s,t,o){
@@ -282,8 +286,10 @@ function create(base){
   // Chapter 4's window is dim through the night and answers in the finale; other lamps stay lit.
   const reply=s.reply>0?s.reply*(s.replyLevel==='bright'?1:.6):s.rescue?.6:0;
   const lightAlpha=ci===3?.25+.75*reply:1;
-  if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
-  if(since>=0&&since<1.35&&s.previousChapter!==ci)drawPlate(ctx,s.previousChapter,{...cam,p:1},1-since/1.35,1,['sky','far','mid']);
+  const changing=since>=0&&since<2.1&&s.previousChapter!==ci,q=changing?since/2.1:1,m0=Math.max(0,Math.min(1,(q-.44)/.12)),mix=m0*m0*(3-2*m0);
+  ctx.canvas.dataset.transition=changing?'blizzard':'';
+  if(changing){if(!drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,1,['sky','far','mid']))fallbackSky(ctx,s.previousChapter);drawPlate(ctx,ci,{...cam,p:0},mix,lightAlpha,['sky','far','mid'])}
+  else if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
   snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
   if(ci===3)dawnGrade(ctx,Math.max(0,(t-70)/20)*.6);
   const a=flameAnchor();
@@ -301,7 +307,8 @@ function create(base){
   drawFlame(ctx,{t,flame:s.flame,wind,shield:s.shield,reduced,expression:o.expression,hope:o.expression==='hope',bob,smoke:1,lookAt:ci===3&&quiet?1:0});
   // Hands over the flame while shielding, so the gesture visibly closes around it.
   if(s.shield&&!ready('hero-shield'))drawHands(ctx,{shield:true,light,bob});
-  drawPlate(ctx,ci,cam,1,0,['fore']);
+  if(changing){drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,0,['fore']);drawPlate(ctx,ci,{...cam,p:0},mix,0,['fore']);chapterVeil(ctx,q,reduced)}
+  else drawPlate(ctx,ci,cam,1,0,['fore']);
   cinematicGrade(ctx,ci,light,t,reduced);
   const hasBreath=breath(ctx,{...s,t,ci,reduced,bob,wind});
   const hasEmbers=embers(ctx,{...s,t,reduced,bob,wind});
