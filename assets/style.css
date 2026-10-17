@@ -121,6 +121,10 @@ html[data-study="1"] .card-info .emotion{visibility:hidden}
 .game-shell.ember .curtain .btn{min-height:48px;margin-top:9px}
 .game-shell.ember .curtain .share-btn{margin-top:9px}
 .game-shell.ember .curtain .related{margin-top:7px}
+.ending-meaning{width:min(340px,100%);margin:8px auto 2px;padding:10px 13px;border-left:2px solid #e7bd7b;background:linear-gradient(90deg,#172235e8,#17223555);text-align:left;display:grid;gap:3px}
+.ending-meaning small{font-size:9px;font-weight:800;letter-spacing:.14em;color:#d9b77f}
+.ending-meaning strong{font-size:13px;line-height:1.45;color:#fff1d9}
+.ending-meaning span{font-size:10px;line-height:1.45;color:#bdc8d7}
 @media(max-height:720px){
 .game-shell.ember .curtain{padding:12px 16px}
 .game-shell.ember .curtain h2{font-size:clamp(24px,7vw,35px)}
@@ -128,6 +132,8 @@ html[data-study="1"] .card-info .emotion{visibility:hidden}
 .game-shell.ember .curtain .btn{min-height:40px}
 .game-shell.ember .curtain .share-btn{padding:6px 11px;margin-top:6px}
 .game-shell.ember .moment-save{padding:6px 10px;margin-top:5px;font-size:11px}
+.game-shell.ember .ending-meaning{margin:4px auto 1px;padding:7px 10px;gap:2px}
+.game-shell.ember .ending-meaning strong{font-size:11px}
 }
 
 /* Focused scene reading: while playing the short journey, minimize the surrounding site UI.
