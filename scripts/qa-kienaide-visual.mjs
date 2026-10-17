@@ -12,10 +12,11 @@ const base='http://127.0.0.1:'+server.address().port+'/emotion-games/kienaide/';
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{args:['--no-sandbox']}:{})});
 const sizes=[{width:390,height:844},{width:360,height:640}];
 const results=[];
+const done=x=>{results.push(x);console.log('step ok:',x)};
 async function open(size,query,{intro=false,reduced=false}={}){
  const ctx=await browser.newContext({viewport:size,isMobile:engine==='chromium',hasTouch:true,reducedMotion:reduced?'reduce':'no-preference'});
  if(!intro)await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
- const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+ const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('crash',()=>errors.push('page crashed'));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
  await page.goto(base+query);return {ctx,page,errors};
 }
 async function layout(page,size){
@@ -38,7 +39,7 @@ try{
    assert.ok(l.stageH>=size.height*.42,'arena should use the screen ('+l.stageH+'px) '+tag);
    const loaded=await page.evaluate(()=>[...document.images].length);void loaded;
    await page.screenshot({path:path.join(out,`${engine}-${tag}-chapter${i}.png`)});
-   assert.deepEqual(errors,[]);await ctx.close();results.push('chapter '+i+' '+tag);
+   assert.deepEqual(errors,[]);await ctx.close();done('chapter '+i+' '+tag);
   }
   // Shielding pose and flame light under a held button.
   {
@@ -47,7 +48,7 @@ try{
    const b=await page.locator('#action').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.waitForTimeout(400);
    await page.screenshot({path:path.join(out,`${engine}-${tag}-shield.png`)});
    assert.equal(await page.locator('#hint').innerText().then(x=>x.includes('かば')||x.includes('離して')),true);
-   await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();results.push('shield '+tag);
+   await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();done('shield '+tag);
   }
  }
  // Light separation measured on pixels: warm light around the flame while burning, none once it is out.
@@ -66,7 +67,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
   const dead=await warmth(page);
   assert.ok(alive>dead+18,'flame light must disappear with the flame: alive '+alive.toFixed(1)+' dead '+dead.toFixed(1));
-  assert.deepEqual(errors,[]);await ctx.close();results.push('light separation (warm '+alive.toFixed(0)+'→'+dead.toFixed(0)+'), '+fps.toFixed(0)+'fps');
+  assert.deepEqual(errors,[]);await ctx.close();done('light separation (warm '+alive.toFixed(0)+'→'+dead.toFixed(0)+'), '+fps.toFixed(0)+'fps');
  }
  // Every ending scene, reached through real play rules (QA speed only).
  const size=sizes[0];
@@ -86,7 +87,7 @@ try{
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
    if(r.policy==='tele'){
     const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
-    if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);const sb=await page.locator('#stage').boundingBox();await press(false);await page.mouse.click(sb.x+x,sb.y+y)}
+    if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
     // wish: keep holding through the silence so the window does not answer.
     if(r.skipReply&&st.phase==='silence'){await press(true)}
     else if(st.hint.includes('長押し')||st.hint.includes('かばって'))await press(true);
@@ -102,7 +103,7 @@ try{
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
   await page.waitForTimeout(400);
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-card.png`)});
-  assert.deepEqual(errors,[]);await ctx.close();results.push('ending '+id);
+  assert.deepEqual(errors,[]);await ctx.close();done('ending '+id);
  }
  // Sound: OFF and volume persist across reloads; play still works with sound off.
  {
@@ -115,7 +116,7 @@ try{
   assert.equal(await page.locator('#sound-toggle').innerText(),'音 ON','raising the volume unmutes');
   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','volume survives reload');
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
-  assert.deepEqual(errors,[]);await ctx.close();results.push('sound settings');
+  assert.deepEqual(errors,[]);await ctx.close();done('sound settings');
  }
  // Keyboard: Space holds the shield, M touches a visible memory.
  {
@@ -128,7 +129,7 @@ try{
   await page.keyboard.press('m');
   assert.equal(await page.locator('#best').innerText(),'1 / 3','M collects the memory');
   assert.ok((await page.locator('#memory-live').innerText()).includes('記憶'));
-  assert.deepEqual(errors,[]);await ctx.close();results.push('keyboard play');
+  assert.deepEqual(errors,[]);await ctx.close();done('keyboard play');
  }
  // Prologue frames, skip, reduced motion.
  for(const reduced of [false,true]){
@@ -139,7 +140,7 @@ try{
   await page.locator('#kienaide-intro button').click({timeout:3000}).catch(()=>{});
   assert.equal(await page.locator('#kienaide-intro').count(),0,'prologue must end (skip or completion)');
   assert.ok(await page.locator('#action').isEnabled());
-  assert.deepEqual(errors,[]);await ctx.close();results.push('intro '+(reduced?'reduced':'motion'));
+  assert.deepEqual(errors,[]);await ctx.close();done('intro '+(reduced?'reduced':'motion'));
  }
  console.log('PASS kienaide visual QA ('+engine+'): '+results.join(', '));
 }finally{await browser.close();server.close()}

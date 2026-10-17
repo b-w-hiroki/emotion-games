@@ -14,25 +14,28 @@ test('GitHub Pages deployment sets the canonical custom origin for social previe
 
 test('every game has public microgame script in generated page contract',()=>{const s=fs.readFileSync('scripts/build.mjs','utf8');assert.ok(s.includes("'microgames.js'"));assert.ok(s.includes('assets/microgames.js'))});
 
-test('four separate layered Kienaide chapters ship in the build',()=>{
+test('four separately painted Kienaide chapters ship in the build',async()=>{
+ const {default:sharp}=await import('sharp');
  const build=fs.readFileSync('scripts/build.mjs','utf8'),view=fs.readFileSync('assets/kienaide-view.js','utf8');
- assert.ok(build.includes("path.join(root,'assets','kienaide')"),'layer folder is copied');
- const sizes=[];
- for(const c of [1,2,3,4]){
-  for(const layer of ['sky','far','mid','fore','lights']){const art=fs.readFileSync('assets/kienaide/ch'+c+'-'+layer+'.svg','utf8');assert.ok(art.includes('<svg')&&art.includes('</svg>'),c+layer)}
-  sizes.push(fs.readFileSync('assets/kienaide/ch'+c+'-mid.svg','utf8'));
+ assert.ok(build.includes("path.join(root,'assets','kienaide','paint')"),'painted layers are copied');
+ assert.ok(view.includes("base+'assets/kienaide/paint/'"),'normal display uses the painted layers');
+ const m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
+ assert.equal(m.generator,'scripts/art/kienaide-paint.mjs','layers can be regenerated from the masters');
+ const means=[];
+ for(const c of ['ch1','ch2','ch3','ch4']){
+  for(const layer of ['sky','far','mid','fore','lights'])assert.ok(fs.statSync('assets/kienaide/paint/'+c+'-'+layer+'.webp').size>2000,c+layer);
+  const src='assets/kienaide/paint/src/'+c+'.webp',meta=await sharp(src).metadata();
+  assert.ok(meta.width>=750&&meta.height>=1300,c+' master is high resolution');
+  const st=await sharp(src).resize(32,42).raw().toBuffer();means.push(st);
  }
- assert.equal(new Set(sizes).size,4,'every chapter has its own composition, not a recolour');
- for(const s of sizes)assert.ok(s.length>3000,'mid layers carry real detail');
- assert.ok(view.includes("const CHAPTER_KEYS=['ch1','ch2','ch3','ch4']"));
- const manifest=JSON.parse(fs.readFileSync('assets/kienaide/manifest.json','utf8'));
- assert.equal(manifest.generator,'scripts/art/kienaide-art.mjs','layers can be regenerated');
+ // Four different compositions, not one picture recoloured or cropped.
+ for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){let d=0;for(let k=0;k<means[i].length;k++)d+=Math.abs(means[i][k]-means[j][k]);assert.ok(d/means[i].length>14,'chapters '+(i+1)+'/'+(j+1)+' differ ('+(d/means[i].length).toFixed(1)+')')}
 });
 test('the lead character, hands, rim light and flame are separately replaceable',()=>{
  const view=fs.readFileSync('assets/kienaide-view.js','utf8');
- for(const name of ['hero-body','hero-hands-hold','hero-hands-shield','hero-rim']){const art=fs.readFileSync('assets/kienaide/'+name+'.svg','utf8');assert.ok(art.includes('<svg')&&art.includes('</svg>')&&art.length>300,name)}
- assert.ok(view.includes("raster(st.shield?'hero-hands-shield':'hero-hands-hold'"),'hands change with the shield gesture');
- assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live, not painted');
+ for(const name of ['hero-body','hero-hands','hero-rim','flame'])assert.ok(fs.statSync('assets/kienaide/paint/'+name+'.webp').size>2000,name);
+ assert.ok(view.includes("if(s.shield)drawHands(ctx,{shield:true"),'hands close over the flame while shielding');
+ assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live from the flame spirit');
 });
 
 test('optimized playable Kienaide v3 images remain valid WebP binaries',()=>{

@@ -190,3 +190,11 @@ body[data-game=kienaide] .game-shell.ember .curtain.tableau>:first-child{margin-
 @media(max-height:700px){body[data-game=kienaide] .game-shell.ember .arena{min-height:236px}}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 body[data-game=kienaide] #stage:focus-visible{outline:2px solid #ffd39a;outline-offset:-3px}
+/* Art-bible buttons (assets/kienaide-v3). The label stays in the DOM for screen readers and tests;
+   the painted button carries the same words. */
+body[data-game=kienaide] .game-shell.ember .action.art-hold{background:url(../assets/kienaide-v3/hold-button.webp) center/100% 100% no-repeat;color:transparent;text-shadow:none;border:0;box-shadow:0 10px 28px #0008;min-height:clamp(64px,13vw,88px);aspect-ratio:1346/380;width:min(100%,430px);margin-inline:auto;display:block;padding:0}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:disabled{filter:saturate(.6) brightness(.7)}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:active{transform:scale(.985);filter:brightness(1.1)}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
+body[data-game=kienaide] .curtain .btn.art-start{background:url(../assets/kienaide-v3/start-button.webp) center/100% 100% no-repeat;color:transparent;text-shadow:none;border:0;box-shadow:none;aspect-ratio:698/269;width:min(78%,300px);min-height:0;height:auto;padding:0}
+body[data-game=kienaide] .curtain .btn.art-start:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}

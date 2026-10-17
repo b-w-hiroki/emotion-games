@@ -1,0 +1,156 @@
+{
+ "generator": "scripts/art/kienaide-paint.mjs",
+ "artBible": [
+  "assets/kienaide-v3/snow-town.webp",
+  "assets/kienaide-v3/traveller-flame.webp",
+  "assets/kienaide-v3/flame-spirit.webp"
+ ],
+ "plate": [
+  900,
+  1200
+ ],
+ "chapters": {
+  "ch1": {
+   "cropTop": 250,
+   "sky": 330,
+   "far": 560,
+   "fore": 1010,
+   "bands": {
+    "sky": {
+     "top": 0,
+     "bottom": 400
+    },
+    "far": {
+     "top": 260,
+     "bottom": 630
+    },
+    "mid": {
+     "top": 490,
+     "bottom": 1080
+    },
+    "fore": {
+     "top": 940,
+     "bottom": 1200
+    }
+   },
+   "warmShare": 0.0736
+  },
+  "ch2": {
+   "cropTop": 0,
+   "sky": 300,
+   "far": 620,
+   "fore": 1000,
+   "bands": {
+    "sky": {
+     "top": 0,
+     "bottom": 370
+    },
+    "far": {
+     "top": 230,
+     "bottom": 690
+    },
+    "mid": {
+     "top": 550,
+     "bottom": 1070
+    },
+    "fore": {
+     "top": 930,
+     "bottom": 1200
+    }
+   },
+   "warmShare": 0.0114
+  },
+  "ch3": {
+   "cropTop": 0,
+   "sky": 360,
+   "far": 560,
+   "fore": 1010,
+   "bands": {
+    "sky": {
+     "top": 0,
+     "bottom": 430
+    },
+    "far": {
+     "top": 290,
+     "bottom": 630
+    },
+    "mid": {
+     "top": 490,
+     "bottom": 1080
+    },
+    "fore": {
+     "top": 940,
+     "bottom": 1200
+    }
+   },
+   "warmShare": 0
+  },
+  "ch4": {
+   "cropTop": 0,
+   "sky": 420,
+   "far": 640,
+   "fore": 1020,
+   "bands": {
+    "sky": {
+     "top": 0,
+     "bottom": 490
+    },
+    "far": {
+     "top": 350,
+     "bottom": 710
+    },
+    "mid": {
+     "top": 570,
+     "bottom": 1090
+    },
+    "fore": {
+     "top": 950,
+     "bottom": 1200
+    }
+   },
+   "warmShare": 0.0095
+  }
+ },
+ "traveller": {
+  "size": [
+   556,
+   900
+  ],
+  "flame": {
+   "x": 355,
+   "y": 240
+  },
+  "hands": {
+   "x": 311,
+   "y": 229,
+   "w": 94,
+   "h": 78
+  }
+ },
+ "files": [
+  "ch1-far.webp",
+  "ch1-fore.webp",
+  "ch1-lights.webp",
+  "ch1-mid.webp",
+  "ch1-sky.webp",
+  "ch2-far.webp",
+  "ch2-fore.webp",
+  "ch2-lights.webp",
+  "ch2-mid.webp",
+  "ch2-sky.webp",
+  "ch3-far.webp",
+  "ch3-fore.webp",
+  "ch3-lights.webp",
+  "ch3-mid.webp",
+  "ch3-sky.webp",
+  "ch4-far.webp",
+  "ch4-fore.webp",
+  "ch4-lights.webp",
+  "ch4-mid.webp",
+  "ch4-sky.webp",
+  "flame.webp",
+  "hero-body.webp",
+  "hero-hands.webp",
+  "hero-rim.webp"
+ ]
+}
