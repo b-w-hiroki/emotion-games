@@ -21,7 +21,7 @@ async function open(size,query,{intro=false,reduced=false}={}){
 }
 async function layout(page,size){
  return page.evaluate(({h})=>{const a=document.querySelector('#action').getBoundingClientRect(),st=document.querySelector('#stage').getBoundingClientRect(),hud=document.querySelector('.hud').getBoundingClientRect();
-  return {actionBottom:a.bottom,actionTop:a.top,stageTop:st.top,stageBottom:st.bottom,stageH:st.height,hudBottom:hud.bottom,scrollW:document.documentElement.scrollWidth,vw:innerWidth,fits:a.bottom<=h+1}},{h:size.height});
+  return {actionBottom:a.bottom,actionTop:a.top,stageTop:st.top,stageBottom:st.bottom,stageH:st.height,stageW:st.width,hudDisplay:getComputedStyle(document.querySelector('.hud')).display,topDisplay:getComputedStyle(document.querySelector('.top')).display,hudBottom:hud.bottom,scrollW:document.documentElement.scrollWidth,vw:innerWidth,fits:a.bottom<=h+1}},{h:size.height});
 }
 try{
  for(const size of sizes){
@@ -37,8 +37,11 @@ try{
    const l=await layout(page,size);
    assert.ok(l.fits,'hold button must be on screen '+tag+' '+JSON.stringify(l));
    assert.ok(l.scrollW<=l.vw+1,'no horizontal scroll '+tag);
-   assert.ok(l.stageBottom<=l.actionTop+1,'arena must not overlap the button '+tag);
-   assert.ok(l.stageH>=size.height*.42,'arena should use the screen ('+l.stageH+'px) '+tag);
+   assert.ok(l.actionTop>=l.stageTop&&l.actionBottom<=l.stageBottom+1,'hold button must sit inside the scene '+tag+' '+JSON.stringify(l));
+   assert.ok(l.stageH>=size.height*.98,'arena should fill the screen ('+l.stageH+'px) '+tag);
+   assert.ok(l.stageW>=size.width-1,'arena should fill the screen width ('+l.stageW+'px) '+tag);
+   assert.equal(l.hudDisplay,'none','duplicate outer HUD must be hidden '+tag);
+   assert.equal(l.topDisplay,'none','site header must not squeeze the game '+tag);
    const loaded=await page.evaluate(()=>[...document.images].length);void loaded;
    await page.screenshot({path:path.join(out,`${engine}-${tag}-chapter${i}.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('chapter '+i+' '+tag);

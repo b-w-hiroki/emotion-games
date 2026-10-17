@@ -34,7 +34,9 @@ function create(base){
  function resize(canvas){
   const box=canvas.getBoundingClientRect(),cssW=Math.max(1,box.width),cssH=Math.max(1,box.height);
   const dpr=Math.min(2,root.devicePixelRatio||1)*perf.quality;
-  const W=Math.max(300,Math.min(480,cssW/cssH*H));
+  // Follow the actual portrait aspect ratio. The previous 300px floor letterboxed tall phones,
+  // leaving large black bands above and below the painting.
+  const W=Math.max(220,Math.min(480,cssW/cssH*H));
   const scale=Math.min(cssW/W,cssH/H);
   if(cssW===view.cssW&&cssH===view.cssH&&dpr===view.dpr)return view;
   Object.assign(view,{W,scale,dpr,cssW,cssH,ox:(cssW-W*scale)/2,oy:(cssH-H*scale)/2});
@@ -96,9 +98,9 @@ function create(base){
   ctx.restore();
  }
  // ---------- traveller ----------
- // The traveller is painted at ~2/3 of the stage height, centred, feet on the ground.
+ // The traveller is the emotional focal point, not a small marker inside a background plate.
  function heroBox(){
-  const t=manifest?.traveller,w0=t?t.size[0]:556,h0=t?t.size[1]:900,h=H*.68,k=h/h0,w=w0*k;
+  const t=manifest?.traveller,w0=t?t.size[0]:556,h0=t?t.size[1]:900,h=Math.min(H*.76,view.W*1.25),k=h/h0,w=w0*k;
   return {x:view.W/2-w*.5,y:H-h+6,w,h,k,t};
  }
  function flameAnchor(){const b=heroBox(),h=b.t?.hands||{x:311,y:229,w:94,h:78};return {x:b.x+(h.x+h.w*.55)*b.k,y:b.y+(h.y+h.h*.32)*b.k}}
@@ -160,7 +162,7 @@ function create(base){
    return;
   }
   const e=st.expression||'calm',light=Math.min(1,health/100)*(st.hope?1.2:1),sprite=ready('flame-'+e)?imgs['flame-'+e]:imgs.flame;
-  const size=(12+24*Math.pow(health/100,.7))*(st.scale||1),lean=st.reduced?0:Math.max(-1,Math.min(1,(st.wind||0)*(st.shield?.15:.9)))*.32;
+  const size=(16+32*Math.pow(health/100,.7))*(st.scale||1),lean=st.reduced?0:Math.max(-1,Math.min(1,(st.wind||0)*(st.shield?.15:.9)))*.32;
   const tremble=st.reduced?0:(e==='afraid'?Math.sin(st.t*31)*1.2:e==='suffocating'?Math.sin(st.t*9)*.8:0);
   const breathe=st.reduced?1:1+Math.sin(st.t*(e==='comfort'?2.2:4.2))*.035;
   // Halo first (additive) so the flame lights the air around it.
@@ -216,16 +218,17 @@ function create(base){
   ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,1,x,y,18);g.addColorStop(0,'rgba(255,240,200,'+(1-q*.5)+')');g.addColorStop(1,'rgba(255,190,110,0)');ctx.fillStyle=g;ctx.fillRect(x-20,y-20,40,40);ctx.restore();
  }
  function hud(ctx,s){
-  ctx.save();ctx.fillStyle='rgba(5,10,22,.58)';ctx.beginPath();ctx.roundRect(8,10,166,58,10);ctx.fill();ctx.restore();
-  const meter=(label,value,y,color)=>{ctx.fillStyle='#e9ecf2';ctx.font='bold 11px system-ui,sans-serif';ctx.textAlign='left';ctx.fillText(label,16,y);ctx.fillStyle='rgba(20,30,46,.8)';ctx.beginPath();ctx.roundRect(46,y-8,118,8,4);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(46,y-8,118*Math.max(0,Math.min(100,value))/100,8,4);ctx.fill()};
+  const u=Math.min(1,view.W/300),panelW=166*u,panelH=58*u,x0=8*u,y0=10*u;
+  ctx.save();ctx.fillStyle='rgba(5,10,22,.64)';ctx.beginPath();ctx.roundRect(x0,y0,panelW,panelH,10*u);ctx.fill();ctx.restore();
+  const meter=(label,value,y,color)=>{ctx.fillStyle='#f2f4f7';ctx.font='bold '+(11*u)+'px system-ui,sans-serif';ctx.textAlign='left';ctx.fillText(label,16*u,y*u);ctx.fillStyle='rgba(20,30,46,.86)';ctx.beginPath();ctx.roundRect(46*u,(y-8)*u,118*u,8*u,4*u);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(46*u,(y-8)*u,118*u*Math.max(0,Math.min(100,value))/100,8*u,4*u);ctx.fill()};
   meter('灯り',s.flame,24,'#ffb15b');meter('息',s.oxygen,42,s.oxygen<28?'#e98a8a':'#a4cee2');
-  for(let i=0;i<3;i++){const x=24+i*16,y=58;ctx.strokeStyle='#eacb91';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,5,0,6.283);ctx.stroke();if(i<s.memories){ctx.fillStyle='#ffd98d';ctx.beginPath();ctx.arc(x,y,3.2,0,6.283);ctx.fill()}}
+  for(let i=0;i<3;i++){const x=(24+i*16)*u,y=58*u;ctx.strokeStyle='#eacb91';ctx.lineWidth=1.5*u;ctx.beginPath();ctx.arc(x,y,5*u,0,6.283);ctx.stroke();if(i<s.memories){ctx.fillStyle='#ffd98d';ctx.beginPath();ctx.arc(x,y,3.2*u,0,6.283);ctx.fill()}}
  }
  function caption(ctx,text,sub,warn){
-  const W=view.W;ctx.save();ctx.textAlign='center';
-  const g=ctx.createLinearGradient(0,H-78,0,H);g.addColorStop(0,'rgba(4,8,18,0)');g.addColorStop(1,'rgba(4,8,18,.74)');ctx.fillStyle=g;ctx.fillRect(0,H-78,W,78);
-  ctx.font='bold 15px system-ui,sans-serif';ctx.fillStyle=warn?'#ffd39a':'#e3eaf3';ctx.shadowColor='#000';ctx.shadowBlur=6;ctx.fillText(text,W/2,H-30);
-  if(sub){ctx.font='11px system-ui,sans-serif';ctx.fillStyle='#bac8d6';ctx.fillText(sub,W/2,H-12)}ctx.restore();
+  const W=view.W,u=Math.min(1,W/300);ctx.save();ctx.textAlign='center';
+  const g=ctx.createLinearGradient(0,H-152,0,H-52);g.addColorStop(0,'rgba(4,8,18,0)');g.addColorStop(1,'rgba(4,8,18,.78)');ctx.fillStyle=g;ctx.fillRect(0,H-152,W,100);
+  ctx.font='bold '+(17*u)+'px system-ui,sans-serif';ctx.fillStyle=warn?'#ffd39a':'#f1f4f8';ctx.shadowColor='#000';ctx.shadowBlur=8*u;ctx.fillText(text,W/2,H-96);
+  if(sub){ctx.font=(12*u)+'px system-ui,sans-serif';ctx.fillStyle='#d0dae5';ctx.fillText(sub,W/2,H-75)}ctx.restore();
  }
  // ---------- one gameplay frame ----------
  function frame(ctx,s,t,o){
