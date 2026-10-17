@@ -329,6 +329,8 @@ function candleCaption(s){
  if(s.finalePhase==='silence')return [s.shield?'静かになった — いま離して':'手をひらいて、窓に灯りを見せて',false];
  if(s.finalePhase==='window-reply')return [s.reply>0?'窓が答えている':'あと少し',false];
  if(ev&&elapsed<ev.at)return [ev.tip,true];
+ if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['渦がほどけた — いま離して',false];
+ if(ev?.kind==='eddy'&&!s.shield&&elapsed>=ev.at)return ['渦風 — 一瞬かばって',true];
  if(s.shield)return [s.wind<.44||s.oxygen<28?'風が弱まった — いま離して':'灯りをかばっている',false];
  if(ev&&(ev.kind==='lull'||ev.kind==='lantern'))return [ev.tip,false];
  return s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
