@@ -31,10 +31,10 @@ test('four separately painted Kienaide chapters ship in the build',async()=>{
  // Four different compositions, not one picture recoloured or cropped.
  for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){let d=0;for(let k=0;k<means[i].length;k++)d+=Math.abs(means[i][k]-means[j][k]);assert.ok(d/means[i].length>14,'chapters '+(i+1)+'/'+(j+1)+' differ ('+(d/means[i].length).toFixed(1)+')')}
 });
-test('the lead character, hands, rim light and flame are separately replaceable',()=>{
+test('the lead character poses, rim light and living flame are separately replaceable',()=>{
  const view=fs.readFileSync('assets/kienaide-view.js','utf8');
- for(const name of ['hero-body','hero-hands','hero-rim','flame'])assert.ok(fs.statSync('assets/kienaide/paint/'+name+'.webp').size>2000,name);
- assert.ok(view.includes("if(s.shield)drawHands(ctx,{shield:true"),'hands close over the flame while shielding');
+ for(const name of ['hero-body','hero-shield','hero-walk','hero-brace','hero-rim','flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'])assert.ok(fs.statSync('assets/kienaide/paint/'+name+'.webp').size>2000,name);
+ assert.ok(view.includes("if(st.shield&&ready('hero-shield'))return 'hero-shield'"),'the full body changes to the shielding pose');
  assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live from the flame spirit');
 });
 

@@ -34,13 +34,15 @@ test('chapter light sources are an additive layer: base + lights reproduces the 
  const m=JSON.parse(readFileSync(P+'manifest.json','utf8'));
  for(const ch of ['ch1','ch2','ch3','ch4']){
   const c=m.chapters[ch];
-  const bands=await Promise.all(['sky','far','mid','fore'].map(async b=>({input:await sharp(P+ch+'-'+b+'.webp').png().toBuffer(),top:c.bands[b].top,left:0})));
+  const bands=await Promise.all(['sky','far','mid','fore'].map(async b=>({input:await sharp(P+ch+'-'+(b==='fore'?'basefore':b)+'.webp').png().toBuffer(),top:(b==='fore'?c.baseFore:c.bands[b]).top,left:0})));
   const base=await sharp({create:{width:900,height:1200,channels:4,background:'#000'}}).composite(bands).png().toBuffer();
   const lit=await sharp(base).composite([{input:P+ch+'-lights.webp',blend:'add'}]).removeAlpha().raw().toBuffer();
   const meta=await sharp(P+'src/'+ch+'.webp').metadata(),h=Math.round(meta.height*900/meta.width);
   const ref=await sharp(P+'src/'+ch+'.webp').resize(900,h).extract({left:0,top:Math.max(0,Math.min(h-1200,c.cropTop)),width:900,height:1200}).removeAlpha().raw().toBuffer();
   let diff=0;for(let i=0;i<ref.length;i+=37)diff+=Math.abs(ref[i]-lit[i]);
   assert.ok(diff/(ref.length/37)<9,ch+' recomposes to the master painting (mean diff '+(diff/(ref.length/37)).toFixed(2)+')');
+  const fore=await sharp(P+ch+'-fore.webp').metadata();
+  assert.equal(fore.width,900,ch+' painted foreground width');assert.equal(fore.height,1200,ch+' painted foreground height');assert.equal(fore.hasAlpha,true,ch+' painted foreground must remain transparent');
  }
 });
 test('chapter backgrounds never contain the traveller or the flame spirit',()=>{

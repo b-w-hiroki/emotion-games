@@ -13,6 +13,9 @@ import sharp from 'sharp';
 const src = path.resolve('assets/kienaide/paint/src');
 const out = path.resolve('assets/kienaide/paint');
 const PW = 900, PH = 1200; // every chapter plate is normalised to 3:4
+const POSES = ['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
+const ENDINGS = ['end-blown','end-smother','end-wish','end-survive','end-dawn'];
+const FLAMES = ['flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'];
 
 // Where each chapter's bands meet (in plate pixels) and how the master is framed into 900x1200.
 const CHAPTERS = {
@@ -126,13 +129,42 @@ async function hero() {
   return { size: [outW, outH], flame, hands: { ...toOut(hands.x, hands.y), w: Math.round(hands.w * scale), h: Math.round(hands.h * scale) } };
 }
 
+// ChatGPT-painted additions are kept as high-quality WebP masters in paint/src. Character poses
+// share a fixed transparent 3:4 canvas instead of being individually trimmed: that preserves the
+// feet/ground line and keeps the kneeling ending physically shorter than the standing poses.
+async function additions(chapters) {
+  const generated = [];
+  const copy = async (sourceName, outputName, options = {}) => {
+    const input = path.join(src, sourceName + '.webp');
+    if (!fs.existsSync(input)) throw new Error('missing generated art source: ' + input);
+    let image = sharp(input);
+    if (options.width && options.height) image = image.resize(options.width, options.height, { fit: 'fill' });
+    await image.webp({ quality: options.quality || 90, alphaQuality: options.alphaQuality || 94 }).toFile(path.join(out, outputName + '.webp'));
+    generated.push(outputName + '.webp');
+  };
+
+  await copy('intro-room', 'intro-room', { width: PW, height: PH, quality: 91 });
+  for (const name of [...POSES, ...ENDINGS]) await copy(name, name, { width: PW, height: PH, quality: 90, alphaQuality: 96 });
+  for (const name of FLAMES) await copy(name, name, { width: 384, height: 384, quality: 92, alphaQuality: 98 });
+  for (const chapter of Object.keys(chapters)) {
+    fs.copyFileSync(path.join(out, chapter + '-fore.webp'), path.join(out, chapter + '-basefore.webp'));
+    chapters[chapter].baseFore = chapters[chapter].bands.fore;
+    await copy('fore-' + chapter, chapter + '-fore', { width: PW, height: PH, quality: 90, alphaQuality: 96 });
+    chapters[chapter].bands.fore = { top: 0, bottom: PH };
+    chapters[chapter].paintedForeground = true;
+  }
+  return generated;
+}
+
 fs.mkdirSync(out, { recursive: true });
 const chapters = {};
 for (const [name, c] of Object.entries(CHAPTERS)) chapters[name] = { ...c, ...(await chapter(name, c)) };
 const traveller = await hero();
 // The flame sprite is the art bible's own flame spirit.
 await sharp('assets/kienaide-v3/flame-spirit.webp').webp({ quality: 92, alphaQuality: 92 }).toFile(path.join(out, 'flame.webp'));
+const generated = await additions(chapters);
 const manifest = { generator: 'scripts/art/kienaide-paint.mjs', artBible: ['assets/kienaide-v3/snow-town.webp', 'assets/kienaide-v3/traveller-flame.webp', 'assets/kienaide-v3/flame-spirit.webp'],
-  plate: [PW, PH], chapters, traveller, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
+  generatedSources: ['intro-room', ...POSES, ...ENDINGS, ...FLAMES, ...Object.keys(chapters).map(c => 'fore-' + c)],
+  plate: [PW, PH], chapters, traveller, generated, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
 console.log('painted layers:', manifest.files.length, JSON.stringify(traveller));

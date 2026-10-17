@@ -8,18 +8,18 @@
 
 | ID | 保存名 | 用途 | 添付する参照画像 | サイズ | 状態 |
 |---|---|---|---|---|---|
-| P1 | `hero-blink.png` | まばたき（待機中に時々差し替え） | hero（炎なし） | 縦3:4（hero と同じ構図） | 未依頼 |
-| P2 | `hero-walk.png` | 歩く（片足を前に出したコマ） | hero（炎なし） | 同上 | 未依頼 |
-| P3 | `hero-brace.png` | 突風に耐える（前かがみ・目を細める） | hero（炎なし） | 同上 | 未依頼 |
-| P4 | `hero-cold.png` | 寒さに震える（凍った橋） | hero（炎なし） | 同上 | 未依頼 |
-| P5 | `hero-breathless.png` | 息が苦しい（息ゲージ残りわずか） | hero（炎なし） | 同上 | 未依頼 |
-| P6 | `hero-relief.png` | 手をひらいてほっとする（凪・静寂） | hero（炎なし） | 同上 | 未依頼 |
-| P7 | `hero-lookup.png` | 遠い窓を見上げる（終盤・窓の返事） | hero（炎なし） | 同上 | 未依頼 |
-| E1 | `end-blown.png` | 結末「風にさらわれた」 | hero（炎なし） | 同上 | 未依頼 |
-| E2 | `end-smother.png` | 結末「守りすぎた」 | hero（炎なし） | 同上 | 未依頼 |
-| E3 | `end-wish.png` | 結末「わすれない」 | hero（炎なし） | 同上 | 未依頼 |
-| E4 | `end-survive.png` | 結末「まだ、ここに」 | hero（炎なし） | 同上 | 未依頼 |
-| E5 | `end-dawn.png` | 結末「おかえり」 | hero（炎なし） | 同上 | 未依頼 |
+| P1 | `hero-blink.png` | まばたき（待機中に時々差し替え） | hero（炎なし） | 縦3:4（hero と同じ構図） | 組込済み（QA済み） |
+| P2 | `hero-walk.png` | 歩く（片足を前に出したコマ） | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| P3 | `hero-brace.png` | 突風に耐える（前かがみ・目を細める） | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| P4 | `hero-cold.png` | 寒さに震える（凍った橋） | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| P5 | `hero-breathless.png` | 息が苦しい（息ゲージ残りわずか） | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| P6 | `hero-relief.png` | 手をひらいてほっとする（凪・静寂） | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| P7 | `hero-lookup.png` | 遠い窓を見上げる（終盤・窓の返事） | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| E1 | `end-blown.png` | 結末「風にさらわれた」 | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| E2 | `end-smother.png` | 結末「守りすぎた」 | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| E3 | `end-wish.png` | 結末「わすれない」 | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| E4 | `end-survive.png` | 結末「まだ、ここに」 | hero（炎なし） | 同上 | 組込済み（QA済み） |
+| E5 | `end-dawn.png` | 結末「おかえり」 | hero（炎なし） | 同上 | 組込済み（QA済み） |
 
 おすすめの順番：P1・P2 → P3〜P7 → E1〜E5。
 
