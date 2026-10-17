@@ -17,7 +17,7 @@ const MEMORIES=[
 // kind can dominate a run and the order changes between retries.
 const EVENT_KINDS={
  gust:{label:'突風',tip:'風が来る — 長押しでかばって',warn:1.2,length:1.8},
- eddy:{label:'渦風',tip:'渦巻く風 — かばい続けると息が苦しい',warn:.8,length:3},
+ eddy:{label:'渦風',tip:'渦巻く風 — 短くかばって、息苦しくなる前に離す',warn:.8,length:3},
  lull:{label:'凪',tip:'凪いだ — いま手を離して息を',warn:0,length:3.2},
  lantern:{label:'誰かの灯り',tip:'窓の灯りが分けてくれる — 手を離して',warn:0,length:3.4}
 };
