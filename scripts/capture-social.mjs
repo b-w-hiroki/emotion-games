@@ -32,7 +32,7 @@ async function grab(slug,scenario){
  const url=site+(slug?slug+'/':'')+(slug==='kienaide'?'?qa=1':'');
  await page.goto(url,{waitUntil:'load'});await page.waitForTimeout(450);
  const key=slug||'index';
- const heading=slug?'.game-heading h1':'.hero h1';
+ const heading=slug==='kienaide'?'#curtain-title':slug?'.game-heading h1':'.hero h1';
  if(!(await page.locator(heading).isVisible()))throw new Error(key+': heading missing');
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
  if(overflow)throw new Error(key+': horizontal overflow');
