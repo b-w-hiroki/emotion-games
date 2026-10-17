@@ -34,6 +34,11 @@ try{
    await page.waitForTimeout(500);
    const pose=await page.locator('#stage').getAttribute('data-pose');
    assert.ok(pose&&pose.startsWith('hero-'),'chapter must select a playable hero pose: '+pose);
+   const vfx=await page.locator('#stage').getAttribute('data-vfx');
+   assert.match(vfx,/grade/,'paintings must share the cinematic colour grade');
+   assert.match(vfx,/grain/,'paper grain must unify the separate painted layers');
+   assert.match(vfx,/snow-depth/,'snow must be split around the traveller for depth');
+   if(i===3)assert.match(vfx,/frost/,'the cold bridge must visibly frost the frame');
    const l=await layout(page,size);
    assert.ok(l.fits,'hold button must be on screen '+tag+' '+JSON.stringify(l));
    assert.ok(l.scrollW<=l.vw+1,'no horizontal scroll '+tag);

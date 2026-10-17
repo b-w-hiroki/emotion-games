@@ -50,3 +50,11 @@ test('chapter backgrounds never contain the traveller or the flame spirit',()=>{
  for(const ch of ['ch1','ch2','ch3','ch4'])assert.ok(m.chapters[ch],ch);
  assert.deepEqual(m.artBible,['assets/kienaide-v3/snow-town.webp','assets/kienaide-v3/traveller-flame.webp','assets/kienaide-v3/flame-spirit.webp']);
 });
+test('cinematic VFX are layered around the subject and respond to the game state',()=>{
+ assert.ok(view.indexOf("'back'")<view.indexOf('drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing})'),'background snow must pass behind the traveller');
+ const gradeAt=view.indexOf('cinematicGrade(ctx,ci,light,t,reduced)');
+ assert.ok(gradeAt<view.indexOf("'front')",gradeAt),'foreground snow stays crisp above the colour grade');
+ assert.match(view,/const oxygen=Math\.max\(0,\(42-\(st\.oxygen\?\?100\)\)\/42\)/,'frost responds to low oxygen');
+ assert.match(view,/st\.shield\?\.55/,'shielding changes the ember behaviour');
+ assert.ok(view.includes("ctx.canvas.dataset.vfx=['grade','grain','snow-depth'"),'runtime exposes the active VFX stack for browser QA');
+});
