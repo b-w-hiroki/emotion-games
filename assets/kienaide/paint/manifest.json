@@ -5,6 +5,22 @@
   "assets/kienaide-v3/traveller-flame.webp",
   "assets/kienaide-v3/flame-spirit.webp"
  ],
+ "characterArtVersion": "repaint-v2",
+ "characterSources": [
+  "repaint-v2/hero-shield.png",
+  "repaint-v2/hero-blink.png",
+  "repaint-v2/hero-walk.png",
+  "repaint-v2/hero-brace.png",
+  "repaint-v2/hero-cold.png",
+  "repaint-v2/hero-breathless.png",
+  "repaint-v2/hero-relief.png",
+  "repaint-v2/hero-lookup.png",
+  "repaint-v2/end-blown.png",
+  "repaint-v2/end-smother.png",
+  "repaint-v2/end-wish.png",
+  "repaint-v2/end-survive.png",
+  "repaint-v2/end-dawn.png"
+ ],
  "generatedSources": [
   "intro-room",
   "frost-edge",
