@@ -1,6 +1,6 @@
 # Character repaint v2
 
-These lossless transparent masters replace the first-pass pose renders at build time without
+These lossless transparent masters replace the neutral body and first-pass pose renders at build time without
 overwriting them. The art bible remains `assets/kienaide-v3/snow-town.webp` and
 `assets/kienaide-v3/traveller-flame.webp`.
 

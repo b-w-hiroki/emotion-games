@@ -42,7 +42,7 @@ test('every character state uses the restrained gouache repaint source set',asyn
  const {default:sharp}=await import('sharp');
  const m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
  assert.equal(m.characterArtVersion,'repaint-v2');
- assert.equal(m.characterSources.length,13,'all gameplay and ending poses are covered');
+ assert.equal(m.characterSources.length,14,'the neutral body plus all gameplay and ending poses are covered');
  for(const source of m.characterSources){
   const p='assets/kienaide/paint/src/'+source,meta=await sharp(p).metadata();
   assert.equal(meta.format,'png',source+' stays as a lossless source master');

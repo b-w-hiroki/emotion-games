@@ -23,7 +23,7 @@ test('rim light is a neutral mask, tinted and scaled by the flame at runtime',as
  let lit=0;for(let i=0;i<data.length;i+=4){if(data[i+3]<40)continue;lit++;assert.ok(data[i]>235&&data[i+1]>235&&data[i+2]>235,'rim mask must be white')}
  assert.ok(lit>500,'rim mask has a visible edge');
  assert.ok(view.includes("const rim=tinted('hero-rim','#ffbf78')"));
- assert.ok(view.includes('ctx.globalAlpha=Math.min(1,st.light*1.1)'));
+ assert.ok(view.includes('ctx.globalAlpha=Math.min(.62,st.light*.68)'));
 });
 test('a dead flame emits no light',()=>{
  assert.match(view,/if\(health<=0\)\{[\s\S]*?return;\s*\}/);
@@ -58,4 +58,10 @@ test('cinematic VFX are layered around the subject and respond to the game state
  assert.match(view,/st\.shield\?\.55/,'shielding changes the ember behaviour');
  assert.ok(view.includes("ctx.canvas.dataset.vfx=['grade','grain','snow-depth'"),'runtime exposes the active VFX stack for browser QA');
  assert.ok(view.includes("ready('frost-edge')"),'hand-painted frost texture replaces the procedural border when loaded');
+});
+test('the dawn window stays behind the traveller and its flame preserves the face',()=>{
+ const ending=view.slice(view.indexOf('function endingFrame'),view.indexOf('// ---------- prologue'));
+ assert.ok(ending.indexOf('dawnWindow=windowGlow')<ending.indexOf('const bob=drawTraveller'),'the large dawn glow belongs behind the character');
+ assert.ok(ending.includes("ending==='dawn'?.34:1"),'dawn flame uses restrained additive exposure');
+ assert.ok(ending.includes("ending==='dawn'?{x:a.x+8,y:a.y+26}:a"),'dawn flame sits in the open palms');
 });
