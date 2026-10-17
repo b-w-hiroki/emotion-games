@@ -7,6 +7,7 @@
  ],
  "characterArtVersion": "repaint-v2",
  "characterSources": [
+  "repaint-v2/hero-body.png",
   "repaint-v2/hero-shield.png",
   "repaint-v2/hero-blink.png",
   "repaint-v2/hero-walk.png",
@@ -175,19 +176,23 @@
  },
  "traveller": {
   "size": [
-   556,
+   675,
    900
   ],
   "flame": {
-   "x": 355,
-   "y": 240
+   "x": 428,
+   "y": 263
   },
   "hands": {
-   "x": 311,
-   "y": 229,
-   "w": 94,
-   "h": 78
-  }
+   "x": 369,
+   "y": 219,
+   "w": 123,
+   "h": 98
+  },
+  "bitmap": [
+   540,
+   720
+  ]
  },
  "generated": [
   "intro-room.webp",

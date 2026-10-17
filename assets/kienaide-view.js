@@ -180,10 +180,10 @@ function create(base){
  }
  // Everything the flame lights on her and on the snow, added after the darkness. Zero when out.
  function drawFirelight(ctx,st){
-  if(!(st.light>0))return;const b=heroBox(),a=flameAnchor();
+  if(!(st.light>0))return;const b=heroBox(),a=st.at||flameAnchor();
   ctx.save();ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(a.x,H-10,4,a.x,H-10,90+st.light*80);g.addColorStop(0,'rgba(255,184,104,'+(.3*st.light)+')');g.addColorStop(1,'rgba(255,170,90,0)');ctx.fillStyle=g;ctx.fillRect(0,H-170,view.W,170);
-  const rim=tinted('hero-rim','#ffbf78');if(rim){ctx.globalAlpha=Math.min(1,st.light*1.1);ctx.drawImage(rim,b.x,b.y+(st.bob||0),b.w,b.h)}
+  const rim=tinted('hero-rim','#ffbf78');if(rim){ctx.globalAlpha=Math.min(.62,st.light*.68);ctx.drawImage(rim,b.x,b.y+(st.bob||0),b.w,b.h)}
   ctx.restore();
  }
  // Hands: the same painted mittens, raised and closed around the flame while shielding.
@@ -202,7 +202,7 @@ function create(base){
    if(st.smoke>0){ctx.save();ctx.strokeStyle='rgba(190,198,214,'+(.5*st.smoke)+')';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,y0);for(let i=1;i<8;i++)ctx.lineTo(a.x+Math.sin(st.t*2+i)*4*i*.4,y0-i*7);ctx.stroke();ctx.restore()}
    return;
   }
-  const e=st.expression||'calm',light=Math.min(1,health/100)*(st.hope?1.2:1),sprite=ready('flame-'+e)?imgs['flame-'+e]:imgs.flame;
+  const e=st.expression||'calm',exposure=st.exposure??1,light=Math.min(1,health/100)*(st.hope?1.2:1)*exposure,sprite=ready('flame-'+e)?imgs['flame-'+e]:imgs.flame;
   const size=(16+32*Math.pow(health/100,.7))*(st.scale||1),lean=st.reduced?0:Math.max(-1,Math.min(1,(st.wind||0)*(st.shield?.15:.9)))*.32;
   const tremble=st.reduced?0:(e==='afraid'?Math.sin(st.t*31)*1.2:e==='suffocating'?Math.sin(st.t*9)*.8:0);
   const breathe=st.reduced?1:1+Math.sin(st.t*(e==='comfort'?2.2:4.2))*.035;
@@ -215,7 +215,7 @@ function create(base){
   if(sprite&&sprite.complete&&sprite.naturalWidth>0){
    const w=size*1.15*breathe,h=size*1.25*(e==='afraid'?.9:1)*breathe;
    ctx.save();ctx.translate(a.x+tremble,y0);ctx.rotate(lean+(st.lookAt?.08:0));
-   ctx.globalAlpha=e==='suffocating'?.72:1;
+   ctx.globalAlpha=(e==='suffocating'?.72:1)*Math.min(1,.72+.28*exposure);
     ctx.drawImage(sprite,-w/2,-h*.92,w,h);ctx.restore();
   }else{
    const g=ctx.createRadialGradient(a.x,y0-size*.5,1,a.x,y0-size*.5,size*.6);g.addColorStop(0,'#fff3c4');g.addColorStop(1,'rgba(245,140,70,0)');ctx.fillStyle=g;ctx.fillRect(a.x-size,y0-size*1.4,size*2,size*1.6);
@@ -326,8 +326,13 @@ function create(base){
   if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
   snow(ctx,te,ending==='blown'?.9:ending==='smother'?.15:.05,reduced,1,'back');
   const flame=ending==='dawn'?92:ending==='survive'?24+Math.sin(te*6)*4:ending==='smother'?Math.max(0,30*(1-te/1.6)):0;
+  const endingExposure=ending==='dawn'?.34:1,flameAt=ending==='dawn'?{x:a.x+8,y:a.y+26}:a;
+  // The responding window belongs behind the traveller. Painting this additive glow after her
+  // washed out the face and made the ending feel like a generated bloom effect.
+  let dawnWindow=null;
+  if(ending==='dawn'){dawnGrade(ctx,.6+.4*k);dawnWindow=windowGlow(ctx,cam,.7+k*.5)}
   const bob=drawTraveller(ctx,{t:te,ci,pose:'end-'+ending,shield:false,wind:ending==='blown'?.9:.1,reduced,light:flame/100,walking:false});
-  if(ending==='dawn'){dawnGrade(ctx,.6+.4*k);const w=windowGlow(ctx,cam,.7+k*.5);beam(ctx,w,a,k);vignette(ctx,1,a)}
+  if(ending==='dawn'){beam(ctx,dawnWindow,flameAt,k);vignette(ctx,1,flameAt)}
   else if(ending==='survive'){dawnGrade(ctx,.45*k);windowGlow(ctx,cam,.25+.12*Math.sin(te*2));vignette(ctx,.45,a)}
   else if(ending==='wish'){windowGlow(ctx,cam,.25);vignette(ctx,.25,a)}
   else{
@@ -336,8 +341,8 @@ function create(base){
    vignette(ctx,0,a);
    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.7;const kk=CH[ci];if(ready(kk+'-lights')){const t=plateTransform(ci,cam.p,DEPTH.mid*cam.p);ctx.drawImage(imgs[kk+'-lights'],t.x,t.y,PW*t.z,PH*t.z)}ctx.restore();
   }
-  drawFirelight(ctx,{light:flame/100,bob});
-  drawFlame(ctx,{t:te,flame,wind:ending==='blown'?.9:.05,shield:ending==='smother',reduced,expression:ending==='dawn'?'hope':ending==='survive'?'afraid':'calm',hope:ending==='dawn',bob,smoke:ending==='blown'||ending==='smother'?Math.max(0,1-te/4):0,lookAt:ending==='dawn'?1:0});
+  drawFirelight(ctx,{light:flame/100*endingExposure,bob,at:flameAt});
+  drawFlame(ctx,{t:te,flame,wind:ending==='blown'?.9:.05,shield:ending==='smother',reduced,expression:ending==='dawn'?'hope':ending==='survive'?'afraid':'calm',hope:ending==='dawn',exposure:endingExposure,scale:ending==='dawn'?.72:1,bob,smoke:ending==='blown'||ending==='smother'?Math.max(0,1-te/4):0,lookAt:ending==='dawn'?1:0},flameAt);
   if(ending==='smother'&&!ready('end-smother'))drawHands(ctx,{shield:true,light:flame/100,bob});
   if(ending==='wish'){
    // The three memories rise from the empty hands and become stars over the house.
