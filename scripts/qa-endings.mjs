@@ -76,11 +76,11 @@ try{
  {
   const t=await pageFor('kienaide','?qa=1');
   assert.ok(await t.page.locator('#story-beat').isVisible());
-  const layers=JSON.parse(fs.readFileSync('assets/kienaide/manifest.json','utf8')).files;
+  const layers=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8')).files;
   const artLoaded=await t.page.evaluate(async files=>Promise.all(files.map(name=>new Promise(ok=>{
-    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide/'+name;
+    const img=new Image();img.onload=()=>ok(img.naturalWidth>0);img.onerror=()=>ok(false);img.src='../assets/kienaide/paint/'+name;
   }))),layers);
-  assert.equal(layers.length>=26,true,'every chapter needs sky/far/mid/fore/lights plus hero layers');
+  assert.equal(layers.length>=24,true,'every chapter needs sky/far/mid/fore/lights plus hero, hands, rim and flame');
   assert.deepEqual(artLoaded,layers.map(()=>true),'all chapter and character layers must load at runtime');
   await t.page.waitForTimeout(250);
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-illustrated-actors-390.png'});

@@ -14,8 +14,8 @@ try{
  await page.locator('#play').click();
  if(await page.locator('#kienaide-intro').count())await page.locator('#kienaide-intro button').click();
  await page.waitForFunction(()=>document.querySelector('#stage').dataset.chapter==='1',null,{timeout:10000});
- const layers=await page.evaluate(async()=>{const names=['ch1-sky','ch1-mid','ch4-lights','hero-body','hero-rim'];return Promise.all(names.map(n=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i.naturalWidth>0);i.onerror=()=>ok(false);i.src='../assets/kienaide/'+n+'.svg'})))});
- assert.deepEqual(layers,[true,true,true,true,true],'layers served');
+ const layers=await page.evaluate(async()=>{const names=['ch1-sky','ch1-mid','ch4-lights','hero-body','hero-rim','flame'];return Promise.all(names.map(n=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i.naturalWidth>0);i.onerror=()=>ok(false);i.src='../assets/kienaide/paint/'+n+'.webp'})))});
+ assert.deepEqual(layers,[true,true,true,true,true,true],'painted layers served');
  await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote,null,{timeout:15000});
  const [x,y]=(await page.locator('#stage').getAttribute('data-mote')).split(',').map(Number),b=await page.locator('#stage').boundingBox();
  await page.mouse.click(b.x+x,b.y+y);
