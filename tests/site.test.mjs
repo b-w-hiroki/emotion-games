@@ -71,6 +71,8 @@ test('Kienaide controls use live type instead of generated button lettering',()=
  assert.match(css,/\.action\.art-hold\{[^}]*min-height:112px/,'the primary input is a full thumb deck, not a thin pill');
  assert.match(app,/class="action-cue"/,'the live cue belongs to the control surface');
  assert.match(view,/dataset\.transition=changing\?'blizzard'/,'chapter art changes are masked by a staged transition');
+ assert.match(view,/dataset\.poseTransition=fade<1\?'dissolve'/,'meaningful pose changes dissolve instead of snapping');
+ assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*border:1px/,'the control deck must not be enclosed by a decorative frame');
 });
 
 test('character finishing does not add filters on every frame',()=>{
