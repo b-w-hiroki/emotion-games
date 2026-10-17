@@ -1,6 +1,6 @@
 // 004「きえないで。」 renderer. Painted layers in the art-bible style (assets/kienaide-v3) are composed
 // at runtime: chapter plates split into sky/far/mid/fore + an additive lights layer, the traveller,
-// her hands, a flame-tinted rim mask, the flame spirit sprite and every light it casts are separate,
+// her hands, the flame spirit sprite and every light it casts are separate,
 // so nothing glows when the flame is out. Rules live in kienaide-core.js; this file only draws.
 (function(root){'use strict';
 const H=480,PW=900,PH=1200;
@@ -28,7 +28,7 @@ function create(base){
  const grainCtx=grain.getContext('2d'),grainData=grainCtx.createImageData(64,64);let grainSeed=90421;
  for(let i=0;i<grainData.data.length;i+=4){grainSeed=(grainSeed*1664525+1013904223)>>>0;const v=112+(grainSeed>>>24)%96;grainData.data[i]=v;grainData.data[i+1]=v+3;grainData.data[i+2]=v+8;grainData.data[i+3]=34}
  grainCtx.putImageData(grainData,0,0);
- // Tinted copies (rim light) are made once per colour.
+ // Tinted copies are cached for any state-specific colour treatment.
  function tinted(n,color){const key='tint|'+n+'|'+color;if(cache.has(key))return cache.get(key);if(!ready(n))return null;const i=imgs[n],c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;const g=c.getContext('2d');g.drawImage(i,0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,c.width,c.height);cache.set(key,c);return c}
  // Adaptive resolution: if frames stay slow, render fewer pixels instead of dropping frames.
  const perf={ema:16,frames:0,quality:1};
@@ -162,18 +162,25 @@ function create(base){
   if(!st.shield&&((st.event&&st.event.kind==='lull')||(st.t||0)-(st.releaseAt??-100)<.7)&&ready('hero-relief'))return 'hero-relief';
   if(st.ci===2&&(st.wind??0)>.42&&ready('hero-cold'))return 'hero-cold';
   if((st.wind??0)>.72&&ready('hero-brace'))return 'hero-brace';
-  if(st.walking&&!st.reduced&&Math.floor((st.t||0)*2.6)%2&&ready('hero-walk'))return 'hero-walk';
-  if(!st.walking&&!st.reduced&&(st.t||0)%4.6<.15&&ready('hero-blink'))return 'hero-blink';
+  // Walking motion comes from the camera and body bob. Alternating whole paintings here made the
+  // traveller appear to teleport between different anatomy every few frames.
   return 'hero-body';
  }
+ const poseFx={current:'',previous:'',changedAt:0};
  function drawTraveller(ctx,st){
-  const b=heroBox(),pose=heroPose(st),pb=pose==='hero-body'?b:{x:view.W/2-b.h*(PW/PH)/2,y:b.y,w:b.h*(PW/PH),h:b.h},bob=st.reduced||!st.walking?0:Math.abs(Math.sin(st.t*2.6))*-2.2;
+  const b=heroBox(),pose=heroPose(st),pb={x:view.W/2-b.h*(PW/PH)/2,y:b.y,w:b.h*(PW/PH),h:b.h},bob=st.reduced||!st.walking?0:Math.abs(Math.sin(st.t*2.6))*-2.2;
+  const now=(root.performance?.now?.()??Date.now())/1000;
+  if(!poseFx.current){poseFx.current=pose;poseFx.changedAt=now}
+  else if(pose!==poseFx.current){poseFx.previous=poseFx.current;poseFx.current=pose;poseFx.changedAt=now}
+  const q=st.reduced?1:Math.max(0,Math.min(1,(now-poseFx.changedAt)/.24)),fade=q*q*(3-2*q);
   ctx.canvas.dataset.pose=pose;
+  ctx.canvas.dataset.poseTransition=fade<1?'dissolve':'';
   ctx.save();ctx.translate(0,bob);
   // Soft contact shadow so she stands on the snow, not on top of the picture.
   ctx.fillStyle='rgba(6,10,22,.45)';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,H-4,b.w*.38,7,0,0,6.283);ctx.fill();
   const body=heroLit(pose,st.ci??0)||heroLit('hero-body',st.ci??0);
-  if(body)ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h);
+  if(poseFx.previous&&fade<1){const previous=heroLit(poseFx.previous,st.ci??0);if(previous){ctx.globalAlpha=1-fade;ctx.drawImage(previous,pb.x,pb.y,pb.w,pb.h)}}
+  ctx.globalAlpha=fade;if(body)ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h);
   else{ctx.fillStyle='#1b2338';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,b.y+b.h*.6,b.w*.32,b.h*.38,0,0,6.283);ctx.fill()}
   ctx.restore();
   return bob;
@@ -183,7 +190,8 @@ function create(base){
   if(!(st.light>0))return;const b=heroBox(),a=st.at||flameAnchor();
   ctx.save();ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(a.x,H-10,4,a.x,H-10,90+st.light*80);g.addColorStop(0,'rgba(255,184,104,'+(.3*st.light)+')');g.addColorStop(1,'rgba(255,170,90,0)');ctx.fillStyle=g;ctx.fillRect(0,H-170,view.W,170);
-  const rim=tinted('hero-rim','#ffbf78');if(rim){ctx.globalAlpha=Math.min(.62,st.light*.68);ctx.drawImage(rim,b.x,b.y+(st.bob||0),b.w,b.h)}
+  // The old full-body rim used the neutral silhouette for every pose, creating a conspicuous
+  // human-shaped outline around moving paintings. Local flame spill provides the light instead.
   ctx.restore();
  }
  // Hands: the same painted mittens, raised and closed around the flame while shielding.

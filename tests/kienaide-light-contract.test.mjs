@@ -18,16 +18,13 @@ test('the art-bible traveller had fire painted in; the runtime traveller and han
  assert.ok(original>.003,'reference check: the art bible image does contain the baked flame ('+original+')');
  for(const n of ['hero-body','hero-hands']){const share=await fireShare(P+n+'.webp');assert.ok(share<.0005,n+' must not contain fire colours: '+share)}
 });
-test('rim light is a neutral mask, tinted and scaled by the flame at runtime',async()=>{
- const {data}=await sharp(P+'hero-rim.webp').ensureAlpha().raw().toBuffer({resolveWithObject:true});
- let lit=0;for(let i=0;i<data.length;i+=4){if(data[i+3]<40)continue;lit++;assert.ok(data[i]>235&&data[i+1]>235&&data[i+2]>235,'rim mask must be white')}
- assert.ok(lit>500,'rim mask has a visible edge');
- assert.ok(view.includes("const rim=tinted('hero-rim','#ffbf78')"));
- assert.ok(view.includes('ctx.globalAlpha=Math.min(.62,st.light*.68)'));
+test('flame light stays local and never draws a mismatched full-body outline',()=>{
+ assert.doesNotMatch(view,/const rim=tinted\('hero-rim'/,'a neutral-pose rim must not outline other poses');
+ assert.match(view,/createRadialGradient\(a\.x,H-10/,'warm spill remains local to the flame');
 });
 test('a dead flame emits no light',()=>{
  assert.match(view,/if\(health<=0\)\{[\s\S]*?return;\s*\}/);
- assert.ok(view.includes('if(!(st.light>0))return'),'rim and snow glow only while burning');
+ assert.ok(view.includes('if(!(st.light>0))return'),'snow glow only exists while the flame is burning');
  assert.ok(view.includes('const light=Math.max(0,Math.min(1,s.flame/100))'));
 });
 test('chapter light sources are an additive layer: base + lights reproduces the painting',async()=>{

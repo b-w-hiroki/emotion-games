@@ -66,7 +66,9 @@ try{
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=30');
    await page.locator('#play').click();await page.waitForTimeout(300);
-   const b=await page.locator('#action').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.waitForTimeout(400);
+   const b=await page.locator('#action').boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();
+   await page.waitForFunction(()=>document.querySelector('#stage').dataset.poseTransition==='dissolve',{timeout:1000});
+   await page.waitForTimeout(400);
    assert.equal(await page.locator('#stage').getAttribute('data-pose'),'hero-shield','holding must replace the full body with the shielding pose');
    assert.ok(await page.locator('#action').evaluate(el=>el.classList.contains('is-held')),'control deck must visibly react to the held state');
    await page.screenshot({path:path.join(out,`${engine}-${tag}-shield.png`)});

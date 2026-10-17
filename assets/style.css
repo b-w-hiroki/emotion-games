@@ -191,17 +191,17 @@ body[data-game=kienaide] .game-shell.ember .curtain.tableau>:first-child{margin-
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 body[data-game=kienaide] #stage:focus-visible{outline:2px solid #ffd39a;outline-offset:-3px}
 /* Live-type controls stay legible and avoid the over-rendered lettering of the original bitmap UI. */
-body[data-game=kienaide] .game-shell.ember .action.art-hold{background:linear-gradient(180deg,#17263af2,#0a1322f7);color:#fff0d2;text-shadow:none;border:1px solid #d9b87599;border-bottom:0;border-radius:28px 28px 0 0;box-shadow:inset 0 1px 0 #fff1cc26,0 -12px 38px #02050ab8;min-height:112px;width:min(100%,520px);margin-inline:auto;display:grid;grid-template-rows:auto 1fr;align-items:center;justify-items:center;gap:5px;padding:13px 22px max(15px,env(safe-area-inset-bottom));font-size:20px;letter-spacing:.035em;touch-action:none;transition:transform .12s ease,background .18s ease,border-color .18s ease}
-body[data-game=kienaide] .game-shell.ember .action.art-hold::before{content:'';position:absolute;left:50%;top:-8px;width:72px;height:3px;border-radius:4px;background:#e9c88699;transform:translateX(-50%);box-shadow:0 0 16px #f4b45a66}
+body[data-game=kienaide] .game-shell.ember .action.art-hold{background:linear-gradient(180deg,#17263ae8,#0a1322fa);color:#fff0d2;text-shadow:none;border:0;border-radius:28px 28px 0 0;box-shadow:inset 0 1px 0 #ffffff12,0 -12px 38px #02050ab8;min-height:112px;width:min(100%,520px);margin-inline:auto;display:grid;grid-template-rows:auto 1fr;align-items:center;justify-items:center;gap:5px;padding:13px 22px max(15px,env(safe-area-inset-bottom));font-size:20px;letter-spacing:.035em;touch-action:none;transition:transform .12s ease,background .18s ease}
+body[data-game=kienaide] .game-shell.ember .action.art-hold::before{content:none}
 body[data-game=kienaide] .action-cue{font-size:12px;font-weight:650;letter-spacing:.08em;color:#d7deea;line-height:1.2}
 body[data-game=kienaide] .action-main{display:grid;grid-template-columns:34px auto;grid-template-rows:auto auto;column-gap:13px;align-items:center;text-align:left}
 body[data-game=kienaide] .action-main i{grid-row:1/3;width:32px;height:32px;border:2px solid #f4d392;border-radius:50%;box-shadow:inset 0 0 0 9px #101c2e,0 0 16px #f2a94c22;transition:box-shadow .16s ease,background .16s ease}
 body[data-game=kienaide] .action-main b{font-size:24px;line-height:1.05;letter-spacing:.08em}
 body[data-game=kienaide] .action-main em{font-style:normal;font-size:10px;color:#c1cad8;letter-spacing:.18em;margin-top:3px}
 body[data-game=kienaide] .game-shell.ember .action.art-hold:disabled{filter:saturate(.55) brightness(.68)}
-body[data-game=kienaide] .game-shell.ember .action.art-hold:active,body[data-game=kienaide] .game-shell.ember .action.art-hold.is-held{transform:translateY(3px);background:linear-gradient(180deg,#513824f5,#171b28fa);border-color:#ffc56dcc;box-shadow:inset 0 5px 16px #0009,0 -8px 34px #e88f3033}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:active,body[data-game=kienaide] .game-shell.ember .action.art-hold.is-held{transform:translateY(3px);background:linear-gradient(180deg,#513824ed,#171b28fa);box-shadow:inset 0 5px 16px #0009,0 -8px 34px #e88f3033}
 body[data-game=kienaide] .game-shell.ember .action.art-hold.is-held .action-main i{background:#ffb75e;box-shadow:inset 0 0 0 7px #4a2c1d,0 0 22px #ff9e43aa}
-body[data-game=kienaide] .game-shell.ember .action.art-hold.is-warning:not(.is-held){border-color:#f2b45dcc;animation:kienaide-control-pulse 1s ease-in-out infinite}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-warning:not(.is-held){animation:kienaide-control-pulse 1s ease-in-out infinite}
 @keyframes kienaide-control-pulse{50%{box-shadow:inset 0 1px 0 #fff1cc33,0 -14px 44px #e88f304d}}
 body[data-game=kienaide] .game-shell.ember .action.art-hold:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
 body[data-game=kienaide] .curtain .btn.art-start{background:#101d31e8;color:#fff0d2;text-shadow:0 1px 8px #000;border:1px solid #dfbf83;border-radius:999px;box-shadow:inset 0 1px 0 #fff3d633,0 10px 35px #0009;width:min(78%,300px);min-height:58px;height:auto;padding:12px 24px;font-size:18px;letter-spacing:.08em}
