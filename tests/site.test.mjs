@@ -31,12 +31,53 @@ test('four separately painted Kienaide chapters ship in the build',async()=>{
  // Four different compositions, not one picture recoloured or cropped.
  for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){let d=0;for(let k=0;k<means[i].length;k++)d+=Math.abs(means[i][k]-means[j][k]);assert.ok(d/means[i].length>14,'chapters '+(i+1)+'/'+(j+1)+' differ ('+(d/means[i].length).toFixed(1)+')')}
 });
-test('the lead character, hands, rim light and flame are separately replaceable',()=>{
+test('the lead character poses, rim light and living flame are separately replaceable',()=>{
  const view=fs.readFileSync('assets/kienaide-view.js','utf8');
- for(const name of ['hero-body','hero-hands','hero-rim','flame'])assert.ok(fs.statSync('assets/kienaide/paint/'+name+'.webp').size>2000,name);
- assert.ok(view.includes("if(s.shield)drawHands(ctx,{shield:true"),'hands close over the flame while shielding');
+ for(const name of ['hero-body','hero-shield','hero-walk','hero-brace','hero-rim','flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'])assert.ok(fs.statSync('assets/kienaide/paint/'+name+'.webp').size>2000,name);
+ assert.ok(view.includes("if(st.shield&&ready('hero-shield'))return 'hero-shield'"),'the full body changes to the shielding pose');
  assert.ok(view.includes('function drawFlame(ctx,st,at)'),'flame is drawn live from the flame spirit');
 });
+
+test('every character state uses the restrained gouache repaint source set',async()=>{
+ const {default:sharp}=await import('sharp');
+ const m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
+ assert.equal(m.characterArtVersion,'repaint-v2');
+ assert.equal(m.characterSources.length,14,'the neutral body plus all gameplay and ending poses are covered');
+ for(const source of m.characterSources){
+  const p='assets/kienaide/paint/src/'+source,meta=await sharp(p).metadata();
+  assert.equal(meta.format,'png',source+' stays as a lossless source master');
+  assert.ok(meta.hasAlpha,source+' must preserve transparency');
+  assert.ok(Math.abs(meta.width/meta.height-.75)<.01,source+' must remain a 3:4 sprite');
+ }
+});
+
+test('the handmade frost wash keeps the playable centre transparent',async()=>{
+ const {default:sharp}=await import('sharp');
+ const p='assets/kienaide/paint/frost-edge.webp',m=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8'));
+ assert.ok(fs.statSync(p).size>10000,'painted frost overlay ships');
+ assert.ok(m.generatedSources.includes('frost-edge'),'the overlay is reproducible from its source master');
+ const {data,info}=await sharp(p).ensureAlpha().resize(90,120).raw().toBuffer({resolveWithObject:true});let edge=0,centre=0,ne=0,nc=0;
+ for(let y=0;y<info.height;y++)for(let x=0;x<info.width;x++){const a=data[(y*info.width+x)*4+3],isCentre=x>22&&x<68&&y>24&&y<96;if(isCentre){centre+=a;nc++}else{edge+=a;ne++}}
+ assert.ok(centre/nc<8,'centre must remain readable ('+(centre/nc).toFixed(1)+')');
+ assert.ok(edge/ne>centre/nc+25,'frost belongs at the frame edge');
+});
+
+test('Kienaide controls use live type instead of generated button lettering',()=>{
+ const css=fs.readFileSync('assets/style.css','utf8');
+ const app=fs.readFileSync('assets/app.js','utf8'),view=fs.readFileSync('assets/kienaide-view.js','utf8');
+ assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*hold-button\.webp/);
+ assert.doesNotMatch(css,/\.btn\.art-start\{[^}]*start-button\.webp/);
+ assert.match(css,/\.action\.art-hold\{[^}]*color:#fff0d2/);
+ assert.match(css,/\.action\.art-hold\{[^}]*min-height:112px/,'the primary input is a full thumb deck, not a thin pill');
+ assert.match(app,/class="action-cue"/,'the live cue belongs to the control surface');
+ assert.match(view,/dataset\.transition=changing\?'blizzard'/,'chapter art changes are masked by a staged transition');
+});
+
+test('character finishing does not add filters on every frame',()=>{
+ const view=fs.readFileSync('assets/kienaide-view.js','utf8');
+ assert.doesNotMatch(view,/g\.filter=.*blur/,'WebKit must not run character filters during play');
+});
+
 
 test('optimized playable Kienaide v3 images remain valid WebP binaries',()=>{
  const names=['snow-town','traveller-flame','flame-spirit','hold-button','start-button','retry-button','gallery-button'];

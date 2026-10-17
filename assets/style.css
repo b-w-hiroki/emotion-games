@@ -190,11 +190,58 @@ body[data-game=kienaide] .game-shell.ember .curtain.tableau>:first-child{margin-
 @media(max-height:700px){body[data-game=kienaide] .game-shell.ember .arena{min-height:236px}}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 body[data-game=kienaide] #stage:focus-visible{outline:2px solid #ffd39a;outline-offset:-3px}
-/* Art-bible buttons (assets/kienaide-v3). The label stays in the DOM for screen readers and tests;
-   the painted button carries the same words. */
-body[data-game=kienaide] .game-shell.ember .action.art-hold{background:url(../assets/kienaide-v3/hold-button.webp) center/100% 100% no-repeat;color:transparent;text-shadow:none;border:0;box-shadow:0 10px 28px #0008;min-height:clamp(64px,13vw,88px);aspect-ratio:1346/380;width:min(100%,430px);margin-inline:auto;display:block;padding:0}
-body[data-game=kienaide] .game-shell.ember .action.art-hold:disabled{filter:saturate(.6) brightness(.7)}
-body[data-game=kienaide] .game-shell.ember .action.art-hold:active{transform:scale(.985);filter:brightness(1.1)}
+/* Live-type controls stay legible and avoid the over-rendered lettering of the original bitmap UI. */
+body[data-game=kienaide] .game-shell.ember .action.art-hold{background:linear-gradient(180deg,#17263af2,#0a1322f7);color:#fff0d2;text-shadow:none;border:1px solid #d9b87599;border-bottom:0;border-radius:28px 28px 0 0;box-shadow:inset 0 1px 0 #fff1cc26,0 -12px 38px #02050ab8;min-height:112px;width:min(100%,520px);margin-inline:auto;display:grid;grid-template-rows:auto 1fr;align-items:center;justify-items:center;gap:5px;padding:13px 22px max(15px,env(safe-area-inset-bottom));font-size:20px;letter-spacing:.035em;touch-action:none;transition:transform .12s ease,background .18s ease,border-color .18s ease}
+body[data-game=kienaide] .game-shell.ember .action.art-hold::before{content:'';position:absolute;left:50%;top:-8px;width:72px;height:3px;border-radius:4px;background:#e9c88699;transform:translateX(-50%);box-shadow:0 0 16px #f4b45a66}
+body[data-game=kienaide] .action-cue{font-size:12px;font-weight:650;letter-spacing:.08em;color:#d7deea;line-height:1.2}
+body[data-game=kienaide] .action-main{display:grid;grid-template-columns:34px auto;grid-template-rows:auto auto;column-gap:13px;align-items:center;text-align:left}
+body[data-game=kienaide] .action-main i{grid-row:1/3;width:32px;height:32px;border:2px solid #f4d392;border-radius:50%;box-shadow:inset 0 0 0 9px #101c2e,0 0 16px #f2a94c22;transition:box-shadow .16s ease,background .16s ease}
+body[data-game=kienaide] .action-main b{font-size:24px;line-height:1.05;letter-spacing:.08em}
+body[data-game=kienaide] .action-main em{font-style:normal;font-size:10px;color:#c1cad8;letter-spacing:.18em;margin-top:3px}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:disabled{filter:saturate(.55) brightness(.68)}
+body[data-game=kienaide] .game-shell.ember .action.art-hold:active,body[data-game=kienaide] .game-shell.ember .action.art-hold.is-held{transform:translateY(3px);background:linear-gradient(180deg,#513824f5,#171b28fa);border-color:#ffc56dcc;box-shadow:inset 0 5px 16px #0009,0 -8px 34px #e88f3033}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-held .action-main i{background:#ffb75e;box-shadow:inset 0 0 0 7px #4a2c1d,0 0 22px #ff9e43aa}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-warning:not(.is-held){border-color:#f2b45dcc;animation:kienaide-control-pulse 1s ease-in-out infinite}
+@keyframes kienaide-control-pulse{50%{box-shadow:inset 0 1px 0 #fff1cc33,0 -14px 44px #e88f304d}}
 body[data-game=kienaide] .game-shell.ember .action.art-hold:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
-body[data-game=kienaide] .curtain .btn.art-start{background:url(../assets/kienaide-v3/start-button.webp) center/100% 100% no-repeat;color:transparent;text-shadow:none;border:0;box-shadow:none;aspect-ratio:698/269;width:min(78%,300px);min-height:0;height:auto;padding:0}
+body[data-game=kienaide] .curtain .btn.art-start{background:#101d31e8;color:#fff0d2;text-shadow:0 1px 8px #000;border:1px solid #dfbf83;border-radius:999px;box-shadow:inset 0 1px 0 #fff3d633,0 10px 35px #0009;width:min(78%,300px);min-height:58px;height:auto;padding:12px 24px;font-size:18px;letter-spacing:.08em}
 body[data-game=kienaide] .curtain .btn.art-start:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
+
+/* 004 immersive mobile layout: the illustration is the interface. Site chrome and duplicate
+   dashboard cards no longer squeeze the scene into the middle of the phone. */
+body[data-game=kienaide]{height:100svh;min-height:100svh;overflow:hidden;background:#070b14}
+body[data-game=kienaide] .top,
+body[data-game=kienaide] .game-heading,
+body[data-game=kienaide] .game-shell.ember>.hud{display:none}
+body[data-game=kienaide] #app{height:100svh;min-height:100svh;display:block}
+body[data-game=kienaide] .game-shell.ember{position:relative;display:block;width:min(100%,560px);height:100svh;min-height:100svh;max-width:560px;margin:0 auto;padding:0;background:#070b14;overflow:hidden}
+body[data-game=kienaide] .game-shell.ember .arena{position:absolute;inset:0;width:100%;height:100%;min-height:0;max-height:none;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}
+body[data-game=kienaide] .game-shell.ember .arena canvas{position:absolute;inset:0;width:100%;height:100%}
+body[data-game=kienaide] .collect-bar{position:absolute;z-index:6;top:max(12px,env(safe-area-inset-top));left:14px;right:14px;margin:0;padding:0;justify-content:flex-end;pointer-events:none}
+body[data-game=kienaide] .collect-bar span{display:none}
+body[data-game=kienaide] .collect-bar button{pointer-events:auto;min-height:42px;padding:9px 14px;border-color:#e9d0a766;background:#111b29cc;color:#fff1d9;font-size:12px;box-shadow:0 5px 20px #0008;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+body.kienaide-playing[data-game=kienaide] .collect-bar{display:none}
+body[data-game=kienaide] .collection-panel{z-index:8;padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));background:#08111df2;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+body[data-game=kienaide] .play-controls{display:none}
+body.kienaide-playing[data-game=kienaide] .play-controls{position:absolute;z-index:5;display:block;left:0;right:0;bottom:0;padding:0;pointer-events:none}
+body.kienaide-playing[data-game=kienaide] .play-controls>p{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;margin:0}
+body.kienaide-playing[data-game=kienaide] .controls-bottom{display:none}
+body.kienaide-playing[data-game=kienaide] .game-shell.ember .action.art-hold{pointer-events:auto;width:100%;max-width:none;min-height:112px;height:auto;margin:0 auto}
+body[data-game=kienaide] .game-shell.ember .story-beat{left:22px;right:22px;top:max(82px,calc(env(safe-area-inset-top) + 64px));padding:8px 10px 18px}
+body[data-game=kienaide] .game-shell.ember .story-beat small{font-size:11px}
+body[data-game=kienaide] .game-shell.ember .story-beat strong{font-size:14px;line-height:1.55}
+body[data-game=kienaide] .sound-toggle{top:max(14px,env(safe-area-inset-top));right:14px;min-width:58px;min-height:42px;padding:8px 11px;font-size:11px;background:#111b29cc;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+body[data-game=kienaide]:not(.kienaide-playing) .sound-toggle{display:none}
+body[data-game=kienaide] .curtain{padding:max(28px,env(safe-area-inset-top)) 24px max(28px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#07101d8c,#07101de8 68%,#07101df5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+body[data-game=kienaide] .curtain h2{font-size:clamp(40px,13vw,64px);line-height:1.05;margin:10px 0;text-shadow:0 3px 28px #000,0 0 34px #f8ae6166}
+body[data-game=kienaide] .curtain p{max-width:340px;font-size:15px;line-height:1.75}
+body[data-game=kienaide] .curtain .btn.art-start{width:min(88%,370px)}
+@media(min-width:561px){body[data-game=kienaide] .game-shell.ember{border-left:1px solid #293448;border-right:1px solid #293448;box-shadow:0 0 90px #000}}
+@media(max-height:700px){
+ body[data-game=kienaide] .game-shell.ember .arena{min-height:0;max-height:none}
+ body.kienaide-playing[data-game=kienaide] .game-shell.ember .action.art-hold{width:100%;min-height:96px;padding-top:10px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+ body[data-game=kienaide] .action-main b{font-size:21px}
+ body[data-game=kienaide] .game-shell.ember .story-beat{top:max(72px,calc(env(safe-area-inset-top) + 58px))}
+ body[data-game=kienaide] .curtain h2{font-size:clamp(34px,11vw,52px)}
+ body[data-game=kienaide] .curtain p{font-size:13px;line-height:1.55}
+}

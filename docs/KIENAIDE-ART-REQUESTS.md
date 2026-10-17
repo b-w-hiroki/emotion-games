@@ -29,17 +29,17 @@
 
 | ID | 保存名 | 用途 | 添付する参照画像 | サイズ | 状態 |
 |---|---|---|---|---|---|
-| A | `intro-room.png` | 導入「最後の灯り」の暖炉の部屋 | snow-town, traveller-flame | 縦3:4（1088×1456以上） | 未依頼 |
-| B1 | `flame-calm.png` | 炎の精：ふだん | flame-spirit | 正方形1024・透過PNG | 未依頼 |
-| B2 | `flame-afraid.png` | 炎の精：おびえ（強風） | flame-spirit | 同上 | 未依頼 |
-| B3 | `flame-comfort.png` | 炎の精：安心（かばわれている） | flame-spirit | 同上 | 未依頼 |
-| B4 | `flame-suffocating.png` | 炎の精：息苦しい（酸素不足） | flame-spirit | 同上 | 未依頼 |
-| B5 | `flame-hope.png` | 炎の精：希望（窓の返事・奇跡） | flame-spirit | 同上 | 未依頼 |
-| C | `hero-shield.png` | 主人公：風から炎をかばう姿勢 | hero（炎なし）, traveller-flame | 縦3:4（hero と同じ構図） | 未依頼 |
-| D1 | `fore-ch1.png` | 第一章の前景（看板・軒先・雪だまり） | snow-town | 縦3:4・透過PNG | 未依頼 |
-| D2 | `fore-ch2.png` | 第二章の前景（アーチの縁・つらら） | ch2 | 同上 | 未依頼 |
-| D3 | `fore-ch3.png` | 第三章の前景（欄干の柱・霜） | ch3 | 同上 | 未依頼 |
-| D4 | `fore-ch4.png` | 最終章の前景（雪の枝・柵） | ch4 | 同上 | 未依頼 |
+| A | `intro-room.png` | 導入「最後の灯り」の暖炉の部屋 | snow-town, traveller-flame | 縦3:4（1088×1456以上） | 組込済み（QA済み） |
+| B1 | `flame-calm.png` | 炎の精：ふだん | flame-spirit | 正方形1024・透過PNG | 組込済み（QA済み） |
+| B2 | `flame-afraid.png` | 炎の精：おびえ（強風） | flame-spirit | 同上 | 組込済み（QA済み） |
+| B3 | `flame-comfort.png` | 炎の精：安心（かばわれている） | flame-spirit | 同上 | 組込済み（QA済み） |
+| B4 | `flame-suffocating.png` | 炎の精：息苦しい（酸素不足） | flame-spirit | 同上 | 組込済み（QA済み） |
+| B5 | `flame-hope.png` | 炎の精：希望（窓の返事・奇跡） | flame-spirit | 同上 | 組込済み（QA済み） |
+| C | `hero-shield.png` | 主人公：風から炎をかばう姿勢 | hero（炎なし）, traveller-flame | 縦3:4（hero と同じ構図） | 組込済み（QA済み） |
+| D1 | `fore-ch1.png` | 第一章の前景（看板・軒先・雪だまり） | snow-town | 縦3:4・透過PNG | 組込済み（QA済み） |
+| D2 | `fore-ch2.png` | 第二章の前景（アーチの縁・つらら） | ch2 | 同上 | 組込済み（QA済み） |
+| D3 | `fore-ch3.png` | 第三章の前景（欄干の柱・霜） | ch3 | 同上 | 組込済み（QA済み） |
+| D4 | `fore-ch4.png` | 最終章の前景（雪の枝・柵） | ch4 | 同上 | 組込済み（QA済み） |
 
 ## 依頼文
 

@@ -5,6 +5,49 @@
   "assets/kienaide-v3/traveller-flame.webp",
   "assets/kienaide-v3/flame-spirit.webp"
  ],
+ "characterArtVersion": "repaint-v2",
+ "characterSources": [
+  "repaint-v2/hero-body.png",
+  "repaint-v2/hero-shield.png",
+  "repaint-v2/hero-blink.png",
+  "repaint-v2/hero-walk.png",
+  "repaint-v2/hero-brace.png",
+  "repaint-v2/hero-cold.png",
+  "repaint-v2/hero-breathless.png",
+  "repaint-v2/hero-relief.png",
+  "repaint-v2/hero-lookup.png",
+  "repaint-v2/end-blown.png",
+  "repaint-v2/end-smother.png",
+  "repaint-v2/end-wish.png",
+  "repaint-v2/end-survive.png",
+  "repaint-v2/end-dawn.png"
+ ],
+ "generatedSources": [
+  "intro-room",
+  "frost-edge",
+  "hero-shield",
+  "hero-blink",
+  "hero-walk",
+  "hero-brace",
+  "hero-cold",
+  "hero-breathless",
+  "hero-relief",
+  "hero-lookup",
+  "end-blown",
+  "end-smother",
+  "end-wish",
+  "end-survive",
+  "end-dawn",
+  "flame-calm",
+  "flame-afraid",
+  "flame-comfort",
+  "flame-suffocating",
+  "flame-hope",
+  "fore-ch1",
+  "fore-ch2",
+  "fore-ch3",
+  "fore-ch4"
+ ],
  "plate": [
   900,
   1200
@@ -29,11 +72,16 @@
      "bottom": 1080
     },
     "fore": {
-     "top": 940,
+     "top": 0,
      "bottom": 1200
     }
    },
-   "warmShare": 0.0736
+   "warmShare": 0.0736,
+   "baseFore": {
+    "top": 940,
+    "bottom": 1200
+   },
+   "paintedForeground": true
   },
   "ch2": {
    "cropTop": 0,
@@ -54,11 +102,16 @@
      "bottom": 1070
     },
     "fore": {
-     "top": 930,
+     "top": 0,
      "bottom": 1200
     }
    },
-   "warmShare": 0.0114
+   "warmShare": 0.0114,
+   "baseFore": {
+    "top": 930,
+    "bottom": 1200
+   },
+   "paintedForeground": true
   },
   "ch3": {
    "cropTop": 0,
@@ -79,11 +132,16 @@
      "bottom": 1080
     },
     "fore": {
-     "top": 940,
+     "top": 0,
      "bottom": 1200
     }
    },
-   "warmShare": 0
+   "warmShare": 0,
+   "baseFore": {
+    "top": 940,
+    "bottom": 1200
+   },
+   "paintedForeground": true
   },
   "ch4": {
    "cropTop": 0,
@@ -104,53 +162,112 @@
      "bottom": 1090
     },
     "fore": {
-     "top": 950,
+     "top": 0,
      "bottom": 1200
     }
    },
-   "warmShare": 0.0095
+   "warmShare": 0.0095,
+   "baseFore": {
+    "top": 950,
+    "bottom": 1200
+   },
+   "paintedForeground": true
   }
  },
  "traveller": {
   "size": [
-   556,
+   675,
    900
   ],
   "flame": {
-   "x": 355,
-   "y": 240
+   "x": 428,
+   "y": 263
   },
   "hands": {
-   "x": 311,
-   "y": 229,
-   "w": 94,
-   "h": 78
-  }
+   "x": 369,
+   "y": 219,
+   "w": 123,
+   "h": 98
+  },
+  "bitmap": [
+   540,
+   720
+  ]
  },
+ "generated": [
+  "intro-room.webp",
+  "frost-edge.webp",
+  "hero-shield.webp",
+  "hero-blink.webp",
+  "hero-walk.webp",
+  "hero-brace.webp",
+  "hero-cold.webp",
+  "hero-breathless.webp",
+  "hero-relief.webp",
+  "hero-lookup.webp",
+  "end-blown.webp",
+  "end-smother.webp",
+  "end-wish.webp",
+  "end-survive.webp",
+  "end-dawn.webp",
+  "flame-calm.webp",
+  "flame-afraid.webp",
+  "flame-comfort.webp",
+  "flame-suffocating.webp",
+  "flame-hope.webp",
+  "ch1-fore.webp",
+  "ch2-fore.webp",
+  "ch3-fore.webp",
+  "ch4-fore.webp"
+ ],
  "files": [
+  "ch1-basefore.webp",
   "ch1-far.webp",
   "ch1-fore.webp",
   "ch1-lights.webp",
   "ch1-mid.webp",
   "ch1-sky.webp",
+  "ch2-basefore.webp",
   "ch2-far.webp",
   "ch2-fore.webp",
   "ch2-lights.webp",
   "ch2-mid.webp",
   "ch2-sky.webp",
+  "ch3-basefore.webp",
   "ch3-far.webp",
   "ch3-fore.webp",
   "ch3-lights.webp",
   "ch3-mid.webp",
   "ch3-sky.webp",
+  "ch4-basefore.webp",
   "ch4-far.webp",
   "ch4-fore.webp",
   "ch4-lights.webp",
   "ch4-mid.webp",
   "ch4-sky.webp",
+  "end-blown.webp",
+  "end-dawn.webp",
+  "end-smother.webp",
+  "end-survive.webp",
+  "end-wish.webp",
+  "flame-afraid.webp",
+  "flame-calm.webp",
+  "flame-comfort.webp",
+  "flame-hope.webp",
+  "flame-suffocating.webp",
   "flame.webp",
+  "frost-edge.webp",
+  "hero-blink.webp",
   "hero-body.webp",
+  "hero-brace.webp",
+  "hero-breathless.webp",
+  "hero-cold.webp",
   "hero-hands.webp",
-  "hero-rim.webp"
+  "hero-lookup.webp",
+  "hero-relief.webp",
+  "hero-rim.webp",
+  "hero-shield.webp",
+  "hero-walk.webp",
+  "intro-room.webp"
  ]
 }

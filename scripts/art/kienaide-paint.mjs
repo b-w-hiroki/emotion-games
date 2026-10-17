@@ -11,8 +11,12 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const src = path.resolve('assets/kienaide/paint/src');
+const characterSrc = path.join(src, 'repaint-v2');
 const out = path.resolve('assets/kienaide/paint');
 const PW = 900, PH = 1200; // every chapter plate is normalised to 3:4
+const POSES = ['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
+const ENDINGS = ['end-blown','end-smother','end-wish','end-survive','end-dawn'];
+const FLAMES = ['flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'];
 
 // Where each chapter's bands meet (in plate pixels) and how the master is framed into 900x1200.
 const CHAPTERS = {
@@ -66,64 +70,75 @@ async function chapter(name, c) {
 }
 
 async function hero() {
-  const { data, info } = await sharp(path.join(src, 'hero.webp')).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const W = info.width, H = info.height, n = W * H;
-  // Flat studio backdrop: flood-fill from the border with a colour tolerance, then soften the edge.
-  const bg = [0, 0, 0]; let cnt = 0;
-  for (let x = 0; x < W; x += 8) for (const y of [2, H - 3]) { const i = (y * W + x) * 3; bg[0] += data[i]; bg[1] += data[i + 1]; bg[2] += data[i + 2]; cnt++; }
-  bg.forEach((v, k) => bg[k] = v / cnt);
-  const dist = p => { const i = p * 3; return Math.hypot(data[i] - bg[0], data[i + 1] - bg[1], data[i + 2] - bg[2]); };
-  const outside = new Uint8Array(n), stack = [];
-  for (let x = 0; x < W; x++) { stack.push(x, (H - 1) * W + x); }
-  for (let y = 0; y < H; y++) { stack.push(y * W, y * W + W - 1); }
-  while (stack.length) {
-    const p = stack.pop(); if (outside[p] || dist(p) > 13) continue; outside[p] = 1;
-    const x = p % W, y = (p / W) | 0;
-    if (x > 0) stack.push(p - 1); if (x < W - 1) stack.push(p + 1); if (y > 0) stack.push(p - W); if (y < H - 1) stack.push(p + W);
+  const master = path.join(characterSrc, 'hero-body.png');
+  if (!fs.existsSync(master)) throw new Error('missing character repaint source: ' + master);
+  const HERO_W = 540, HERO_H = 720, DISPLAY_W = 675, DISPLAY_H = 900;
+  const { data, info } = await sharp(master).resize(HERO_W, HERO_H, { fit: 'fill' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const W = info.width, H = info.height;
+  await sharp(data, { raw: info }).webp({ quality: 90, alphaQuality: 96 }).toFile(path.join(out, 'hero-body.webp'));
+  // The runtime bitmap is smaller than its logical display coordinate space. This preserves the
+  // on-screen size while keeping WebKit's tinted-body and rim composites below the original cost.
+  const handsPx = { x: 295, y: 175, w: 98, h: 78 };
+  const hands = { x: 369, y: 219, w: 123, h: 98 };
+  const flamePx = { x: 342, y: 210 }, flame = { x: 428, y: 263 };
+  // Hand patch remains available to the intro/fallback renderer, cut from the same repaint.
+  const hp = Buffer.from(await sharp(data, { raw: info }).extract({ left: handsPx.x, top: handsPx.y, width: handsPx.w, height: handsPx.h }).raw().toBuffer());
+  for (let y = 0; y < handsPx.h; y++) for (let x = 0; x < handsPx.w; x++) {
+    const o = (y * handsPx.w + x) * 4, e = Math.hypot((x - handsPx.w / 2) / (handsPx.w / 2), (y - handsPx.h / 2) / (handsPx.h / 2));
+    hp[o + 3] = Math.round(hp[o + 3] * smooth((1 - e) / .35));
   }
-  // Alpha: 0 outside, 1 inside, with a 2px soft edge; also remove the faint drop shadow tint.
-  const alpha = new Float32Array(n);
-  for (let p = 0; p < n; p++) alpha[p] = outside[p] ? 0 : 1;
-  const blurred = new Float32Array(n);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let s = 0, c = 0; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H) { s += alpha[yy * W + xx]; c++; } }
-    blurred[y * W + x] = Math.min(alpha[y * W + x] ? 1 : .0, s / c * 1.15);
-  }
-  let x0 = W, y0 = H, x1 = 0, y1 = 0;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (blurred[y * W + x] > .05) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-  const pad = 6; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(W - 1, x1 + pad); y1 = Math.min(H - 1, y1 + pad);
-  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, rgba = Buffer.alloc(cw * ch * 4);
-  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
-    const p = (y + y0) * W + (x + x0), i = p * 3, o = (y * cw + x) * 4;
-    rgba[o] = data[i]; rgba[o + 1] = data[i + 1]; rgba[o + 2] = data[i + 2]; rgba[o + 3] = Math.round(255 * blurred[p]);
-  }
-  const scale = 900 / ch, outW = Math.round(cw * scale), outH = 900;
-  await sharp(rgba, { raw: { width: cw, height: ch, channels: 4 } }).resize(outW, outH).webp({ quality: 90, alphaQuality: 90 }).toFile(path.join(out, 'hero-body.webp'));
-  // Anchors measured on the master (1088x1456): mittens clasped at the chest.
-  const toOut = (x, y) => ({ x: Math.round((x - x0) * scale), y: Math.round((y - y0) * scale) });
-  const hands = { x: 585, y: 375, w: 150, h: 125 };
-  const flame = toOut(655, 392);
-  // Hand patch with an elliptical soft mask; drawn above the flame while shielding.
-  const hp = Buffer.alloc(hands.w * hands.h * 4);
-  for (let y = 0; y < hands.h; y++) for (let x = 0; x < hands.w; x++) {
-    const p = (hands.y + y) * W + hands.x + x, i = p * 3, o = (y * hands.w + x) * 4;
-    const e = Math.hypot((x - hands.w / 2) / (hands.w / 2), (y - hands.h / 2) / (hands.h / 2));
-    hp[o] = data[i]; hp[o + 1] = data[i + 1]; hp[o + 2] = data[i + 2]; hp[o + 3] = Math.round(255 * blurred[p] * smooth((1 - e) / .35));
-  }
-  await sharp(hp, { raw: { width: hands.w, height: hands.h, channels: 4 } }).resize(Math.round(hands.w * scale), Math.round(hands.h * scale)).webp({ quality: 92, alphaQuality: 90 }).toFile(path.join(out, 'hero-hands.webp'));
+  await sharp(hp, { raw: { width: handsPx.w, height: handsPx.h, channels: 4 } }).webp({ quality: 92, alphaQuality: 96 }).toFile(path.join(out, 'hero-hands.webp'));
   // Rim mask: the silhouette's outer edge, weighted toward the flame. White only; the game colours it.
-  const rim = Buffer.alloc(cw * ch * 4), fx = 655 - x0, fy = 392 - y0;
-  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
-    const p = (y + y0) * W + (x + x0); const a = blurred[p]; if (a <= 0) continue;
-    let minA = 1; for (let d = 1; d <= 7; d += 2) for (const [dx, dy] of [[d, 0], [-d, 0], [0, d], [0, -d]]) { const xx = x + x0 + dx, yy = y + y0 + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H) minA = Math.min(minA, blurred[yy * W + xx]); }
+  const rim = Buffer.alloc(W * H * 4), fx = flamePx.x, fy = flamePx.y;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = y * W + x, a = data[p * 4 + 3] / 255; if (a <= 0) continue;
+    let minA = 1; for (let d = 1; d <= 7; d += 2) for (const [dx, dy] of [[d, 0], [-d, 0], [0, d], [0, -d]]) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H) minA = Math.min(minA, data[(yy * W + xx) * 4 + 3] / 255); }
     const edge = a * (1 - minA), near = smooth(1 - Math.hypot(x - fx, (y - fy) * .8) / 420);
     // Also the front of the scarf and coat facing the flame (soft fill near the hands).
     const fill = a * smooth(1 - Math.hypot(x - fx, y - fy) / 150) * .55;
     const v = Math.min(1, edge * near * 1.6 + fill);
-    const o = (y * cw + x) * 4; rim[o] = rim[o + 1] = rim[o + 2] = 255; rim[o + 3] = Math.round(255 * v);
+    const o = p * 4; rim[o] = rim[o + 1] = rim[o + 2] = 255; rim[o + 3] = Math.round(255 * v);
   }
-  await sharp(rim, { raw: { width: cw, height: ch, channels: 4 } }).resize(outW, outH).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(out, 'hero-rim.webp'));
-  return { size: [outW, outH], flame, hands: { ...toOut(hands.x, hands.y), w: Math.round(hands.w * scale), h: Math.round(hands.h * scale) } };
+  await sharp(rim, { raw: { width: W, height: H, channels: 4 } }).webp({ quality: 80, alphaQuality: 88 }).toFile(path.join(out, 'hero-rim.webp'));
+  return { size: [DISPLAY_W, DISPLAY_H], flame, hands, bitmap: [HERO_W, HERO_H] };
+}
+
+// ChatGPT-painted additions are kept as high-quality masters in paint/src. Character repaint-v2
+// lives beside (rather than overwriting) the first pass, so the art direction remains reversible.
+// Poses share a fixed transparent 3:4 canvas instead of being individually trimmed: that preserves
+// the feet/ground line and keeps the kneeling ending physically shorter than the standing poses.
+async function additions(chapters) {
+  const generated = [];
+  const copy = async (sourceName, outputName, options = {}) => {
+    const input = path.join(src, sourceName + '.webp');
+    if (!fs.existsSync(input)) throw new Error('missing generated art source: ' + input);
+    let image = sharp(input);
+    if (options.width && options.height) image = image.resize(options.width, options.height, { fit: 'fill' });
+    await image.webp({ quality: options.quality || 90, alphaQuality: options.alphaQuality || 94 }).toFile(path.join(out, outputName + '.webp'));
+    generated.push(outputName + '.webp');
+  };
+
+  await copy('intro-room', 'intro-room', { width: PW, height: PH, quality: 91 });
+  // Desaturate and soften the transparent frost wash so cyan edge contamination never reaches play.
+  await sharp(path.join(src, 'frost-edge.png')).resize(PW, PH, { fit: 'fill' }).modulate({ saturation: .18, brightness: .82 }).blur(.45)
+    .webp({ quality: 84, alphaQuality: 94 }).toFile(path.join(out, 'frost-edge.webp'));
+  generated.push('frost-edge.webp');
+  for (const name of [...POSES, ...ENDINGS]) {
+    const input = path.join(characterSrc, name + '.png');
+    if (!fs.existsSync(input)) throw new Error('missing character repaint source: ' + input);
+    await sharp(input).resize(PW, PH, { fit: 'fill' })
+      .webp({ quality: 90, alphaQuality: 96 }).toFile(path.join(out, name + '.webp'));
+    generated.push(name + '.webp');
+  }
+  for (const name of FLAMES) await copy(name, name, { width: 384, height: 384, quality: 92, alphaQuality: 98 });
+  for (const chapter of Object.keys(chapters)) {
+    fs.copyFileSync(path.join(out, chapter + '-fore.webp'), path.join(out, chapter + '-basefore.webp'));
+    chapters[chapter].baseFore = chapters[chapter].bands.fore;
+    await copy('fore-' + chapter, chapter + '-fore', { width: PW, height: PH, quality: 90, alphaQuality: 96 });
+    chapters[chapter].bands.fore = { top: 0, bottom: PH };
+    chapters[chapter].paintedForeground = true;
+  }
+  return generated;
 }
 
 fs.mkdirSync(out, { recursive: true });
@@ -132,7 +147,11 @@ for (const [name, c] of Object.entries(CHAPTERS)) chapters[name] = { ...c, ...(a
 const traveller = await hero();
 // The flame sprite is the art bible's own flame spirit.
 await sharp('assets/kienaide-v3/flame-spirit.webp').webp({ quality: 92, alphaQuality: 92 }).toFile(path.join(out, 'flame.webp'));
+const generated = await additions(chapters);
 const manifest = { generator: 'scripts/art/kienaide-paint.mjs', artBible: ['assets/kienaide-v3/snow-town.webp', 'assets/kienaide-v3/traveller-flame.webp', 'assets/kienaide-v3/flame-spirit.webp'],
-  plate: [PW, PH], chapters, traveller, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
+  characterArtVersion: 'repaint-v2',
+  characterSources: ['repaint-v2/hero-body.png', ...POSES.map(name => `repaint-v2/${name}.png`), ...ENDINGS.map(name => `repaint-v2/${name}.png`)],
+  generatedSources: ['intro-room', 'frost-edge', ...POSES, ...ENDINGS, ...FLAMES, ...Object.keys(chapters).map(c => 'fore-' + c)],
+  plate: [PW, PH], chapters, traveller, generated, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
 console.log('painted layers:', manifest.files.length, JSON.stringify(traveller));

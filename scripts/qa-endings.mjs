@@ -100,9 +100,10 @@ try{
   await t.ctx.close();console.log('PASS: four-chapter flame journey, sound control, failure and persistence');
  }
  {
-  const t=await pageFor('kienaide','?qa=1');
+  // Sixfold time still keeps CI short while leaving enough frames to observe each wind warning.
+  const t=await pageFor('kienaide','?qa=1&speed=6');
   const box=await t.page.locator('#action').boundingBox();let holding=false;
-  for(let i=0;i<150&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
+  for(let i=0;i<300&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
    const hint=await t.page.locator('#hint').innerText();
    if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
    if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
