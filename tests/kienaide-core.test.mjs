@@ -7,7 +7,7 @@ const DT=1/30;
 // Replays a whole night. policy(state,time,holding) → holding; collect=true taps every memory.
 function play(seed,policy,{collect=false,until=95}={}){
  const s=K.create({seed}),log=[];let t=0,hold=false;
- while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was}))log.push({...e,t});if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
+ while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was}))log.push({...e,t});if(s.routeChoice==='pending')s.routeChoice='legacy-test';if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
  return {s,log};
 }
 const tele=(s,t,h)=>(!h&&s.wind>.61)?true:(h&&(s.wind<.44||s.oxygen<28))?false:h;
@@ -99,10 +99,29 @@ test('memories: seeded positions in reach, collected only while shown, and once'
  assert.ok(s.mote);assert.equal(K.collect(s,s.mote.id),true);assert.equal(s.memories,1);
  assert.equal(K.collect(s,s.slots[0].id),false,'no double collection');
 });
+
+test('the route fork pauses for a real choice; shortcut trades distance for wind, shelter restores breath at a distance cost',()=>{
+ const a=K.create({seed:11}),b=K.create({seed:11});
+ assert.equal(K.step(a,27.9,DT,{}).some(e=>e.type==='route-choice'),false);
+ assert.equal(K.step(a,28,DT,{}).some(e=>e.type==='route-choice'),true);
+ assert.equal(a.routeChoice,'pending');assert.equal(K.step(a,28,DT,{}).length,0);
+ assert.equal(K.chooseRoute(a,'shortcut',28),true);assert.equal(K.routeDistance(a,28),Math.ceil(100*(90-28)/90)-16);
+ a.shelterReady=false;a.shelterUntil=-1;const beforeWind=K.baseWind(29,1);K.step(a,29,DT,{});assert.ok(a.wind>beforeWind,'the shortcut exposes the flame to harsher wind');
+ b.flame=60;b.oxygen=60;K.step(b,28,DT,{});const oldFlame=b.flame,oldOxygen=b.oxygen,shortDistance=K.routeDistance(a,28);
+ assert.equal(K.chooseRoute(b,'rest',28),true);assert.equal(b.flame,oldFlame);assert.ok(b.oxygen>oldOxygen);assert.ok(K.routeDistance(b,28)>shortDistance);
+ assert.equal(K.chooseRoute(b,'shortcut',28),false,'a fork is resolved once');
+});
 test('flame personality follows state and shows nothing when out',()=>{
  assert.equal(K.flameExpression({flame:0}),'out');
  assert.equal(K.flameExpression({flame:50,rescue:true}),'hope');
  assert.equal(K.flameExpression({flame:50,oxygen:10}),'suffocating');
  assert.equal(K.flameExpression({flame:20,oxygen:80}),'afraid');
  assert.equal(K.flameExpression({flame:50,oxygen:80,shield:true}),'comfort');
+});
+test('near-empty flame and breath have separate accessible danger states',()=>{
+ assert.equal(K.vitalState({flame:20,oxygen:100}),'flame-critical');
+ assert.equal(K.vitalState({flame:80,oxygen:22}),'breath-critical');
+ assert.equal(K.vitalState({flame:34,oxygen:80}),'flame-warning');
+ assert.equal(K.vitalState({flame:80,oxygen:36}),'breath-warning');
+ assert.equal(K.vitalState({flame:35,oxygen:37}),'');
 });

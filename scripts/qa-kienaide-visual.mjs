@@ -61,6 +61,23 @@ try{
   assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
+  const fork=await open(size,'?qa=1&seed=3&speed=1&t=27.5');await fork.page.locator('#play').click();
+  await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:4000});
+  const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
+  await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
+  await fork.page.screenshot({path:path.join(out,`${engine}-route-choice.png`)});
+  await fork.page.locator('#route-choice [data-route="shortcut"]').click();
+  await fork.page.waitForFunction(n=>Number(document.querySelector('#distance-value').textContent)<n,before,{timeout:2000});
+  assert.ok(Number(await fork.page.locator('#distance-value').innerText())<before,'shortcut visibly cuts the route');
+  assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
+  assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice, distance, vital warnings');
+  for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
+   const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
+   await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});
+   assert.ok(await warning.page.locator('#action').evaluate((el,c)=>el.classList.contains(c),vital==='flame'?'is-life-critical':'is-breath-critical'));
+   if(vital==='breath'){assert.equal(await warning.page.locator('#action').isDisabled(),true);assert.match(await warning.page.locator('.action-main').innerText(),/ひと休み|はなす/)}
+   await warning.page.screenshot({path:path.join(out,`${engine}-${vital}-critical.png`)});assert.deepEqual(warning.errors,[]);await warning.ctx.close();
+  }
  }
   // Shielding pose and flame light under a held button.
   {
@@ -89,6 +106,7 @@ try{
   fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,quality:Number(await page.locator('#stage').getAttribute('data-quality')),warmAlive:Math.round(alive)},null,1));
   assert.ok(fps>=30,'frame rate '+fps.toFixed(1));
   await page.goto(base+'?qa=1&seed=2&speed=12');await page.locator('#play').click();
+  await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await page.locator('#route-choice [data-route="shortcut"]').click();
   await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
   const dead=await warmth(page);
   assert.ok(alive>dead+18,'flame light must disappear with the flame: alive '+alive.toFixed(1)+' dead '+dead.toFixed(1));
@@ -111,6 +129,10 @@ try{
   const press=async on=>{if(on===holding)return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
+   if(await page.locator('#route-choice').isVisible()){
+    const route=id==='blown'?'shortcut':'rest';await press(false);await page.locator('#route-choice [data-route="'+route+'"]').click();
+    if(r.policy==='hold')await press(true);
+   }
    if(r.policy==='tele'){
     const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}

@@ -23,6 +23,10 @@ try{
   assert.equal(await page.locator('#collection-progress').innerText(),'結末 '+count+' / 5');
   assert.deepEqual(errors,[]);
  }
+async function chooseFork(page,route='rest'){
+ const option=page.locator('#route-choice [data-route="'+route+'"]');
+ if(await option.isVisible())await option.click();
+}
  {
   const t=await pageFor('micha-dame');
   for(let i=0;i<3;i++)await t.page.locator('#stage').click({timeout:2000});
@@ -88,6 +92,7 @@ try{
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-art-scene01-390.png'});
   console.log('PASS: all four illustrated chapter backgrounds loaded in Chromium');
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
+  await t.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await chooseFork(t.page,'shortcut');
   await t.page.waitForTimeout(7600);
   await check(t,'風にさらわれた。');
   assert.ok(await t.page.locator('#moment-save').isVisible(),'candle ending must offer image card');
@@ -104,6 +109,7 @@ try{
   const t=await pageFor('kienaide','?qa=1&speed=6');
   const box=await t.page.locator('#action').boundingBox();let holding=false;
   for(let i=0;i<300&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
+   await chooseFork(t.page,'rest');
    const hint=await t.page.locator('#hint').innerText();
    if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
    if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
@@ -119,6 +125,7 @@ try{
   // Memories appear at seeded positions; the canvas exposes where the current one is drawn.
   const box=await t.page.locator('#action').boundingBox(),stage=await t.page.locator('#stage').boundingBox();let holding=false,shot=false;
   for(let i=0;i<220&&!await t.page.locator('#stage').getAttribute('data-ending');i++){
+   await chooseFork(t.page,'rest');
    const hint=await t.page.locator('#hint').innerText(),mote=await t.page.locator('#stage').getAttribute('data-mote');
    if(mote){if(holding){await t.page.mouse.up();holding=false}if(!shot){shot=true;await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'})}const [x,y]=mote.split(',').map(Number);await t.page.mouse.click(stage.x+x,stage.y+y);continue}
    if(!holding&&(hint.includes('長押し')||hint.includes('かばって'))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
