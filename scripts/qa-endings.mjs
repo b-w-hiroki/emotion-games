@@ -109,7 +109,8 @@ async function chooseFork(page,route='rest'){
    // Threefold time leaves enough frames to react to each wind warning while keeping CI short.
    const t=await pageFor('kienaide','?qa=1&speed=3');
   const box=await t.page.locator('#action').boundingBox();let holding=false;
-  for(let i=0;i<300&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
+  const deadline=performance.now()+90000;
+  while(performance.now()<deadline&&!await t.page.locator('#stage').getAttribute('data-ending')){
    if(await chooseFork(t.page,'rest'))holding=false;
    const hint=await t.page.locator('#hint').innerText();
    if(!holding&&(hint.includes('長押し')||(hint.includes('かばって')&&!hint.includes('息苦しくなる前に離す')))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
@@ -117,6 +118,7 @@ async function chooseFork(page,route='rest'){
    await t.page.waitForTimeout(60);
   }
   if(holding)await t.page.mouse.up();
+  assert.ok(await t.page.locator('#stage').getAttribute('data-ending'),'controller must keep playing until an ending');
   await check(t,'まだ、ここに。');
   assert.ok(Number((await t.page.locator('#record').innerText()).replace('%',''))>0);
   await t.ctx.close();console.log('PASS: readable wind telegraph supports a complete night journey');
@@ -125,7 +127,8 @@ async function chooseFork(page,route='rest'){
    const t=await pageFor('kienaide','?qa=1&speed=2');
   // Memories appear at seeded positions; the canvas exposes where the current one is drawn.
   const box=await t.page.locator('#action').boundingBox(),stage=await t.page.locator('#stage').boundingBox();let holding=false,shot=false;
-   for(let i=0;i<1500&&!await t.page.locator('#stage').getAttribute('data-ending');i++){
+   const deadline=performance.now()+120000;
+   while(performance.now()<deadline&&!await t.page.locator('#stage').getAttribute('data-ending')){
    if(await chooseFork(t.page,'rest'))holding=false;
    const hint=await t.page.locator('#hint').innerText(),mote=await t.page.locator('#stage').getAttribute('data-mote');
    if(mote){if(holding){await t.page.mouse.up();holding=false}if(!shot){shot=true;await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'})}const [x,y]=mote.split(',').map(Number);await t.page.mouse.click(stage.x+x,stage.y+y);continue}
@@ -134,6 +137,7 @@ async function chooseFork(page,route='rest'){
     await t.page.waitForTimeout(25);
   }
   if(holding)await t.page.mouse.up();
+  assert.ok(await t.page.locator('#stage').getAttribute('data-ending'),'memory controller must keep playing until an ending');
   await t.page.waitForFunction(()=>!document.getElementById('curtain').classList.contains('hidden'));
   const title=await t.page.locator('#curtain-title').innerText();assert.ok(['わすれない。','おかえり。'].includes(title),title);
   assert.equal(await t.page.locator('#best').innerText(),'3 / 3');assert.deepEqual(t.errors,[]);
