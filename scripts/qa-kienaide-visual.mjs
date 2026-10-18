@@ -50,6 +50,9 @@ try{
    assert.ok(l.stageW>=size.width-1,'arena should fill the screen width ('+l.stageW+'px) '+tag);
    assert.equal(l.hudDisplay,'none','duplicate outer HUD must be hidden '+tag);
    assert.equal(l.topDisplay,'none','site header must not squeeze the game '+tag);
+   const distance=await page.locator('#distance-panel').evaluate(el=>({box:el.getBoundingClientRect().toJSON(),font:getComputedStyle(el.querySelector('strong')).fontSize}));
+   assert.ok(parseFloat(distance.font)>=30,'journey distance must be readable at a glance '+tag+' '+distance.font);
+   assert.ok(distance.box.width>=170,'journey marker should feel like a signpost, not a tiny caption '+tag);
    const loaded=await page.evaluate(()=>[...document.images].length);void loaded;
    await page.screenshot({path:path.join(out,`${engine}-${tag}-chapter${i}.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('chapter '+i+' '+tag);
@@ -68,6 +71,8 @@ try{
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
   await fork.page.screenshot({path:path.join(out,`${engine}-route-choice.png`)});
+  const routeTarget=await fork.page.locator('#route-choice button').first().evaluate(el=>el.getBoundingClientRect().height);
+  assert.ok(routeTarget>=60,'route options must be comfortable thumb targets ('+routeTarget+'px)');
   await fork.page.locator('#route-choice [data-route="shortcut"]').click();
   await fork.page.waitForFunction(n=>Number(document.querySelector('#distance-value').textContent)<n,before,{timeout:2000});
   assert.ok(Number(await fork.page.locator('#distance-value').innerText())<before,'shortcut visibly cuts the route');
@@ -77,8 +82,16 @@ try{
    const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
    await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});
    assert.ok(await warning.page.locator('#action').evaluate((el,c)=>el.classList.contains(c),vital==='flame'?'is-life-critical':'is-breath-critical'));
+   assert.equal(await warning.page.locator('#distance-panel').getAttribute('data-danger'),danger,'distance signpost must echo the critical state');
+   assert.match(await warning.page.locator('#distance-panel').evaluate(el=>getComputedStyle(el).animationName),/kienaide-distance-(life|breath)/,'critical distance state needs a distinct gentle pulse');
    if(vital==='breath'){assert.equal(await warning.page.locator('#action').isDisabled(),true);assert.match(await warning.page.locator('.action-main').innerText(),/ひと休み|はなす/)}
    assert.deepEqual(warning.errors,[]);await warning.ctx.close();
+  }
+  if(size.width===390){
+   const reduced=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital=flame',{reduced:true});await reduced.page.locator('#play').click();
+   await reduced.page.waitForFunction(()=>document.querySelector('#stage').dataset.danger==='flame-critical',{timeout:3000});
+   assert.equal(await reduced.page.locator('#distance-panel').evaluate(el=>getComputedStyle(el).animationName),'none','reduced-motion must disable the distance pulse');
+   assert.deepEqual(reduced.errors,[]);await reduced.ctx.close();
   }
  }
   // Shielding pose and flame light under a held button.
@@ -117,10 +130,14 @@ try{
     if(r.policy==='hold')await press(true);
    }
    if(r.policy==='tele'){
-    const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
+   const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
-    // wish: keep holding through the silence so the window does not answer.
-    if(r.skipReply&&st.phase==='silence'){await press(true)}
+    // Drive the finale from its explicit phases, not transient prose that may update
+    // between automation frames. Wish intentionally stays shielded through silence.
+    if(st.phase==='gust-warning')await press(false);
+    else if(st.phase==='gust-active')await press(true);
+    else if(st.phase==='silence')await press(!!r.skipReply);
+    else if(st.phase==='window-reply')await press(false);
     else if(st.hint.includes('長押し')||(st.hint.includes('かばって')&&!st.hint.includes('息苦しくなる前に離す')))await press(true);
     else if(st.hint.includes('離して')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
    }
