@@ -13,6 +13,8 @@ const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{ar
 const sizes=[{width:390,height:844},{width:360,height:640}];
 const results=[];
 const done=x=>{results.push(x);console.log('step ok:',x)};
+const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
+ const d=c.getContext('2d').getImageData(Math.round((x-40)*k),Math.round((y-50)*k),Math.round(80*k),Math.round(80*k)).data;let w=0;for(let i=0;i<d.length;i+=4)w+=d[i]-d[i+2];return w/(d.length/4)});
 async function open(size,query,{intro=false,reduced=false}={}){
  const ctx=await browser.newContext({viewport:size,isMobile:engine==='chromium',hasTouch:true,reducedMotion:reduced?'reduce':'no-preference'});
  if(!intro)await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
@@ -76,7 +78,7 @@ try{
    await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});
    assert.ok(await warning.page.locator('#action').evaluate((el,c)=>el.classList.contains(c),vital==='flame'?'is-life-critical':'is-breath-critical'));
    if(vital==='breath'){assert.equal(await warning.page.locator('#action').isDisabled(),true);assert.match(await warning.page.locator('.action-main').innerText(),/ひと休み|はなす/)}
-   await warning.page.screenshot({path:path.join(out,`${engine}-${vital}-critical.png`)});assert.deepEqual(warning.errors,[]);await warning.ctx.close();
+   assert.deepEqual(warning.errors,[]);await warning.ctx.close();
   }
  }
   // Shielding pose and flame light under a held button.
@@ -92,25 +94,6 @@ try{
    assert.equal(await page.locator('#hint').innerText().then(x=>x.includes('かば')||x.includes('離して')),true);
    await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();done('shield '+tag);
   }
- }
- // Light separation measured on pixels: warm light around the flame while burning, none once it is out.
- const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
-  const d=c.getContext('2d').getImageData(Math.round((x-40)*k),Math.round((y-50)*k),Math.round(80*k),Math.round(80*k)).data;let w=0;for(let i=0;i<d.length;i+=4)w+=d[i]-d[i+2];return w/(d.length/4)});
- {
-  const {ctx,page,errors}=await open(sizes[0],'?qa=1&seed=2&speed=1');
-  await page.locator('#play').click();await page.waitForTimeout(1200);
-  const alive=await warmth(page);
-  // FPS at real speed over 3 s, after the renderer has had 2 s to settle its resolution.
-  await page.waitForTimeout(2000);
-  const fps=await page.evaluate(()=>new Promise(ok=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<3000)requestAnimationFrame(f);else ok(n/((performance.now()-t0)/1000))};requestAnimationFrame(f)}));
-  fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,quality:Number(await page.locator('#stage').getAttribute('data-quality')),warmAlive:Math.round(alive)},null,1));
-  assert.ok(fps>=30,'frame rate '+fps.toFixed(1));
-  await page.goto(base+'?qa=1&seed=2&speed=12');await page.locator('#play').click();
-  await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await page.locator('#route-choice [data-route="shortcut"]').click();
-  await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
-  const dead=await warmth(page);
-  assert.ok(alive>dead+18,'flame light must disappear with the flame: alive '+alive.toFixed(1)+' dead '+dead.toFixed(1));
-  assert.deepEqual(errors,[]);await ctx.close();done('light separation (warm '+alive.toFixed(0)+'→'+dead.toFixed(0)+'), '+fps.toFixed(0)+'fps');
  }
  // Every ending scene, reached through real play rules (QA speed only).
  const size=sizes[0];
@@ -192,6 +175,20 @@ try{
   assert.equal(await page.locator('#kienaide-intro').count(),0,'prologue must end (skip or completion)');
   assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('intro '+(reduced?'reduced':'motion'));
+ }
+ // Check representative real-time performance after capturing all functional/layout evidence.
+ {
+  const {ctx,page,errors}=await open(sizes[0],'?qa=1&seed=2&speed=1');
+  await page.locator('#play').click();await page.waitForTimeout(1200);
+  const alive=await warmth(page);await page.waitForTimeout(2000);
+  const fps=await page.evaluate(()=>new Promise(ok=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<3000)requestAnimationFrame(f);else ok(n/((performance.now()-t0)/1000))};requestAnimationFrame(f)}));
+  fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,quality:Number(await page.locator('#stage').getAttribute('data-quality')),warmAlive:Math.round(alive)},null,1));
+  assert.ok(fps>=30,'frame rate '+fps.toFixed(1));
+  await page.goto(base+'?qa=1&seed=2&speed=12');await page.locator('#play').click();
+  await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await page.locator('#route-choice [data-route="shortcut"]').click();
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
+  const dead=await warmth(page);assert.ok(alive>dead+18,'flame light must disappear with the flame: alive '+alive.toFixed(1)+' dead '+dead.toFixed(1));
+  assert.deepEqual(errors,[]);await ctx.close();done('light separation (warm '+alive.toFixed(0)+'→'+dead.toFixed(0)+'), '+fps.toFixed(0)+'fps');
  }
  console.log('PASS kienaide visual QA ('+engine+'): '+results.join(', '));
 }finally{await browser.close();server.close()}

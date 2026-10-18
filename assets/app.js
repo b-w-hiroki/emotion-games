@@ -359,13 +359,15 @@ function drawCandle(dt){
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);
  $('hint').textContent=text;
-  actionCue.textContent=text;actionMain.textContent=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる';actionSub.textContent=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る';action.disabled=s.oxygen<=22&&!s.shield;
+  const mainText=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる',subText=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る',disableHold=s.oxygen<=22&&!s.shield;
+  if(actionCue.textContent!==text)actionCue.textContent=text;if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;if(action.disabled!==disableHold)action.disabled=disableHold;
   action.classList.toggle('is-held',!!s.shield);action.classList.toggle('is-warning',!!warn);
- record.textContent=Math.max(0,Math.round(s.flame))+'%';const remaining=Math.max(0,Math.ceil(s.journey-elapsed));timer.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
- const distance=K.routeDistance(s,elapsed);distanceValue.textContent=String(distance);distancePanel.setAttribute('aria-label','家まで '+distance+' メートル');distanceFill.style.width=(100-Math.min(100,distance))+'%';
- const danger=K.vitalState(s);canvas.dataset.danger=danger;
- action.classList.toggle('is-life-critical',danger==='flame-critical');action.classList.toggle('is-breath-critical',danger==='breath-critical');action.classList.toggle('is-vital-warning',danger.endsWith('warning'));distancePanel.dataset.danger=danger;
- if(state.vitalAlert!==danger){state.vitalAlert=danger;if(danger)$('vital-live').textContent=danger.startsWith('flame')?'灯りが危険な状態です。':'息が危険な状態です。';else if($('vital-live').textContent)$('vital-live').textContent='灯りと息が落ち着きました。'}
+ const recordText=Math.max(0,Math.round(s.flame))+'%',remaining=Math.max(0,Math.ceil(s.journey-elapsed)),timerText=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');if(record.textContent!==recordText)record.textContent=recordText;if(timer.textContent!==timerText)timer.textContent=timerText;
+ const distance=K.routeDistance(s,elapsed);if(state.displayDistance!==distance){state.displayDistance=distance;distanceValue.textContent=String(distance);distancePanel.setAttribute('aria-label','家まで '+distance+' メートル');distanceFill.style.width=(100-Math.min(100,distance))+'%'}
+ const danger=K.vitalState(s);if(state.displayDanger!==danger){state.displayDanger=danger;canvas.dataset.danger=danger;
+  action.classList.toggle('is-life-critical',danger==='flame-critical');action.classList.toggle('is-breath-critical',danger==='breath-critical');action.classList.toggle('is-vital-warning',danger.endsWith('warning'));distancePanel.dataset.danger=danger;
+  if(state.vitalAlert!==danger){state.vitalAlert=danger;if(danger)$('vital-live').textContent=danger.startsWith('flame')?'灯りが危険な状態です。':'息が危険な状態です。';else if($('vital-live').textContent)$('vital-live').textContent='灯りと息が落ち着きました。'}
+ }
  KA.update(s,elapsed,{playing:true,dt:step,ended:false});
  KV.frame(ctx,s,elapsed,{reduced:reducedMotion(),playing:true,caption:text,warn,expression:K.flameExpression(s)});
  // Test/QA hooks: plain data attributes, no globals.
