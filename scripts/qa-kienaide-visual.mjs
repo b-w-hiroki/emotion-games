@@ -243,6 +243,8 @@ try{
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-scene.png`)});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
   await page.waitForTimeout(400);
+  await page.waitForFunction(()=>document.querySelector('#moment-save').dataset.state==='ready');
+  assert.ok(await page.locator('#moment-save').isEnabled(),id+' ending PNG must be prepared before sharing');
   const explanation=await page.locator('#ending-meaning').innerText();
   for(const fact of endingFacts[id])assert.ok(explanation.includes(fact),id+' must explain '+fact+': '+explanation);
   const copy=await page.locator('#curtain-description').evaluate(el=>{
