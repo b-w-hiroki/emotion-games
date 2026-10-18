@@ -275,7 +275,12 @@ landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease()});
 action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&landscapeMode.matches))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 const pointerRelease=e=>{if(!candle||e.pointerId===candlePointer)holdRelease()};
 action.addEventListener('pointerup',pointerRelease);action.addEventListener('pointercancel',pointerRelease);
-if(candle)action.addEventListener('lostpointercapture',pointerRelease);
+if(candle){
+ action.addEventListener('lostpointercapture',pointerRelease);
+ window.addEventListener('pointerup',pointerRelease);window.addEventListener('pointercancel',pointerRelease);
+ // Some WebKit versions defer lostpointercapture; the next owner move is a fallback.
+ window.addEventListener('pointermove',e=>{if(e.pointerId===candlePointer&&!action.hasPointerCapture?.(e.pointerId))holdRelease()});
+}
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
 window.addEventListener('blur',holdRelease);document.addEventListener('visibilitychange',()=>{if(document.hidden)holdRelease()});
 action.addEventListener('contextmenu',e=>e.preventDefault());
