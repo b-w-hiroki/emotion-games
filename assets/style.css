@@ -296,3 +296,22 @@ body.kienaide-title-screen .curtain .btn.art-start:focus-visible{outline:2px sol
  body[data-game=kienaide] .curtain h2{font-size:clamp(34px,11vw,52px)}
  body[data-game=kienaide] .curtain p{font-size:13px;line-height:1.55}
 }
+
+/* Journey information should read at a glance without competing with the painting. */
+body[data-game=kienaide] .distance-panel{grid-template-columns:auto auto auto;column-gap:7px;min-width:196px;padding:10px 19px 16px;border-radius:18px;background:linear-gradient(180deg,#0a1421f7,#091321f2);box-shadow:0 7px 26px #0009,inset 0 1px #fff2}
+body[data-game=kienaide] .distance-label{font-size:12px;font-weight:650;letter-spacing:.1em}
+body[data-game=kienaide] .distance-panel strong{font-size:36px;letter-spacing:-.04em}
+body[data-game=kienaide] .distance-panel>span{font-size:14px;font-weight:650}
+body[data-game=kienaide] .distance-track{bottom:6px;left:12px;right:12px;height:4px}
+body[data-game=kienaide] .distance-panel[data-danger="flame-critical"]{border-color:#ff9c82;animation:kienaide-distance-life 1.2s ease-in-out infinite}
+body[data-game=kienaide] .distance-panel[data-danger="breath-critical"]{border-color:#9aeaff;animation:kienaide-distance-breath 1.2s ease-in-out infinite}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-life-critical{border-top-width:2px}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-breath-critical{border-top-width:2px}
+body.kienaide-playing[data-game=kienaide] .route-choice button{min-height:64px;border-radius:15px;padding:9px 10px}
+body.kienaide-playing[data-game=kienaide] .route-choice button strong{font-size:14px}
+body.kienaide-playing[data-game=kienaide] .route-choice button small{font-size:10px}
+@keyframes kienaide-distance-life{50%{box-shadow:0 0 25px #f25f4d66,inset 0 1px #fff2}}
+@keyframes kienaide-distance-breath{50%{box-shadow:0 0 25px #49b2d566,inset 0 1px #fff2}}
+@media(max-width:390px){body[data-game=kienaide] .distance-panel{min-width:178px;padding:9px 16px 15px}body[data-game=kienaide] .distance-panel strong{font-size:33px}}
+@media(max-height:700px){body[data-game=kienaide] .distance-panel{bottom:calc(110px + env(safe-area-inset-bottom));padding-block:7px 13px}body[data-game=kienaide] .distance-panel strong{font-size:30px}}
+@media(prefers-reduced-motion:reduce){body[data-game=kienaide] .distance-panel[data-danger="flame-critical"],body[data-game=kienaide] .distance-panel[data-danger="breath-critical"]{animation:none}}
