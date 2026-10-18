@@ -25,9 +25,19 @@ test('the five endings are reachable by distinct play styles',()=>{
  assert.equal(wish.s.memories,3);assert.equal(wish.s.ended,'wish','memories without the window reply stay わすれない');
 });
 test('ending resolution is the single gallery source of truth',()=>{
- assert.equal(K.arrivalEnding({memories:3,flame:68}),'dawn');
- assert.equal(K.arrivalEnding({memories:3,flame:67}),'wish');
- assert.equal(K.arrivalEnding({memories:2,flame:100}),'survive');
+ assert.equal(K.arrivalEnding({memories:3,flame:68,replyLevel:'bright'}),'dawn');
+ assert.equal(K.arrivalEnding({memories:3,flame:67,replyLevel:'bright'}),'wish');
+ assert.equal(K.arrivalEnding({memories:3,flame:100,replyLevel:'faint'}),'wish','a missed silence cannot become a homecoming through flame alone');
+ assert.equal(K.arrivalEnding({memories:3,flame:100,replyLevel:'dark'}),'wish');
+ assert.equal(K.arrivalEnding({memories:2,flame:100,replyLevel:'bright'}),'survive');
+});
+test('opening the hands in the final silence changes the ending with the same memories and ample flame',()=>{
+ const run=open=>{const s=K.create({seed:5});Object.assign(s,{flame:100,oxygen:100,memories:3});let holding=false;
+  for(let t=79;t<=90.1&&!s.ended;t+=DT){const before=holding;holding=t>=81.5&&(!open||t<87);K.step(s,t,DT,{shield:holding,wasShield:before})}return s};
+ const closed=run(false),opened=run(true);
+ assert.ok(closed.flame>=68&&opened.flame>=68,'both paths must have enough light to isolate the input decision');
+ assert.equal(closed.replyLevel,'faint');assert.equal(closed.ended,'wish');
+ assert.equal(opened.replyLevel,'bright');assert.equal(opened.ended,'dawn');
 });
 test('finale phases follow the contract timing and storm strength',()=>{
  assert.deepEqual([79.9,80,81.9,82,86.9,87,88.4,88.5].map(t=>K.finalePhaseAt(t)),['approach','gust-warning','gust-warning','gust-active','gust-active','silence','silence','window-reply']);
