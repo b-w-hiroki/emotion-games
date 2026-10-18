@@ -178,6 +178,7 @@ if(candle){
 let momentCard=null;
 if(candle){
  const save=$('moment-save'),status=document.createElement('p');status.id='moment-status';status.className='moment-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.hidden=true;save.after(status);
+ if(typeof window.KienaideCard?.create==='function'){
  momentCard=window.KienaideCard.create({change:({state:phase,message,ready})=>{save.dataset.state=phase;save.disabled=phase==='idle'||phase==='preparing'||phase==='saving';save.setAttribute('aria-busy',String(phase==='preparing'||phase==='saving'));save.textContent=phase==='preparing'?'カードを準備中…':phase==='saving'?'共有・保存中…':phase==='error'?(ready?'もう一度、保存・共有':'カード作成を再試行'):'結末カードを保存・共有 ↗';status.hidden=!message;status.innerHTML=guidanceMarkup(message);if(phase==='ready'&&!message)mark('moment_card_created',{ending_id:lastEnding,rescue:!!state.rescue})},make:()=>{
   const endingId=lastEnding,memories=state.memories||0,rescue=!!state.rescue;
   const card=document.createElement('canvas');card.width=900;card.height=1200;
@@ -204,6 +205,7 @@ if(candle){
   return {canvas:card,filename:'kienaide-'+endingId+'.png',title:'きえないで。',text:'私の夜の結末。あなたならどう守る？ '+currentUrl()};
  }});
  save.addEventListener('click',()=>{if(mode!=='end')return;const token=endingAt,focused=document.activeElement===save;momentCard.save().then(()=>{if(focused&&mode==='end'&&endingAt===token&&!save.disabled&&(document.activeElement===document.body||document.activeElement===save))save.focus()})});
+ }else{momentCard={reset(){save.disabled=true;status.hidden=true},prepare(){save.dataset.state='unavailable';save.disabled=true;save.textContent='カード機能を利用できません';status.hidden=false;status.innerHTML=guidanceMarkup('カード機能を読み込めませんでした。ページを読み直してください。')}};momentCard.reset()}
 }
 function renderCollection(){
  $('collection-progress').textContent='結末 '+collected.length+' / '+endingList.length;

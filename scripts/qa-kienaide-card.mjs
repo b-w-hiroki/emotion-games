@@ -6,8 +6,9 @@ const server=http.createServer((req,res)=>{const rel=new URL(req.url,'http://loc
 if(!remote)await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const base=remote?remote.replace(/\/$/,'')+'/kienaide/':'http://127.0.0.1:'+server.address().port+'/emotion-games/kienaide/';
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{args:['--no-sandbox']}:{})});
-async function ending(size,{nullBlob=false,delayBlob=false}={}){
+async function ending(size,{nullBlob=false,delayBlob=false,missingModule=false}={}){
  const ctx=await browser.newContext({viewport:size,hasTouch:true,isMobile:engine==='chromium',acceptDownloads:true});
+ if(missingModule)await ctx.route('**/kienaide-card.js',route=>route.abort());
  await ctx.addInitScript(({nullBlob,delayBlob})=>{
   localStorage.setItem('emotion-kienaide-intro-v1','1');window.cardCalls=0;
   const toBlob=HTMLCanvasElement.prototype.toBlob;
@@ -51,6 +52,10 @@ try{
  {
   const {ctx,page,errors}=await ending({width:390,height:844},{delayBlob:true});assert.ok(await page.locator('#moment-save').isDisabled());await page.locator('#play').click();await page.evaluate(()=>{window.restoreCardEncoder();window.completeCard()});await page.waitForTimeout(300);
   assert.equal(await page.locator('#moment-save').getAttribute('data-state'),'idle');assert.ok(await page.locator('#moment-status').isHidden());assert.deepEqual(errors,[]);await ctx.close();console.log('PASS late PNG callback cannot change the next journey');
+ }
+ {
+  const {ctx,page,errors}=await ending({width:360,height:640},{missingModule:true});await page.waitForFunction(()=>document.querySelector('#moment-save').dataset.state==='unavailable');assert.ok(await page.locator('#moment-save').isDisabled());assert.match(await page.locator('#moment-status').innerText(),/ページを読み直して/);assert.ok((await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide')))).includes('smother'));
+  await page.locator('#play').click();assert.ok(await page.locator('#moment-status').isHidden());assert.ok(await page.locator('#action').isEnabled());assert.deepEqual(errors,[]);await ctx.close();console.log('PASS missing export module does not break play, discovery saves or retry');
  }
  console.log('PASS Kienaide card QA',engine,remote||'local');
 }finally{await browser.close();if(!remote)server.close()}
