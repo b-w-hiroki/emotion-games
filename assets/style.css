@@ -213,6 +213,36 @@ body[data-game=kienaide] .game-shell.ember .action.art-hold:focus-visible{outlin
 body[data-game=kienaide] .curtain .btn.art-start{background:#101d31e8;color:#fff0d2;text-shadow:0 1px 8px #000;border:1px solid #dfbf83;border-radius:999px;box-shadow:inset 0 1px 0 #fff3d633,0 10px 35px #0009;width:min(78%,300px);min-height:58px;height:auto;padding:12px 24px;font-size:18px;letter-spacing:.08em}
 body[data-game=kienaide] .curtain .btn.art-start:focus-visible{outline:2px solid #ffe3a8;outline-offset:3px}
 
+/* The journey marker is a readable diegetic signpost, not a tiny caption baked into the scene. */
+body[data-game=kienaide] .distance-panel{position:absolute;z-index:4;left:50%;bottom:calc(128px + env(safe-area-inset-bottom));transform:translateX(-50%);display:grid;grid-template-columns:auto auto auto;align-items:baseline;column-gap:5px;min-width:150px;padding:9px 15px 13px;border:1px solid #f1d6a680;border-radius:16px;background:linear-gradient(180deg,#0a1421f2,#091321eb);box-shadow:0 5px 22px #0008,inset 0 1px #fff2;text-shadow:0 2px 8px #000}
+body[data-game=kienaide] .distance-label{font-size:10px;letter-spacing:.08em;color:#ead9bf}
+body[data-game=kienaide] .distance-panel strong{font-size:27px;line-height:1;font-variant-numeric:tabular-nums;color:#fff1d5}
+body[data-game=kienaide] .distance-panel>span{font-size:12px;color:#f4d9aa}
+body[data-game=kienaide] .distance-track{position:absolute;bottom:5px;left:10px;right:10px;height:3px;overflow:hidden;border-radius:3px;background:#ffffff29}
+body[data-game=kienaide] .distance-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f6be71,#fff0c5);transition:width .2s linear}
+body[data-game=kienaide] .distance-panel[data-danger^=flame]{border-color:#fb9d7baa;box-shadow:0 0 20px #f25f4d36,inset 0 1px #fff2}
+body[data-game=kienaide] .distance-panel[data-danger^=breath]{border-color:#8ad6ecaa;box-shadow:0 0 20px #49b2d536,inset 0 1px #fff2}
+body.kienaide-playing[data-game=kienaide] .play-controls .route-choice[hidden]{display:none}
+body.kienaide-playing[data-game=kienaide] .play-controls .route-choice{position:relative;z-index:2;display:block;pointer-events:auto;padding:12px 14px 14px;background:linear-gradient(180deg,#102034f5,#091321fa);border:1px solid #ecd39a99;border-radius:20px 20px 0 0;box-shadow:0 -12px 35px #0009}
+body.kienaide-playing[data-game=kienaide] .route-choice>p{margin:0 0 9px;text-align:center;color:#fff0d2;font-size:13px;font-weight:750;letter-spacing:.04em}
+body.kienaide-playing[data-game=kienaide] .route-choice>div{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+body.kienaide-playing[data-game=kienaide] .route-choice button{min-height:56px;padding:7px 8px;border:1px solid #e5c58a77;border-radius:12px;background:#17283c;color:#fff0d2;text-align:center}
+body.kienaide-playing[data-game=kienaide] .route-choice button:active{background:#3c3026}
+body.kienaide-playing[data-game=kienaide] .route-choice button strong,body.kienaide-playing[data-game=kienaide] .route-choice button small{display:block}
+body.kienaide-playing[data-game=kienaide] .route-choice button strong{font-size:13px}
+body.kienaide-playing[data-game=kienaide] .route-choice button small{margin-top:3px;color:#cbd3df;font-size:9px}
+body.kienaide-playing.has-route-choice[data-game=kienaide] .game-shell.ember .action{display:none}
+body.kienaide-playing.has-route-choice[data-game=kienaide] .distance-panel{visibility:hidden}
+body.kienaide-playing[data-game=kienaide] .route-choice button:focus-visible{outline:2px solid #ffe3a8;outline-offset:2px}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-life-critical{background:linear-gradient(180deg,#5b2827ed,#201723fa);border-top:1px solid #ff8e77aa;animation:kienaide-life-warning 1.25s ease-in-out infinite}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-breath-critical{background:linear-gradient(180deg,#193e50ed,#111c2afa);border-top:1px solid #8fe3f4aa;animation:kienaide-breath-warning 1.25s ease-in-out infinite}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-breath-critical:disabled{opacity:1;filter:none;color:#e9f8ff}
+body[data-game=kienaide] .game-shell.ember .action.art-hold.is-vital-warning:not(.is-life-critical):not(.is-breath-critical){border-top:1px solid #ffc86a99}
+@keyframes kienaide-life-warning{50%{box-shadow:inset 0 1px #ffc2b933,0 -13px 40px #ec55495c}}
+@keyframes kienaide-breath-warning{50%{box-shadow:inset 0 1px #d7f6ff33,0 -13px 40px #49b9d65c}}
+@media(max-width:390px){body[data-game=kienaide] .distance-panel{bottom:calc(124px + env(safe-area-inset-bottom));min-width:136px;padding:8px 13px 12px}}
+@media(prefers-reduced-motion:reduce){body[data-game=kienaide] .distance-track i{transition:none}body[data-game=kienaide] .game-shell.ember .action.art-hold.is-life-critical,body[data-game=kienaide] .game-shell.ember .action.art-hold.is-breath-critical{animation:none}}
+
 /* 004 immersive mobile layout: the illustration is the interface. Site chrome and duplicate
    dashboard cards no longer squeeze the scene into the middle of the phone. */
 body[data-game=kienaide]{height:100svh;min-height:100svh;overflow:hidden;background:#070b14}

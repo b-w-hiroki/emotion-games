@@ -13,6 +13,8 @@ const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{ar
 const sizes=[{width:390,height:844},{width:360,height:640}];
 const results=[];
 const done=x=>{results.push(x);console.log('step ok:',x)};
+const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
+ const d=c.getContext('2d').getImageData(Math.round((x-40)*k),Math.round((y-50)*k),Math.round(80*k),Math.round(80*k)).data;let w=0;for(let i=0;i<d.length;i+=4)w+=d[i]-d[i+2];return w/(d.length/4)});
 async function open(size,query,{intro=false,reduced=false}={}){
  const ctx=await browser.newContext({viewport:size,isMobile:engine==='chromium',hasTouch:true,reducedMotion:reduced?'reduce':'no-preference'});
  if(!intro)await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
@@ -61,6 +63,23 @@ try{
   assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
+  const fork=await open(size,'?qa=1&seed=3&speed=1&t=27.5');await fork.page.locator('#play').click();
+  await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:4000});
+  const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
+  await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
+  await fork.page.screenshot({path:path.join(out,`${engine}-route-choice.png`)});
+  await fork.page.locator('#route-choice [data-route="shortcut"]').click();
+  await fork.page.waitForFunction(n=>Number(document.querySelector('#distance-value').textContent)<n,before,{timeout:2000});
+  assert.ok(Number(await fork.page.locator('#distance-value').innerText())<before,'shortcut visibly cuts the route');
+  assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
+  assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice, distance, vital warnings');
+  for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
+   const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
+   await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});
+   assert.ok(await warning.page.locator('#action').evaluate((el,c)=>el.classList.contains(c),vital==='flame'?'is-life-critical':'is-breath-critical'));
+   if(vital==='breath'){assert.equal(await warning.page.locator('#action').isDisabled(),true);assert.match(await warning.page.locator('.action-main').innerText(),/ひと休み|はなす/)}
+   assert.deepEqual(warning.errors,[]);await warning.ctx.close();
+  }
  }
   // Shielding pose and flame light under a held button.
   {
@@ -76,30 +95,12 @@ try{
    await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();done('shield '+tag);
   }
  }
- // Light separation measured on pixels: warm light around the flame while burning, none once it is out.
- const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
-  const d=c.getContext('2d').getImageData(Math.round((x-40)*k),Math.round((y-50)*k),Math.round(80*k),Math.round(80*k)).data;let w=0;for(let i=0;i<d.length;i+=4)w+=d[i]-d[i+2];return w/(d.length/4)});
- {
-  const {ctx,page,errors}=await open(sizes[0],'?qa=1&seed=2&speed=1');
-  await page.locator('#play').click();await page.waitForTimeout(1200);
-  const alive=await warmth(page);
-  // FPS at real speed over 3 s, after the renderer has had 2 s to settle its resolution.
-  await page.waitForTimeout(2000);
-  const fps=await page.evaluate(()=>new Promise(ok=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<3000)requestAnimationFrame(f);else ok(n/((performance.now()-t0)/1000))};requestAnimationFrame(f)}));
-  fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,quality:Number(await page.locator('#stage').getAttribute('data-quality')),warmAlive:Math.round(alive)},null,1));
-  assert.ok(fps>=30,'frame rate '+fps.toFixed(1));
-  await page.goto(base+'?qa=1&seed=2&speed=12');await page.locator('#play').click();
-  await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
-  const dead=await warmth(page);
-  assert.ok(alive>dead+18,'flame light must disappear with the flame: alive '+alive.toFixed(1)+' dead '+dead.toFixed(1));
-  assert.deepEqual(errors,[]);await ctx.close();done('light separation (warm '+alive.toFixed(0)+'→'+dead.toFixed(0)+'), '+fps.toFixed(0)+'fps');
- }
  // Every ending scene, reached through real play rules (QA speed only).
  const size=sizes[0];
  const routes={
   blown:{query:'?qa=1&seed=2',policy:'none'},
   smother:{query:'?qa=1&seed=2',policy:'hold'},
-  survive:{query:'?qa=1&seed=2&speed=6',policy:'tele'},
+  survive:{query:'?qa=1&seed=2&speed=3',policy:'tele'},
   wish:{query:'?qa=1&seed=2&speed=6',policy:'tele',collect:true,skipReply:true},
   dawn:{query:'?qa=1&seed=1&speed=3',policy:'tele',collect:true}
  };
@@ -111,12 +112,16 @@ try{
   const press=async on=>{if(on===holding)return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
+   if(await page.locator('#route-choice').isVisible()){
+    const route=id==='blown'?'shortcut':'rest';await press(false);await page.locator('#route-choice [data-route="'+route+'"]').click();
+    if(r.policy==='hold')await press(true);
+   }
    if(r.policy==='tele'){
     const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
     // wish: keep holding through the silence so the window does not answer.
     if(r.skipReply&&st.phase==='silence'){await press(true)}
-    else if(st.hint.includes('長押し')||st.hint.includes('かばって'))await press(true);
+    else if(st.hint.includes('長押し')||(st.hint.includes('かばって')&&!st.hint.includes('息苦しくなる前に離す')))await press(true);
     else if(st.hint.includes('離して')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
    }
    await page.waitForTimeout(25);
@@ -170,6 +175,20 @@ try{
   assert.equal(await page.locator('#kienaide-intro').count(),0,'prologue must end (skip or completion)');
   assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('intro '+(reduced?'reduced':'motion'));
+ }
+ // Check representative real-time performance after capturing all functional/layout evidence.
+ {
+  const {ctx,page,errors}=await open(sizes[0],'?qa=1&seed=2&speed=1');
+  await page.locator('#play').click();await page.waitForTimeout(1200);
+  const alive=await warmth(page);await page.waitForTimeout(2000);
+  const fps=await page.evaluate(()=>new Promise(ok=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<3000)requestAnimationFrame(f);else ok(n/((performance.now()-t0)/1000))};requestAnimationFrame(f)}));
+  fs.writeFileSync(path.join(out,engine+'-perf.json'),JSON.stringify({fps:Math.round(fps*10)/10,quality:Number(await page.locator('#stage').getAttribute('data-quality')),warmAlive:Math.round(alive)},null,1));
+  assert.ok(fps>=30,'frame rate '+fps.toFixed(1));
+  await page.goto(base+'?qa=1&seed=2&speed=12');await page.locator('#play').click();
+  await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await page.locator('#route-choice [data-route="shortcut"]').click();
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='blown',null,{timeout:20000});await page.waitForTimeout(800);
+  const dead=await warmth(page);assert.ok(alive>dead+18,'flame light must disappear with the flame: alive '+alive.toFixed(1)+' dead '+dead.toFixed(1));
+  assert.deepEqual(errors,[]);await ctx.close();done('light separation (warm '+alive.toFixed(0)+'→'+dead.toFixed(0)+'), '+fps.toFixed(0)+'fps');
  }
  console.log('PASS kienaide visual QA ('+engine+'): '+results.join(', '));
 }finally{await browser.close();server.close()}

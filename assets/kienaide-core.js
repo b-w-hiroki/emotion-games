@@ -36,6 +36,7 @@ function create(opts={}){
  const seed=(opts.seed>>>0)||1;
  return {seed,shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:JOURNEY,
   story:'',storyPause:0,shelterReady:true,shelterUntil:-1,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
+  routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,
   lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),eddyReleasedEvent:'',
   finalePhase:'approach',previousFinalePhase:'approach',gustShield:0,gustExposed:0,silenceRelease:0,reply:0,replyLevel:'',
   previousChapter:0,sceneChangedAt:-999,shieldTime:0,ended:''};
@@ -48,6 +49,13 @@ function flameExpression(s){
  if(s.shield)return 'comfort';
  if((s.wind??0)>.58)return 'afraid';
  return 'calm';
+}
+function vitalState(s){
+ if((s.flame??100)<=20)return 'flame-critical';
+ if((s.oxygen??100)<=22)return 'breath-critical';
+ if((s.flame??100)<=34)return 'flame-warning';
+ if((s.oxygen??100)<=36)return 'breath-warning';
+ return '';
 }
 function canTriggerMiracle(s,time){
  return !s.rescue && time>=70 && time<=89 &&
@@ -70,6 +78,8 @@ function baseWind(time,chapter){
 function step(s,time,dt,input){
  const out=[];const emit=(type,data={})=>out.push({type,...data});
  if(s.ended)return out;
+ if(s.routeChoice==='pending')return out;
+ if(s.routeChoice==='none'&&time>=28&&time<29){s.routeChoice='pending';s.shield=false;emit('route-choice');return out}
  s.shield=!!input.shield;
  if(s.shield)s.shieldTime+=dt;
  const chapter=chapterAt(time);
@@ -83,6 +93,7 @@ function step(s,time,dt,input){
  if(live&&ev.kind==='gust')wind+=.55;
  if(live&&ev.kind==='eddy')wind=s.eddyReleasedEvent===ev.id?Math.min(wind,.38):Math.max(wind,.5+Math.abs(Math.sin(time*7))*.35);
  if(live&&ev.kind==='lull')wind*=.3;
+ if(s.routeChoice==='shortcut'&&time<s.shortcutUntil)wind=Math.min(1.15,wind+.2);
  // Finale: deterministic storm tied to the player's shielding decision.
  const phase=finalePhaseAt(time);s.finalePhase=phase;
  if(phase==='gust-active')wind=1.15;else if(phase==='silence'||phase==='window-reply')wind=.08;
@@ -127,8 +138,23 @@ function collect(s,id){
  if(!s.mote||s.mote.id!==id||s.memoryGot.has(id))return false;
  s.memoryGot.add(id);s.memories++;s.mote=null;return true;
 }
+function chooseRoute(s,choice,time){
+ if(s.routeChoice!=='pending'||!['shortcut','rest'].includes(choice))return false;
+ const remaining=Math.max(0,100*(s.journey-time)/s.journey);
+ s.routeChoice=choice;s.routeChoiceAt=time;
+ if(choice==='shortcut'){
+  s.routeStartMeters=Math.max(0,remaining-16);s.shortcutUntil=time+8;
+ }else{
+  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);
+ }
+ return true;
+}
+function routeDistance(s,time){
+ const fraction=s.routeChoiceAt==null?time/s.journey:(time-s.routeChoiceAt)/(s.journey-s.routeChoiceAt);
+ return Math.max(0,Math.ceil((s.routeChoiceAt==null?100:s.routeStartMeters)*(1-Math.max(0,Math.min(1,fraction)))));
+}
 function score(s){return Math.round(s.flame*.65+s.oxygen*.15+s.memories*7)}
-const api={JOURNEY,CHAPTERS,MEMORIES,EVENT_KINDS,create,step,collect,score,flameExpression,canTriggerMiracle,chapterAt,finalePhaseAt,arrivalEnding,eventSchedule,memorySlots,baseWind};
+const api={JOURNEY,CHAPTERS,MEMORIES,EVENT_KINDS,create,step,collect,chooseRoute,routeDistance,score,flameExpression,vitalState,canTriggerMiracle,chapterAt,finalePhaseAt,arrivalEnding,eventSchedule,memorySlots,baseWind};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.KienaideCore=api;
 })(typeof window!=='undefined'?window:globalThis);
