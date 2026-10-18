@@ -70,6 +70,30 @@ try{
    await page.screenshot({path:path.join(out,`${engine}-${tag}-guidance-wrap.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('guidance line balance '+tag);
   }
+  // Interrupted holds must release; unrelated fingers/keys must not release the owner.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=7&speed=0.0001&t=8');
+   await page.locator('#play').click();const action=page.locator('#action');await action.focus();
+   await page.keyboard.down('Space');await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await page.keyboard.press('Enter');await page.waitForTimeout(80);
+   assert.ok(await action.evaluate(el=>el.classList.contains('is-held')),'another key must not release Space');
+   await page.keyboard.press('Tab');
+   await page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'),null,{timeout:3000});
+   await page.keyboard.up('Space');
+   const box=await action.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+   await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await action.dispatchEvent('pointerup',{pointerId:999,pointerType:'touch'});await page.waitForTimeout(80);
+   assert.ok(await action.evaluate(el=>el.classList.contains('is-held')),'another finger must not release the active hold');
+   const released=await action.evaluate(el=>{for(let id=1;id<10;id++)if(el.hasPointerCapture(id)){el.releasePointerCapture(id);return true}return false});
+   assert.equal(released,true,'the test must release a real captured pointer');
+   await page.mouse.move(1,1);
+   await page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'),null,{timeout:3000});
+   await page.mouse.up();
+   await action.focus();await page.keyboard.press('Space');await page.waitForTimeout(80);
+   assert.ok(await action.evaluate(el=>!el.classList.contains('is-held')),'input remains usable after interruption');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-input-recovered.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('hold ownership and interruption '+tag);
+  }
   // Chapters: frozen at a moment inside each chapter (speed=0.0001 keeps the frame still).
   for(const [i,t] of [[1,8],[2,30],[3,56],[4,76]]){
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t='+t);

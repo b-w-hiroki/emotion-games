@@ -268,18 +268,23 @@ function showKienaideIntro(){
 $('play').addEventListener('click',()=>{if(mode==='end'){mark('game_retry');run()}else if(candle)showKienaideIntro();else run()});
 $('reset').addEventListener('click',()=>{if(mode!=='intro')mark('game_retry');run()});
 $('share').addEventListener('click',()=>share(points?points+'点':''));
-function holdRelease(){if(!down)return;down=false;if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
+let candlePointer=null,candleKey=null;
+function releaseCandleInput(){const pointer=candlePointer;candlePointer=null;candleKey=null;if(pointer!==null&&action.hasPointerCapture?.(pointer))action.releasePointerCapture(pointer)}
+function holdRelease(){if(!down)return;down=false;if(candle)releaseCandleInput();if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
 landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease()});
-action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&landscapeMode.matches))return;e.preventDefault();down=true;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
-action.addEventListener('pointerup',holdRelease);action.addEventListener('pointercancel',holdRelease);
+action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&landscapeMode.matches))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
+const pointerRelease=e=>{if(!candle||e.pointerId===candlePointer)holdRelease()};
+action.addEventListener('pointerup',pointerRelease);action.addEventListener('pointercancel',pointerRelease);
+if(candle)action.addEventListener('lostpointercapture',pointerRelease);
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
 window.addEventListener('blur',holdRelease);document.addEventListener('visibilitychange',()=>{if(document.hidden)holdRelease()});
 action.addEventListener('contextmenu',e=>e.preventDefault());
 // Keyboard play for 004: hold Space/Enter on the button to shield, M (or Enter on the scene) to touch a memory.
 if(candle){
- const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down&&!landscapeMode.matches){e.preventDefault();down=true;state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}};
- const lift=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();holdRelease()}};
- action.addEventListener('keydown',press);action.addEventListener('keyup',lift);
+ const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down&&!action.disabled&&!landscapeMode.matches){e.preventDefault();down=true;candleKey=e.key;state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}};
+ const lift=e=>{if(e.key===candleKey){e.preventDefault();holdRelease()}};
+ action.addEventListener('keydown',press);document.addEventListener('keyup',lift);
+ action.addEventListener('blur',()=>{if(candleKey!==null)holdRelease()});
  const touchMemory=()=>{const s=state,m=s.mote;if(mode!=='play'||landscapeMode.matches||!m||!K.collect(s,m.id))return;s.storyPause=elapsed+4;best.textContent=s.memories+' / 3';KA.cues.memory(s.memories);mark('memory_collected',{memory_id:m.id,count:s.memories,input:'key'});setStory(m.title,m.line)};
  canvas.tabIndex=0;canvas.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();touchMemory()}});
  document.addEventListener('keydown',e=>{if((e.key==='m'||e.key==='M')&&!e.repeat)touchMemory()});
@@ -311,7 +316,7 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
 
 let lastShield=false;
 function startCandle(){
- KA.init();KA.resume();KA.startJourney();runCount++;
+ releaseCandleInput();KA.init();KA.resume();KA.startJourney();runCount++;
  const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
  Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
  if(qa&&params.has('mem')){for(const m of state.slots.slice(0,Math.min(3,Number(params.get('mem'))||0)))state.memoryGot.add(m.id);state.memories=state.memoryGot.size}
