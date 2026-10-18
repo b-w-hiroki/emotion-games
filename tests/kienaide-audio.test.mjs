@@ -113,7 +113,12 @@ test('audio suspends in the background and resumes for both the intro and active
  audio.suspend();assert.equal(audio.state,'suspended');
  audio.resume();await Promise.resolve();assert.equal(audio.state,'running');
  const app=fs.readFileSync('assets/app.js','utf8');
- assert.ok(app.includes("else if(mode==='play'||mode==='intro')KA.resume()"),'the prologue must resume audio after returning to the foreground');
+ const lifecycle=app.match(/document\.addEventListener\('visibilitychange',(\(\)=>\{last=0;[^\n]+\})\);/)[1];
+ for(const [mode,candleDialog,resumes,collectionFromMenu=false] of [['intro',null,true],['intro',{id:'kienaide-intro'},true],['play',null,true],['play',{id:'journey-menu'},false],['play',{id:'collection-panel'},false,true],['play',{id:'collection-panel'},true],['play',{id:'route-choice'},true],['end',null,false]]){
+  const calls=[],context={mode,candleDialog,collectionFromMenu,last:2,document:{hidden:false},KA:{resume:()=>calls.push('resume'),suspend:()=>calls.push('suspend')}};
+  vm.runInNewContext('('+lifecycle+')()',context);assert.equal(context.last,0);assert.deepEqual(calls,resumes?['resume']:[],mode+' '+candleDialog?.id);
+  context.document.hidden=true;calls.length=0;vm.runInNewContext('('+lifecycle+')()',context);assert.deepEqual(calls,['suspend']);
+ }
  assert.ok(app.includes('((wasHidden?hiddenAt:now)-t0)/1000*speed'),'time spent in a background tab must not skip the intro');
  assert.ok(app.includes('skipped:introTime<iv.INTRO_LENGTH'),'background time must not distort the intro skip metric');
 });
