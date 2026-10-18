@@ -19,6 +19,7 @@ async function open(size,query='',{save=false,noAudio=false,intro=false}={}){
 }
 const facts=page=>page.evaluate(()=>Object.fromEntries(['timer','record','best','distance-value'].map(id=>[id,document.getElementById(id).textContent])));
 async function noShortTail(page,selector){
+ assert.ok(await page.locator(selector).evaluate(el=>el.scrollWidth<=el.clientWidth+1),'text must not overflow '+selector);
  const lines=await page.locator(selector).evaluate(el=>{const rows=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let node=walker.nextNode();node;node=walker.nextNode())for(let i=0;i<node.length;i++){const r=document.createRange();r.setStart(node,i);r.setEnd(node,i+1);const box=r.getBoundingClientRect();let row=rows.find(l=>Math.abs(l.top-box.top)<1);if(!row){row={top:box.top,text:''};rows.push(row)}row.text+=node.textContent[i]}return rows.map(r=>r.text.trim())});
  assert.ok(lines.length<=1||lines.at(-1).length>5,selector+' has a short tail: '+JSON.stringify(lines));
 }
