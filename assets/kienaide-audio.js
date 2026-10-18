@@ -33,6 +33,8 @@ function create(){
  }
  function resume(){if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
  function suspend(){if(ac&&ac.state==='running')ac.suspend().catch(()=>{})}
+ // Simulation time returns to zero on retry; audio preferences and the context do not.
+ function startJourney(){nextNote=0;noteIndex=0;lastStep=0;nextBreath=0;chapter=-1}
  function setMuted(m){prefs.muted=!!m;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
  function setVolume(v){prefs.volume=Math.min(1,Math.max(0,v));if(prefs.volume>0&&prefs.muted)prefs.muted=false;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
  function tone(freq,dur=.6,vol=.12,type='sine',when=0,dest){
@@ -98,7 +100,7 @@ function create(){
   // The flame's small voice: two soft rising blips, never words.
   voice(){tone(880,.12,.05,'sine');tone(1175,.16,.045,'sine',.11)}
  };
- return {init,resume,suspend,update,ambient,cues,setMuted,setVolume,get muted(){return prefs.muted},get volume(){return prefs.volume},get ready(){return !!ac},get state(){return ac?ac.state:'none'}};
+ return {init,resume,suspend,startJourney,update,ambient,cues,setMuted,setVolume,get muted(){return prefs.muted},get volume(){return prefs.volume},get ready(){return !!ac},get state(){return ac?ac.state:'none'}};
 }
 root.KienaideAudio={create,KEY,breathProfile};
 })(typeof window!=='undefined'?window:globalThis);
