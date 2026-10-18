@@ -66,9 +66,15 @@ try{
   assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
-  const fork=await open(size,'?qa=1&seed=3&speed=1&t=27.5');await fork.page.locator('#play').click();
+  const fork=await open(size,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
+  const actionBox=await fork.page.locator('#action').boundingBox();await fork.page.mouse.move(actionBox.x+actionBox.width/2,actionBox.y+actionBox.height/2);await fork.page.mouse.down();
   await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:4000});
+  await fork.page.mouse.up();
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
+  assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/16m短縮・風8秒/,'shortcut must explain its distance and wind tradeoff');
+  const restEffect=await fork.page.locator('#route-choice [data-route="rest"] small').innerText();
+  assert.match(restEffect,/16m遠回り・息\+\d+%/,'rest must show the actual capped breath recovery');
+  assert.notEqual(restEffect,'16m遠回り・息+0%','holding to protect the flame should make the rest option meaningful');
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
   await fork.page.screenshot({path:path.join(out,`${engine}-route-choice.png`)});
   const routeTarget=await fork.page.locator('#route-choice button').first().evaluate(el=>el.getBoundingClientRect().height);
