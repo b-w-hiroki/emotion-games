@@ -17,7 +17,7 @@ async function open(size,query='',{save=false,noAudio=false,intro=false}={}){
  },{save,noAudio,intro});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base+query);return {ctx,page,errors};
 }
-const facts=page=>page.evaluate(()=>Object.fromEntries(['timer','record','best','distance-value'].map(id=>[id,document.getElementById(id).textContent])));
+const facts=page=>page.evaluate(()=>({...Object.fromEntries(['timer','record','best','distance-value'].map(id=>[id,document.getElementById(id).textContent])),light:document.querySelector('#light-meter').getAttribute('aria-valuenow'),breath:document.querySelector('#breath-meter').getAttribute('aria-valuenow')}));
 async function noShortTail(page,selector){
  assert.ok(await page.locator(selector).evaluate(el=>el.scrollWidth<=el.clientWidth+1),'text must not overflow '+selector);
  const lines=await page.locator(selector).evaluate(el=>{const rows=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let node=walker.nextNode();node;node=walker.nextNode())for(let i=0;i<node.length;i++){const r=document.createRange();r.setStart(node,i);r.setEnd(node,i+1);const box=r.getBoundingClientRect();let row=rows.find(l=>Math.abs(l.top-box.top)<1);if(!row){row={top:box.top,text:''};rows.push(row)}row.text+=node.textContent[i]}return rows.map(r=>r.text.trim())});
@@ -48,6 +48,46 @@ try{
  }
  for(const size of [{width:390,height:844},{width:360,height:640}]){
   const tag=size.width+'x'+size.height;
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=12.8',{save:true});
+   await page.evaluate(()=>{const AC=window.AudioContext||window.webkitAudioContext;if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.menuAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}});
+   await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
+   const menuButton=page.locator('#journey-menu-open'),menu=page.locator('#journey-menu');
+   const box=await menuButton.boundingBox(),soundBox=await page.locator('#sound-toggle').boundingBox();
+   assert.ok(box.width>=44&&box.height>=44&&box.x>=0&&box.y>=0&&box.x+box.width+8<=soundBox.x,'pause target is large and separate from sound: '+JSON.stringify({box,soundBox}));
+   await page.locator('#action').focus();await page.keyboard.down('Space');await menuButton.click();await page.keyboard.up('Space');
+   await page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
+   assert.ok(await menu.isVisible());assert.equal(await menu.getAttribute('aria-modal'),'true');
+   const layout=await menu.evaluate(el=>{const card=el.querySelector('.journey-menu-card'),b=card.getBoundingClientRect();return {fits:b.top>=0&&b.bottom<=innerHeight+1&&b.left>=0&&b.right<=innerWidth,targets:[...el.querySelectorAll('#pause-normal>button')].map(button=>{const r=button.getBoundingClientRect();return r.width>=200&&r.height>=52})}});
+   assert.ok(layout.fits&&layout.targets.every(Boolean),'menu fits the viewport and primary actions have large touch targets');
+   assert.ok(await page.locator('#stage').evaluate(el=>!!el.closest('[inert]')));
+   await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='suspended');
+   const paused=await facts(page);await page.keyboard.press('m');await page.waitForTimeout(1200);assert.deepEqual(await facts(page),paused,'menu freezes clock, life, breath, distance and memory');
+   for(let i=0;i<10;i++){await page.keyboard.press(i%2?'Shift+Tab':'Tab');assert.ok(await menu.evaluate(el=>el.contains(document.activeElement)))}
+   await noShortTail(page,'#pause-normal .pause-guide');
+   assert.ok(await menu.locator('button').evaluateAll(buttons=>buttons.filter(button=>button.getClientRects().length).every(button=>button.scrollWidth<=button.clientWidth+1)),'menu button labels stay inside their targets');await noShortTail(page,'#pause-sound');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-journey-menu.png`)});
+   await page.locator('[data-pause-action="restart"]').click();assert.ok(await page.locator('#pause-confirm').isVisible());
+   await page.keyboard.press('Escape');assert.ok(await page.locator('#pause-normal').isVisible());assert.deepEqual(await facts(page),paused,'cancel preserves this journey');
+   await page.locator('#pause-collection').click();assert.ok(await page.locator('#collection-panel').isVisible());
+   await page.keyboard.press('Escape');assert.ok(await menu.isVisible());assert.deepEqual(await facts(page),paused,'gallery returns to paused menu, not a running journey');
+   const supported=await page.evaluate(()=>!!window.menuAudio);
+   if(supported){await page.locator('#pause-volume').fill('35');await page.locator('#pause-volume').dispatchEvent('input');assert.equal(await page.locator('#volume').inputValue(),'35');await page.locator('#pause-sound').click();assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF');assert.equal(await page.evaluate(()=>window.menuAudio.state),'suspended')}
+   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))});
+   assert.equal(await page.evaluate(()=>window.menuAudio?.state||'suspended'),'suspended','foregrounding must not resume a paused journey');
+   await page.locator('#pause-resume').click();assert.ok(await page.locator('#action').evaluate(el=>el===document.activeElement));await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='running');
+   await page.waitForFunction(t=>document.querySelector('#timer').textContent!==t,paused.timer,{timeout:3000});
+   await menuButton.click();const beforeRestart=await facts(page);await page.locator('[data-pause-action="restart"]').click();await page.locator('#pause-confirm-action').click();
+   await page.waitForFunction(before=>{const seconds=t=>t.split(':').reduce((n,x)=>n*60+Number(x),0);return seconds(document.querySelector('#timer').textContent)>seconds(before)},beforeRestart.timer);assert.equal(await page.locator('#best').innerText(),'0 / 3');
+   assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide'))),['dawn','wish']);
+   if(supported)assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-audio-v1'))),{muted:true,volume:.35});
+   await menuButton.click();await page.locator('[data-pause-action="title"]').click();await noShortTail(page,'#pause-confirm-text');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-journey-confirm.png`)});
+   await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#pause-confirm-action').click()]);
+   assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-title-screen')));assert.ok(await menuButton.isHidden());assert.equal(new URL(page.url()).search,'');
+   await page.locator('#open-collection').click();assert.equal(await page.locator('#collection-progress').innerText(),'結末 2 / 5');
+   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS journey pause, help, audio, gallery, cancel, restart and title',tag);
+  }
   {
    const {ctx,page,errors}=await open(size,'',{save:true});
    assert.equal(await page.locator('#collection-progress').innerText(),'結末 2 / 5');
@@ -119,7 +159,11 @@ try{
  {
   const {ctx,page,errors}=await open({width:360,height:640},'?qa=1&speed=0.0001',{noAudio:true});
   assert.equal(await page.locator('#sound-toggle').innerText(),'音 非対応');assert.ok(await page.locator('#sound-toggle').isDisabled());
-  await page.locator('#play').click();assert.ok(await page.locator('#action').isEnabled());assert.deepEqual(errors,[]);await ctx.close();console.log('PASS playable without Web Audio');
+  await page.locator('#play').click();assert.ok(await page.locator('#action').isEnabled());await page.locator('#journey-menu-open').click();assert.ok(await page.locator('#pause-sound').isDisabled());assert.ok(await page.locator('#pause-volume').isDisabled());assert.equal(await page.locator('#pause-sound').innerText(),'音 非対応');await page.locator('#pause-resume').click();
+  await page.goto(base+'?qa=1&speed=0.0001&vital=breath');await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await page.locator('#journey-menu-open').click();await page.locator('#pause-resume').click();assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'critical breath restores focus to an enabled control, not inside a hidden menu');
+  await page.locator('#open-collection').evaluate(el=>el.click());await page.keyboard.press('Escape');assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'collection uses the same safe fallback');
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS playable without Web Audio and critical-breath focus recovery');
  }
  {
   const {ctx,page}=await open({width:390,height:844});
