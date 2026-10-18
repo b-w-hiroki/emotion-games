@@ -135,7 +135,7 @@ if(candle){
  vol.addEventListener('input',()=>{KA.init();KA.resume();KA.setVolume(Number(vol.value)/100);if(Number(vol.value)===0)KA.setMuted(true);paint()});
  paint();
  // Background tabs must not keep playing or double the timers when they come back.
- document.addEventListener('visibilitychange',()=>{if(document.hidden)KA.suspend();else if(mode==='play')KA.resume()});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()});
 }
 if(candle){
  const save=$('moment-save');
@@ -252,11 +252,11 @@ function showKienaideIntro(){
  const skip=document.createElement('button');skip.type='button';skip.textContent='スキップして遊ぶ';
  overlay.append(stage,line,skip);document.body.append(overlay);
  const iv=window.KienaideView.create(base),g=stage.getContext('2d'),reduced=reducedMotion(),speed=qa?6:1;
- let t0=0,finished=false,shown='';const voiced=[0,0];
- const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:t0&&(performance.now()-t0)/1000*speed<iv.INTRO_LENGTH});run()};
+ let t0=0,hiddenAt=0,introTime=0,wasHidden=false,finished=false,shown='';const voiced=[0,0];
+ const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:introTime<iv.INTRO_LENGTH});run()};
  skip.addEventListener('click',done,{once:true});
  overlay.addEventListener('keydown',e=>{if(e.key==='Escape')done()});
- const loop=now=>{if(finished)return;if(!t0)t0=now;const t=(now-t0)/1000*speed;iv.resize(stage);iv.introFrame(g,t,{reduced});
+ const loop=now=>{if(finished)return;if(!t0)t0=now;if(document.hidden&&!wasHidden){hiddenAt=now;wasHidden=true}else if(!document.hidden&&wasHidden){t0+=now-hiddenAt;wasHidden=false}const t=((wasHidden?hiddenAt:now)-t0)/1000*speed;introTime=t;iv.resize(stage);iv.introFrame(g,t,{reduced});
   const cur=[...iv.INTRO].reverse().find(l=>t>=l.at);if(cur&&cur.text!==shown){shown=cur.text;line.textContent=cur.text}
   KA.ambient(t<11?.02:.32,t<8?Math.min(1,t/3)*.8:.4);if(!voiced[0]&&t>=5){voiced[0]=1;KA.cues.voice()}if(!voiced[1]&&t>=14.7){voiced[1]=1;KA.cues.voice()}
   if(t>=iv.INTRO_LENGTH)return done();introRaf=requestAnimationFrame(loop)};

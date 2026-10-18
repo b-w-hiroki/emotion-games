@@ -204,6 +204,14 @@ try{
   assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('intro '+(reduced?'reduced':'motion'));
  }
+ if(engine==='chromium'){
+  const ctx=await browser.newContext({viewport:size});
+  await ctx.addInitScript(()=>{const proto=Object.getPrototypeOf(new AudioContext()),resume=proto.resume,suspend=proto.suspend;window.__audioLifecycle={resume:0,suspend:0};proto.resume=function(...args){window.__audioLifecycle.resume++;return resume.apply(this,args)};proto.suspend=function(...args){window.__audioLifecycle.suspend++;return suspend.apply(this,args)}});
+  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'?qa=1&speed=6');await page.locator('#play').click();await page.waitForSelector('#kienaide-intro canvas');await page.waitForTimeout(2100);
+  const before=await page.evaluate(()=>window.__audioLifecycle.resume);await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))});await page.waitForTimeout(1000);
+  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))});await page.waitForTimeout(450);
+  assert.ok((await page.evaluate(()=>window.__audioLifecycle.suspend))>0,'backgrounding suspends audio');assert.ok((await page.evaluate(()=>window.__audioLifecycle.resume))>before,'returning during the prologue resumes audio');assert.equal(await page.locator('#kienaide-intro').count(),1,'background time must not consume the prologue');assert.deepEqual(errors,[]);await ctx.close();done('intro background audio and clock');
+ }
  // Check representative real-time performance after capturing all functional/layout evidence.
  {
   const {ctx,page,errors}=await open(sizes[0],'?qa=1&seed=2&speed=1');

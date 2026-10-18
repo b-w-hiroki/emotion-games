@@ -11,6 +11,8 @@ function audioRig(saved='{}'){
  const node=extra=>Object.assign({connect(){return this}},extra);
  class AudioContext{
   constructor(){this.currentTime=0;this.sampleRate=16;this.destination={};this.state='running'}
+  resume(){this.state='running';return Promise.resolve()}
+  suspend(){this.state='suspended';return Promise.resolve()}
   createGain(){return node({gain:param()})}
   createDelay(){return node({delayTime:param()})}
   createBiquadFilter(){return node({frequency:param(),Q:param()})}
@@ -57,4 +59,14 @@ test('breathing sound is scheduled only while audible play is in a low-oxygen st
  const muted=audioRig('{"muted":true}');
  muted.audio.update(state(20),0,options);
  assert.equal(muted.stats.bufferStarts,2,'mute suppresses the breath cue');
+});
+
+test('audio suspends in the background and resumes for both the intro and active play',async()=>{
+ const {audio}=audioRig();
+ audio.suspend();assert.equal(audio.state,'suspended');
+ audio.resume();await Promise.resolve();assert.equal(audio.state,'running');
+ const app=fs.readFileSync('assets/app.js','utf8');
+ assert.ok(app.includes("else if(mode==='play'||mode==='intro')KA.resume()"),'the prologue must resume audio after returning to the foreground');
+ assert.ok(app.includes('((wasHidden?hiddenAt:now)-t0)/1000*speed'),'time spent in a background tab must not skip the intro');
+ assert.ok(app.includes('skipped:introTime<iv.INTRO_LENGTH'),'background time must not distort the intro skip metric');
 });
