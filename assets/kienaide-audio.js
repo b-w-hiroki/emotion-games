@@ -9,9 +9,10 @@ function save(p){try{localStorage.setItem(KEY,JSON.stringify(p))}catch(_){}}
 const SCALES=[[69,72,74,76,79],[67,69,72,74,76],[64,67,69,71,74],[72,74,76,79,81]];
 const CHORDS=[[57,64,69],[55,62,67],[52,59,64],[60,64,67,72]];
 const midi=n=>440*Math.pow(2,(n-69)/12);
+function breathProfile(oxygen){if(oxygen>36)return null;const urgency=1-Math.max(0,oxygen)/36;return {urgency,interval:3.2-urgency*1.3,gain:.012+urgency*.023,frequency:760-urgency*260}}
 function create(){
  const prefs=load();
- let ac=null,master=null,bus=null,wind=null,fire=null,steps=null,pad=null,nextNote=0,noteIndex=0,lastStep=0,chapter=-1;
+ let ac=null,master=null,bus=null,wind=null,fire=null,steps=null,pad=null,nextNote=0,noteIndex=0,lastStep=0,nextBreath=0,chapter=-1;
  function init(){
   if(ac)return true;
   const AC=root.AudioContext||root.webkitAudioContext;if(!AC)return false;
@@ -48,6 +49,10 @@ function create(){
   if(!ac||prefs.muted)return;const t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=steps.noise;f.type='lowpass';f.frequency.value=freq;
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);s.connect(f).connect(g).connect(master);s.start(t,Math.random());s.stop(t+.2);
  }
+ function breathCue(profile){
+  if(!ac||prefs.muted||!profile)return;const t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=steps.noise;f.type='bandpass';f.frequency.value=profile.frequency;f.Q.value=.55;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(profile.gain,t+.22);g.gain.exponentialRampToValueAtTime(.0001,t+.9);s.connect(f).connect(g).connect(master);s.start(t,Math.random());s.stop(t+.95);
+ }
  function setPad(ch){
   if(!ac)return;const t=ac.currentTime;
   for(const v of pad.voices){v.g.gain.setTargetAtTime(0,t,.8);v.o.stop(t+4)}
@@ -64,6 +69,7 @@ function create(){
   fire.hg.gain.setTargetAtTime(quiet||life<=0?0:.02*life,t,.2);
   fire.hum.frequency.setTargetAtTime(s.oxygen<24?82:s.rescue||s.reply>0?165:110+life*30,t,.2);
   if(!quiet&&o.playing&&time-lastStep>.55){lastStep=time;thump(.035+w*.02,150+Math.random()*60)}
+  const breath=breathProfile(s.oxygen);if(!quiet&&breath&&t>=nextBreath){breathCue(breath);nextBreath=t+breath.interval}
   if(s.oxygen<24&&!quiet&&Math.floor(time*1.4)!==Math.floor((time-o.dt)*1.4))tone(98,.18,.12,'sine',0,master);
   // Sparse melody: one note every ~1.6–2.4 s, quieter when wind is high, stops in the finale storm.
   if(!quiet&&s.finalePhase==='approach'&&time>=nextNote){const sc=SCALES[chapter];noteIndex=(noteIndex+1+(Math.floor(time*3)%3))%sc.length;bell(sc[noteIndex],0,.05*(1-w*.5));nextNote=time+1.6+((noteIndex*7)%5)*.2}
@@ -94,5 +100,5 @@ function create(){
  };
  return {init,resume,suspend,update,ambient,cues,setMuted,setVolume,get muted(){return prefs.muted},get volume(){return prefs.volume},get ready(){return !!ac},get state(){return ac?ac.state:'none'}};
 }
-root.KienaideAudio={create,KEY};
+root.KienaideAudio={create,KEY,breathProfile};
 })(typeof window!=='undefined'?window:globalThis);
