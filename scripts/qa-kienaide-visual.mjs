@@ -108,6 +108,17 @@ try{
    await page.mouse.up();assert.deepEqual(errors,[]);await ctx.close();done('shield '+tag);
   }
  }
+ // Migrate the old high-resolution preview collection into the formal game's save without loss.
+ {
+  const ctx=await browser.newContext({viewport:sizes[0],isMobile:engine==='chromium',hasTouch:true});
+  await ctx.addInitScript(()=>{localStorage.setItem('kienaide-art-endings-v1',JSON.stringify(['dawn','survive','not-an-ending']));localStorage.setItem('emotion-endings-v1-kienaide',JSON.stringify(['survive']))});
+  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base);await page.locator('#open-collection').evaluate(el=>el.click());
+  assert.equal(await page.locator('#collection-list .found').count(),2,'legacy and current discoveries are deduplicated');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide'))),['survive','dawn']);
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kienaide-art-endings-v1'))),['dawn','survive','not-an-ending'],'legacy data remains untouched');
+  assert.deepEqual(errors,[]);await ctx.close();done('ending save migration');
+ }
  // Every ending scene, reached through real play rules (QA speed only).
  const size=sizes[0];
  const routes={

@@ -28,6 +28,12 @@ test('hidden input branches exist in each title',()=>{
 test('collection saves discoveries and remains separate from score',()=>{
  for(const marker of ["emotion-endings-v1-","localStorage.setItem('emotion-endings-v1-","function renderCollection()","ending_discovered","ending_id:lastEnding","collection_open"])assert.ok(app.includes(marker),marker);
 });
+
+test('Kienaide imports valid preview discoveries without overwriting either collection',()=>{
+ assert.ok(app.includes("if(slug==='kienaide')try{const raw=JSON.parse(localStorage.getItem('kienaide-art-endings-v1')||'[]')"));
+ assert.ok(app.includes("new Set([...collected,...raw.filter(id=>endingList.some(e=>e.id===id))])"));
+ assert.ok(app.includes("localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(collected))"));
+});
 test('runtime passes syntax validation',()=>{
  const r=spawnSync(process.execPath,['--check','assets/app.js'],{encoding:'utf8'});
  assert.equal(r.status,0,r.stderr);

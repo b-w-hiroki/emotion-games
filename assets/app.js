@@ -61,6 +61,7 @@ const rewardSets={
 };
 Object.assign(rewardSets,window.EmotionMissions?.rewards||{});
 let collected=[];try{const raw=JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)||'[]');if(Array.isArray(raw))collected=raw.filter(id=>endingList.some(e=>e.id===id))}catch(_){}
+if(slug==='kienaide')try{const raw=JSON.parse(localStorage.getItem('kienaide-art-endings-v1')||'[]');if(Array.isArray(raw)){const merged=[...new Set([...collected,...raw.filter(id=>endingList.some(e=>e.id===id))])];if(merged.length!==collected.length){collected=merged;localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(collected))}}}catch(_){}
 let lastEnding='';
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
