@@ -58,13 +58,13 @@ function vitalState(s){
  return '';
 }
 function canTriggerMiracle(s,time){
- return !s.rescue && time>=70 && time<=89 &&
+ return !s.rescue && time>=70 && time<=(s.journey||JOURNEY)-1 &&
    (s.memories||0)>=2 && s.flame>0 && s.flame<=29 && s.oxygen>=30 &&
    !s.shield && time-s.releaseAt>=0 && time-s.releaseAt<=1.3 &&
    s.wind<.46;
 }
 function chapterAt(time){let c=0;for(let i=1;i<CHAPTERS.length;i++)if(time>=CHAPTERS[i].at)c=i;return c}
-function finalePhaseAt(time){const f=time-80;return f<0?'approach':f<2?'gust-warning':f<7?'gust-active':f<8.5?'silence':'window-reply'}
+function finalePhaseAt(time,journey=JOURNEY){const f=time-(journey-10);return f<0?'approach':f<2?'gust-warning':f<7?'gust-active':f<8.5?'silence':'window-reply'}
 // The ending is resolved by one function so new presentation can never drift from the gallery IDs.
 function arrivalEnding(s){return s.memories===3?(s.flame>=68?'dawn':'wish'):'survive'}
 function baseWind(time,chapter){
@@ -95,7 +95,7 @@ function step(s,time,dt,input){
  if(live&&ev.kind==='lull')wind*=.3;
  if(s.routeChoice==='shortcut'&&time<s.shortcutUntil)wind=Math.min(1.15,wind+.2);
  // Finale: deterministic storm tied to the player's shielding decision.
- const phase=finalePhaseAt(time);s.finalePhase=phase;
+ const phase=finalePhaseAt(time,s.journey);s.finalePhase=phase;
  if(phase==='gust-active')wind=1.15;else if(phase==='silence'||phase==='window-reply')wind=.08;
  if(phase!==s.previousFinalePhase){s.previousFinalePhase=phase;emit('finale',{phase});
   if(phase==='window-reply'){
@@ -143,9 +143,9 @@ function chooseRoute(s,choice,time){
  const remaining=Math.max(0,100*(s.journey-time)/s.journey);
  s.routeChoice=choice;s.routeChoiceAt=time;
  if(choice==='shortcut'){
-  s.routeStartMeters=Math.max(0,remaining-16);s.shortcutUntil=time+8;
+  s.routeStartMeters=Math.max(0,remaining-16);s.shortcutUntil=time+8;s.journey=JOURNEY-8;
  }else{
-  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);
+  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);s.journey=JOURNEY+8;
  }
  return true;
 }
