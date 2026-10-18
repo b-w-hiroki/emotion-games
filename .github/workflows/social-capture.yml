@@ -18,12 +18,14 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npm run build
+      - run: node scripts/qa-kienaide-release.mjs chromium
       - run: node scripts/capture-social.mjs
       - run: node scripts/qa-endings.mjs
       - run: node scripts/qa-20.mjs
       - run: node scripts/qa-research.mjs
       - run: node scripts/qa-art-preview.mjs
       - run: node scripts/qa-kienaide-visual.mjs chromium
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: node scripts/capture-kienaide-clip.mjs
       - if: always()
         uses: actions/upload-artifact@v4
@@ -42,6 +44,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps webkit
       - run: npm run build
+      - run: node scripts/qa-kienaide-release.mjs webkit
       - run: node scripts/qa-kienaide-visual.mjs webkit
       - if: always()
         uses: actions/upload-artifact@v4

@@ -245,6 +245,13 @@ try{
   await page.waitForTimeout(400);
   const explanation=await page.locator('#ending-meaning').innerText();
   for(const fact of endingFacts[id])assert.ok(explanation.includes(fact),id+' must explain '+fact+': '+explanation);
+  const copy=await page.locator('#curtain-description').evaluate(el=>{
+   const lines=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+   for(let node=walker.nextNode();node;node=walker.nextNode())for(let i=0;i<node.length;i++){const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);const box=range.getBoundingClientRect();let line=lines.find(l=>Math.abs(l.top-box.top)<1);if(!line){line={top:box.top,text:''};lines.push(line)}line.text+=node.textContent[i]}
+   return {overflow:el.scrollWidth>el.clientWidth+1,lines:lines.map(l=>l.text.trim())};
+  });
+  assert.equal(copy.overflow,false,id+' ending copy must fit');
+  assert.ok(copy.lines.length<=1||copy.lines.at(-1).length>5,id+' ending must not strand a short tail: '+JSON.stringify(copy.lines));
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-card.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('ending '+id);
  }

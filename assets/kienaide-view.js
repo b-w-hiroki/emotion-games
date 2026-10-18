@@ -5,6 +5,8 @@
 (function(root){'use strict';
 const H=480,PW=900,PH=1200;
 const CH=['ch1','ch2','ch3','ch4'],BANDS=['sky','far','mid','fore'];
+// Weighted premultiplied layers keep their opaque overlap solid instead of leaking the scenery.
+function blendPose(g,previous,current,fade){g.clearRect(0,0,g.canvas.width,g.canvas.height);g.save();g.globalAlpha=1-fade;g.drawImage(previous,0,0,g.canvas.width,g.canvas.height);g.globalCompositeOperation='lighter';g.globalAlpha=fade;g.drawImage(current,0,0,g.canvas.width,g.canvas.height);g.restore()}
 const HERO_POSES=['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
 const END_POSES=['end-blown','end-smother','end-wish','end-survive','end-dawn'];
 const FLAME_POSES=['flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'];
@@ -19,8 +21,10 @@ function create(base){
  const dir=base+'assets/kienaide/paint/';
  const names=[];for(const c of CH)for(const l of [...BANDS,'lights'])names.push(c+'-'+l);
  names.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
- for(const n of names){const img=new Image();img.decoding='async';img.onerror=()=>{failed++};img.src=dir+n+'.webp';imgs[n]=img}
- fetch(dir+'manifest.json').then(r=>r.json()).then(m=>{manifest=m}).catch(()=>{failed++});
+ const pending=[];
+ for(const n of names){const img=new Image();img.decoding='async';pending.push(new Promise(resolve=>{img.onload=()=>resolve(true);img.onerror=()=>{failed++;resolve(false)}}));img.src=dir+n+'.webp';imgs[n]=img}
+ pending.push(fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false}));
+ const loaded=Promise.all(pending).then(results=>results.every(Boolean));
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
  // A fixed paper grain helps separately generated paintings sit inside the same film.
  // It is deterministic (no digital sparkle); only the tile offset drifts slightly.
@@ -167,6 +171,7 @@ function create(base){
   return 'hero-body';
  }
  const poseFx={current:'',previous:'',changedAt:0};
+ const poseMix=document.createElement('canvas');poseMix.width=PW;poseMix.height=PH;const poseMixCtx=poseMix.getContext('2d');
  function drawTraveller(ctx,st){
   const b=heroBox(),pose=heroPose(st),pb={x:view.W/2-b.h*(PW/PH)/2,y:b.y,w:b.h*(PW/PH),h:b.h},bob=st.reduced||!st.walking?0:Math.abs(Math.sin(st.t*2.6))*-2.2;
   const now=(root.performance?.now?.()??Date.now())/1000;
@@ -179,8 +184,7 @@ function create(base){
   // Soft contact shadow so she stands on the snow, not on top of the picture.
   ctx.fillStyle='rgba(6,10,22,.45)';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,H-4,b.w*.38,7,0,0,6.283);ctx.fill();
   const body=heroLit(pose,st.ci??0)||heroLit('hero-body',st.ci??0);
-  if(poseFx.previous&&fade<1){const previous=heroLit(poseFx.previous,st.ci??0);if(previous){ctx.globalAlpha=1-fade;ctx.drawImage(previous,pb.x,pb.y,pb.w,pb.h)}}
-  ctx.globalAlpha=fade;if(body)ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h);
+  if(body){const previous=poseFx.previous&&fade<1?heroLit(poseFx.previous,st.ci??0):null;if(previous){blendPose(poseMixCtx,previous,body,fade);ctx.drawImage(poseMix,pb.x,pb.y,pb.w,pb.h)}else ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h)}
   else{ctx.fillStyle='#1b2338';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,b.y+b.h*.6,b.w*.32,b.h*.38,0,0,6.283);ctx.fill()}
   ctx.restore();
   return bob;
@@ -423,7 +427,7 @@ function create(base){
   for(const ch of text){if(ctx.measureText(row+ch).width>max&&row){rows.push(row);row=''}row+=ch;if((ch==='、'||ch==='。')&&ctx.measureText(row).width>max*.45&&rows.length<2){rows.push(row);row=''}}
   if(row)rows.push(row);return rows;
  }
- return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,imgs,failed:()=>failed,names,manifest:()=>manifest};
+ return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,loaded,imgs,failed:()=>failed,names,manifest:()=>manifest};
 }
 root.KienaideView={create};
 })(typeof window!=='undefined'?window:globalThis);

@@ -33,5 +33,7 @@ try{
  const probe=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',webm],{encoding:'utf8'}),total=Number(probe.stdout)||length,start=Math.max(0,total-12);
  const r=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(start),'-i',webm,'-t','12','-vf','scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2','-r','30','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',mp4],{encoding:'utf8'});
  fs.writeFileSync(path.join(out,'clip-finale.json'),JSON.stringify({ending,reply,recordedSeconds:Math.round(length*10)/10,mp4:r.status===0},null,1));
- console.log('PASS kienaide finale clip:',ending,reply,length.toFixed(1)+'s',r.status===0?'mp4':'webm only');
+ if(r.status!==0&&process.env.CI)throw new Error('Release clip requires MP4: '+(r.stderr||r.error?.message||r.status));
+ if(r.status===0){const probe=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',mp4],{encoding:'utf8'}),seconds=Number(probe.stdout);if(!(seconds>=6&&seconds<=12.1))throw new Error('Release MP4 must be 6–12 seconds: '+seconds)}
+ console.log('PASS kienaide finale capture:',ending,reply,length.toFixed(1)+'s',r.status===0?'verified 6–12s mp4':'raw webm only — release MP4 not verified');
 }finally{await browser.close();server.close()}
