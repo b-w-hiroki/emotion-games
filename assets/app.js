@@ -116,7 +116,7 @@ if(candle){
  distancePanel.innerHTML='<div class="distance-label">家まで</div><strong id="distance-value">100</strong><span>m</span><div class="distance-track" aria-hidden="true"><i></i></div><p class="sr-only" id="vital-live" aria-live="polite"></p>';
  const track=distancePanel.querySelector('.distance-track i');distanceValue=distancePanel.querySelector('strong');distanceFill=track;document.querySelector('.arena').append(distancePanel);
  const controls=document.querySelector('.play-controls');routePanel=document.createElement('section');routePanel.className='route-choice';routePanel.id='route-choice';routePanel.hidden=true;routePanel.setAttribute('aria-label','道を選ぶ');
- routePanel.innerHTML='<p>この先、道が分かれている。</p><div><button type="button" data-route="shortcut"><strong>吹雪の近道</strong><small>短い道。風は強い。</small></button><button type="button" data-route="rest"><strong>軒先でひと息</strong><small>遠回り。息を戻せる。</small></button></div>';
+ routePanel.innerHTML='<p>この先、道が分かれている。</p><div><button type="button" data-route="shortcut"><strong>吹雪の近道</strong><small>16m短縮・風8秒</small></button><button type="button" data-route="rest"><strong>軒先でひと息</strong><small id="route-rest-effect"></small></button></div>';
  action.before(routePanel);
  routePanel.addEventListener('click',e=>{const btn=e.target.closest('[data-route]');if(!btn||!K.chooseRoute(state,btn.dataset.route,elapsed))return;routePanel.hidden=true;document.body.classList.remove('has-route-choice');const shortcut=btn.dataset.route==='shortcut';setStory(shortcut?'吹雪の坂へ':'軒先のあかり',''+(shortcut?'近道へ踏み出した。風が強まる。':'戸口が開いた。胸の奥まで、やっと息を吸えた。'));state.storyPause=elapsed+3;mark('route_selected',{route:btn.dataset.route,flame:Math.round(state.flame),oxygen:Math.round(state.oxygen)});action.focus()});
 }
@@ -324,7 +324,7 @@ function candleEvents(list){
  for(const e of list){
   if(e.type==='chapter'){mark('chapter_reached',{chapter:e.chapter+1});KA.cues.chapter()}
   if(e.type==='event'){mark('wind_event',{kind:e.event.kind});KA.cues.event(e.event.kind);if(e.event.kind==='gust'||e.event.kind==='eddy')navigator.vibrate?.(40);setStory(e.event.label,e.event.tip);s.storyPause=elapsed+3}
-  if(e.type==='route-choice'){holdRelease();lastShield=false;routePanel.hidden=false;document.body.classList.add('has-route-choice');setStory('分かれ道','吹雪の坂を急ぐか、灯りを借りて休むか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
+  if(e.type==='route-choice'){holdRelease();lastShield=false;$('route-rest-effect').textContent='16m遠回り・息+'+Math.min(28,Math.round(100-s.oxygen))+'%';routePanel.hidden=false;document.body.classList.add('has-route-choice');setStory('分かれ道','吹雪の坂を急ぐか、灯りを借りて休むか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
   if(e.type==='shelter'){mark('shelter_discovered',{chapter:2});setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3}
   if(e.type==='foreshadow'){setStory('夜明け前　小さな予感','向こうの窓が、こちらの灯りを見ている。');s.storyPause=elapsed+4;mark('rescue_foreshadowed',{flame:Math.round(s.flame)})}
   if(e.type==='miracle'){s.storyPause=elapsed+6;setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');KA.cues.miracle();mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)})}
