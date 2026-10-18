@@ -161,7 +161,7 @@ try{
     else if(st.phase==='silence')await press(!!r.skipReply);
     else if(st.phase==='window-reply')await press(false);
     else if(st.hint.includes('長押し')||(st.hint.includes('かばって')&&!st.hint.includes('息苦しくなる前に離す')))await press(true);
-    else if(st.hint.includes('離して')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
+    else if(st.hint.includes('離して')||st.hint.includes('はなして')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
    }
    await page.waitForTimeout(25);
   }

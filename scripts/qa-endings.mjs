@@ -112,8 +112,8 @@ async function chooseFork(page,route='rest'){
   for(let i=0;i<300&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
    if(await chooseFork(t.page,'rest'))holding=false;
    const hint=await t.page.locator('#hint').innerText();
-   if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
-   if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
+   if(!holding&&(hint.includes('長押し')||(hint.includes('かばって')&&!hint.includes('息苦しくなる前に離す')))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
+   if(holding&&(hint.includes('離して')||hint.includes('はなして')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
    await t.page.waitForTimeout(60);
   }
   if(holding)await t.page.mouse.up();
@@ -130,7 +130,7 @@ async function chooseFork(page,route='rest'){
    const hint=await t.page.locator('#hint').innerText(),mote=await t.page.locator('#stage').getAttribute('data-mote');
    if(mote){if(holding){await t.page.mouse.up();holding=false}if(!shot){shot=true;await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'})}const [x,y]=mote.split(',').map(Number);await t.page.mouse.click(stage.x+x,stage.y+y);continue}
     if(!holding&&(hint.includes('長押し')||(hint.includes('かばって')&&!hint.includes('息苦しくなる前に離す')))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
-   if(holding&&(hint.includes('離して')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
+   if(holding&&(hint.includes('離して')||hint.includes('はなして')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
     await t.page.waitForTimeout(25);
   }
   if(holding)await t.page.mouse.up();
