@@ -15,9 +15,16 @@ const results=[];
 const done=x=>{results.push(x);console.log('step ok:',x)};
 const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
  const d=c.getContext('2d').getImageData(Math.round((x-40)*k),Math.round((y-50)*k),Math.round(80*k),Math.round(80*k)).data;let w=0;for(let i=0;i<d.length;i+=4)w+=d[i]-d[i+2];return w/(d.length/4)});
-async function open(size,query,{intro=false,reduced=false}={}){
+async function open(size,query,{intro=false,reduced=false,audioProbe=false}={}){
  const ctx=await browser.newContext({viewport:size,isMobile:engine==='chromium',hasTouch:true,reducedMotion:reduced?'reduce':'no-preference'});
  if(!intro)await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+ if(audioProbe)await ctx.addInitScript(()=>{
+  window.audioStarts={steps:0,melody:0};
+  const proto=(window.AudioContext||window.webkitAudioContext).prototype;
+  for(const method of ['createBufferSource','createOscillator']){
+   const create=proto[method];proto[method]=function(...args){const source=create.apply(this,args),start=source.start;source.start=function(...args){if(method==='createBufferSource'&&!this.loop)window.audioStarts.steps++;if(method==='createOscillator'&&this.type==='sine')window.audioStarts.melody++;return start.apply(this,args)};return source};
+  }
+ });
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('crash',()=>errors.push('page crashed'));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
  await page.goto(base+query);return {ctx,page,errors};
 }
@@ -194,6 +201,19 @@ try{
   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','volume survives reload');
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('sound settings');
+ }
+ // A completed run must not leave the next run waiting on the previous audio clock.
+ {
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=3',{audioProbe:true});
+  await page.locator('#play').click();
+  const action=await page.locator('#action').boundingBox();
+  await page.mouse.move(action.x+action.width/2,action.y+action.height/2);await page.mouse.down();
+  await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:30000});
+  await page.mouse.up();
+  const before=await page.evaluate(()=>({...window.audioStarts}));
+  await page.locator('#play').click();
+  await page.waitForFunction(previous=>window.audioStarts.steps>previous.steps&&window.audioStarts.melody>previous.melody,before,{timeout:2500});
+  assert.deepEqual(errors,[]);await ctx.close();done('retry restores footsteps and melody');
  }
  // Keyboard: Space holds the shield, M touches a visible memory.
  {

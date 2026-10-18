@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const source=fs.readFileSync('assets/kienaide-audio.js','utf8');
 
 function audioRig(saved='{}'){
- const stats={bufferStarts:0,oscillatorStarts:0,gainTargets:[]};
+ const stats={bufferStarts:0,oscillatorStarts:0,melodyStarts:0,gainTargets:[]};
  const param=onTarget=>({value:0,setValueAtTime(v){this.value=v},setTargetAtTime(v){this.value=v;onTarget?.(v)},exponentialRampToValueAtTime(){}});
  const node=extra=>Object.assign({connect(){return this}},extra);
  class AudioContext{
@@ -16,7 +16,7 @@ function audioRig(saved='{}'){
   createGain(){return node({gain:param(v=>stats.gainTargets.push(v))})}
   createDelay(){return node({delayTime:param()})}
   createBiquadFilter(){return node({frequency:param(),Q:param()})}
-  createOscillator(){return node({frequency:param(),start(){stats.oscillatorStarts++},stop(){}})}
+  createOscillator(){return node({frequency:param(),start(){stats.oscillatorStarts++;if(this.type==='sine')stats.melodyStarts++},stop(){}})}
   createStereoPanner(){return node({pan:param()})}
   createBuffer(_,length){return {getChannelData(){return new Float32Array(length)}}}
   createBufferSource(){return node({buffer:null,start(){stats.bufferStarts++},stop(){},loop:false})}
@@ -30,6 +30,33 @@ function audioRig(saved='{}'){
 function state(oxygen,finalePhase='approach'){
  return {chapter:0,wind:.1,flame:50,oxygen,shield:false,finalePhase,rescue:false,reply:0};
 }
+
+test('every retry immediately restores footsteps and melody without recreating ambience',()=>{
+ const {audio,stats}=audioRig();
+ const options={playing:true,dt:1/60,ended:false};
+ for(const endTime of [82,98,14]){
+  audio.update({...state(80),chapter:3},endTime,options);
+  const buffers=stats.bufferStarts,melody=stats.melodyStarts;
+  audio.startJourney();
+  assert.equal(stats.bufferStarts,buffers,'reset must not duplicate the ambient loops');
+  audio.update(state(80),1,options);
+  assert.equal(stats.bufferStarts-buffers,1,'the new journey has a footstep in its first second');
+  assert.equal(stats.melodyStarts-melody,2,'the new journey has its two-voice melody immediately');
+ }
+});
+
+test('retry preserves mute, volume and the existing audio context',()=>{
+ const {audio,stats}=audioRig('{"muted":true,"volume":0.35}');
+ audio.startJourney();audio.init();
+ audio.update(state(80),1,{playing:true,dt:1/60,ended:false});
+ assert.equal(audio.muted,true);assert.equal(audio.volume,.35);
+ assert.equal(stats.bufferStarts,2,'only the original ambient loops exist while muted');
+ assert.equal(stats.melodyStarts,0);
+ audio.setMuted(false);audio.startJourney();
+ audio.update(state(80),1,{playing:true,dt:1/60,ended:false});
+ assert.equal(stats.bufferStarts,3);assert.equal(stats.melodyStarts,2);
+ assert.equal(audio.volume,.35);assert.equal(audio.state,'running');
+});
 
 test('breathing cue grows more frequent and present as oxygen becomes critical',()=>{
  const {breathProfile}=(()=>{const scope={};vm.runInNewContext(source,scope);return scope.KienaideAudio})();
