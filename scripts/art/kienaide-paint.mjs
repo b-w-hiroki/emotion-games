@@ -12,6 +12,8 @@ import sharp from 'sharp';
 
 const src = path.resolve('assets/kienaide/paint/src');
 const characterSrc = path.join(src, 'repaint-v2');
+const cleanPoses = ['hero-walk','hero-shield'];
+const poseSource = name => path.join(src, cleanPoses.includes(name) ? 'clean-v1' : 'repaint-v2', name + '.png');
 const out = path.resolve('assets/kienaide/paint');
 const PW = 900, PH = 1200; // every chapter plate is normalised to 3:4
 const POSES = ['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
@@ -124,7 +126,7 @@ async function additions(chapters) {
     .webp({ quality: 84, alphaQuality: 94 }).toFile(path.join(out, 'frost-edge.webp'));
   generated.push('frost-edge.webp');
   for (const name of [...POSES, ...ENDINGS]) {
-    const input = path.join(characterSrc, name + '.png');
+    const input = poseSource(name);
     if (!fs.existsSync(input)) throw new Error('missing character repaint source: ' + input);
     await sharp(input).resize(PW, PH, { fit: 'fill' })
       .webp({ quality: 90, alphaQuality: 96 }).toFile(path.join(out, name + '.webp'));
@@ -150,7 +152,8 @@ await sharp('assets/kienaide-v3/flame-spirit.webp').webp({ quality: 92, alphaQua
 const generated = await additions(chapters);
 const manifest = { generator: 'scripts/art/kienaide-paint.mjs', artBible: ['assets/kienaide-v3/snow-town.webp', 'assets/kienaide-v3/traveller-flame.webp', 'assets/kienaide-v3/flame-spirit.webp'],
   characterArtVersion: 'repaint-v2',
-  characterSources: ['repaint-v2/hero-body.png', ...POSES.map(name => `repaint-v2/${name}.png`), ...ENDINGS.map(name => `repaint-v2/${name}.png`)],
+  characterCleanup: { version: 'clean-v1', sources: cleanPoses.map(name => `clean-v1/${name}.png`), note: 'Noise cleanup only; original repaint-v2 masters retained.' },
+  characterSources: ['repaint-v2/hero-body.png', ...POSES.map(name => `${cleanPoses.includes(name) ? 'clean-v1' : 'repaint-v2'}/${name}.png`), ...ENDINGS.map(name => `repaint-v2/${name}.png`)],
   generatedSources: ['intro-room', 'frost-edge', ...POSES, ...ENDINGS, ...FLAMES, ...Object.keys(chapters).map(c => 'fore-' + c)],
   plate: [PW, PH], chapters, traveller, generated, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
