@@ -66,7 +66,9 @@ try{
   assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
-  const fork=await open(size,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
+  for(const routeSize of sizes){
+  const suffix=routeSize.width===390?'':'-360',choice=routeSize.width===390?'shortcut':'rest';
+  const fork=await open(routeSize,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
   const actionBox=await fork.page.locator('#action').boundingBox();await fork.page.mouse.move(actionBox.x+actionBox.width/2,actionBox.y+actionBox.height/2);await fork.page.mouse.down();
   await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:10000});
   await fork.page.mouse.up();
@@ -77,17 +79,18 @@ try{
   assert.notEqual(restEffect,'8秒遅く・息+0%','holding to protect the flame should make the rest option meaningful');
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
   assert.equal(await fork.page.locator('#story-beat small').innerText(),'分かれ道','the fork instructions must remain while the player decides');
-  await fork.page.screenshot({path:path.join(out,`${engine}-route-choice.png`)});
-  const routeTarget=await fork.page.locator('#route-choice button').first().evaluate(el=>el.getBoundingClientRect().height);
-  assert.ok(routeTarget>=60,'route options must be comfortable thumb targets ('+routeTarget+'px)');
-  await fork.page.locator('#route-choice [data-route="shortcut"]').click();
-  await fork.page.waitForFunction(n=>Number(document.querySelector('#distance-value').textContent)<n,before,{timeout:2000});
-  assert.ok(Number(await fork.page.locator('#distance-value').innerText())<before,'shortcut visibly cuts the route');
+  await fork.page.screenshot({path:path.join(out,`${engine}-route-choice${suffix}.png`)});
+  const targets=await fork.page.locator('#route-choice button').evaluateAll(buttons=>buttons.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom,title:parseFloat(getComputedStyle(el.querySelector('strong')).fontSize),detail:parseFloat(getComputedStyle(el.querySelector('small')).fontSize),reachable:el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}}));
+  for(const target of targets){assert.ok(target.width>=280&&target.height>=80,'choices need large thumb targets: '+JSON.stringify(target));assert.ok(target.y>=routeSize.height*.5&&target.bottom<=routeSize.height-24,'choices must sit in the lower half, clear of the bottom edge');assert.ok(target.x>=16&&target.right<=routeSize.width-16,'choices must stay inside the screen');assert.ok(target.title>=16&&target.detail>=12,'choice text must remain legible');assert.ok(target.reachable,'choice centre must receive the tap')}
+  assert.ok(targets[1].y-targets[0].bottom>=10,'stacked choices need a gap against accidental taps');
+  await fork.page.locator('#route-choice [data-route="'+choice+'"]').tap();
+  await fork.page.waitForFunction(({before,choice})=>{const n=Number(document.querySelector('#distance-value').textContent);return choice==='shortcut'?n<before:n>before},{before,choice},{timeout:2000});
   const seconds=text=>{const [m,s]=text.split(':').map(Number);return m*60+s};
-  assert.ok(seconds(await fork.page.locator('#timer').innerText())<=seconds(remaining)-8,'shortcut must also reduce time to actual arrival');
+  const arrival=seconds(await fork.page.locator('#timer').innerText());assert.ok(choice==='shortcut'?arrival<=seconds(remaining)-8:arrival>=seconds(remaining)+7,'the tapped choice must change actual arrival time');
   assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
-  await fork.page.screenshot({path:path.join(out,`${engine}-shortcut-after-choice.png`)});
-  assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice, distance, vital warnings');
+  await fork.page.screenshot({path:path.join(out,`${engine}-${choice}-after-choice${suffix}.png`)});
+  assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice touch targets '+routeSize.width);
+  }
   for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
    const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
    await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});

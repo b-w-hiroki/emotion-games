@@ -223,14 +223,16 @@ body[data-game=kienaide] .distance-track i{display:block;height:100%;width:0;bac
 body[data-game=kienaide] .distance-panel[data-danger^=flame]{border-color:#fb9d7baa;box-shadow:0 0 20px #f25f4d36,inset 0 1px #fff2}
 body[data-game=kienaide] .distance-panel[data-danger^=breath]{border-color:#8ad6ecaa;box-shadow:0 0 20px #49b2d536,inset 0 1px #fff2}
 body.kienaide-playing[data-game=kienaide] .play-controls .route-choice[hidden]{display:none}
-body.kienaide-playing[data-game=kienaide] .play-controls .route-choice{position:relative;z-index:2;display:block;pointer-events:auto;padding:12px 14px 14px;background:linear-gradient(180deg,#102034f5,#091321fa);border:1px solid #ecd39a99;border-radius:20px 20px 0 0;box-shadow:0 -12px 35px #0009}
-body.kienaide-playing[data-game=kienaide] .route-choice>p{margin:0 0 9px;text-align:center;color:#fff0d2;font-size:13px;font-weight:750;letter-spacing:.04em}
-body.kienaide-playing[data-game=kienaide] .route-choice>div{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-body.kienaide-playing[data-game=kienaide] .route-choice button{min-height:56px;padding:7px 8px;border:1px solid #e5c58a77;border-radius:12px;background:#17283c;color:#fff0d2;text-align:center}
+body.kienaide-playing[data-game=kienaide] .play-controls .route-choice{position:relative;z-index:2;display:block;pointer-events:auto;padding:16px;background:linear-gradient(180deg,#102034f5,#091321fa);border:1px solid #ecd39a77;border-radius:24px;box-shadow:0 12px 36px #0009}
+body.kienaide-playing[data-game=kienaide] .route-choice>p{margin:0 0 12px;text-align:center;color:#fff0d2;font-size:15px;font-weight:750;letter-spacing:.04em}
+body.kienaide-playing[data-game=kienaide] .route-choice>div{display:grid;grid-template-columns:1fr;gap:12px}
+body.kienaide-playing[data-game=kienaide] .route-choice button{position:relative;min-height:84px;padding:16px 44px 16px 20px;border:1px solid #e5c58aaa;border-radius:16px;background:#17283c;color:#fff0d2;text-align:left;touch-action:manipulation}
+body.kienaide-playing[data-game=kienaide] .route-choice button::after{content:"";position:absolute;right:22px;top:calc(50% - 4px);width:8px;height:8px;border-top:2px solid #f1d39e;border-right:2px solid #f1d39e;transform:rotate(45deg)}
 body.kienaide-playing[data-game=kienaide] .route-choice button:active{background:#3c3026}
 body.kienaide-playing[data-game=kienaide] .route-choice button strong,body.kienaide-playing[data-game=kienaide] .route-choice button small{display:block}
-body.kienaide-playing[data-game=kienaide] .route-choice button strong{font-size:13px}
-body.kienaide-playing[data-game=kienaide] .route-choice button small{margin-top:3px;color:#cbd3df;font-size:9px}
+body.kienaide-playing[data-game=kienaide] .route-choice button strong{font-size:18px;line-height:1.3}
+body.kienaide-playing[data-game=kienaide] .route-choice button small{margin-top:6px;color:#d2dce8;font-size:13px;line-height:1.45}
+body.kienaide-playing.has-route-choice[data-game=kienaide] .play-controls{left:16px;right:16px;bottom:calc(clamp(28px,6svh,56px) + env(safe-area-inset-bottom))}
 body.kienaide-playing.has-route-choice[data-game=kienaide] .game-shell.ember .action{display:none}
 body.kienaide-playing.has-route-choice[data-game=kienaide] .distance-panel{visibility:hidden}
 body.kienaide-playing[data-game=kienaide] .route-choice button:focus-visible{outline:2px solid #ffe3a8;outline-offset:2px}
@@ -307,9 +309,6 @@ body[data-game=kienaide] .distance-panel[data-danger="flame-critical"]{border-co
 body[data-game=kienaide] .distance-panel[data-danger="breath-critical"]{border-color:#9aeaff;animation:kienaide-distance-breath 1.2s ease-in-out infinite}
 body[data-game=kienaide] .game-shell.ember .action.art-hold.is-life-critical{border-top-width:2px}
 body[data-game=kienaide] .game-shell.ember .action.art-hold.is-breath-critical{border-top-width:2px}
-body.kienaide-playing[data-game=kienaide] .route-choice button{min-height:64px;border-radius:15px;padding:9px 10px}
-body.kienaide-playing[data-game=kienaide] .route-choice button strong{font-size:14px}
-body.kienaide-playing[data-game=kienaide] .route-choice button small{font-size:10px}
 @keyframes kienaide-distance-life{50%{box-shadow:0 0 25px #f25f4d66,inset 0 1px #fff2}}
 @keyframes kienaide-distance-breath{50%{box-shadow:0 0 25px #49b2d566,inset 0 1px #fff2}}
 @media(max-width:390px){body[data-game=kienaide] .distance-panel{min-width:178px;padding:9px 16px 15px}body[data-game=kienaide] .distance-panel strong{font-size:33px}}
