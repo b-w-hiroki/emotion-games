@@ -130,10 +130,14 @@ try{
     if(r.policy==='hold')await press(true);
    }
    if(r.policy==='tele'){
-    const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
+   const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
-    // wish: keep holding through the silence so the window does not answer.
-    if(r.skipReply&&st.phase==='silence'){await press(true)}
+    // Drive the finale from its explicit phases, not transient prose that may update
+    // between automation frames. Wish intentionally stays shielded through silence.
+    if(st.phase==='gust-warning')await press(false);
+    else if(st.phase==='gust-active')await press(true);
+    else if(st.phase==='silence')await press(!!r.skipReply);
+    else if(st.phase==='window-reply')await press(false);
     else if(st.hint.includes('長押し')||(st.hint.includes('かばって')&&!st.hint.includes('息苦しくなる前に離す')))await press(true);
     else if(st.hint.includes('離して')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
    }
