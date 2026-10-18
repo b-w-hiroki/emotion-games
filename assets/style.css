@@ -315,3 +315,8 @@ body.kienaide-playing[data-game=kienaide] .route-choice button small{font-size:1
 @media(max-width:390px){body[data-game=kienaide] .distance-panel{min-width:178px;padding:9px 16px 15px}body[data-game=kienaide] .distance-panel strong{font-size:33px}}
 @media(max-height:700px){body[data-game=kienaide] .distance-panel{bottom:calc(110px + env(safe-area-inset-bottom));padding-block:7px 13px}body[data-game=kienaide] .distance-panel strong{font-size:30px}}
 @media(prefers-reduced-motion:reduce){body[data-game=kienaide] .distance-panel[data-danger="flame-critical"],body[data-game=kienaide] .distance-panel[data-danger="breath-critical"]{animation:none}}
+.orientation-notice{position:fixed;z-index:30;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;background:#07101df5;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.orientation-notice>span{display:grid;place-items:center;width:58px;height:82px;border:2px solid #f1c98f;border-radius:12px;color:#f1c98f;font-size:24px;transform:rotate(90deg)}
+.orientation-notice strong{font-size:23px;color:#fff1d9}
+.orientation-notice p{max-width:290px;margin:0;color:#c1c9d5;font-size:14px;line-height:1.8}
+@media(orientation:landscape) and (max-height:500px){body[data-game=kienaide] .orientation-notice{display:flex}}
