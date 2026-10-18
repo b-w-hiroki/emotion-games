@@ -24,12 +24,35 @@ async function noShortTail(page,selector){
  assert.ok(lines.length<=1||lines.at(-1).length>5,selector+' has a short tail: '+JSON.stringify(lines));
 }
 try{
+ {
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/hero-body.webp',async route=>{await gate;await route.continue()});
+  const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=1',{waitUntil:'domcontentloaded'});
+  assert.ok(await page.locator('#play').isDisabled());assert.ok(await page.locator('#journey-loading').isVisible());
+  await page.locator('#play').evaluate(el=>el.click());await page.waitForTimeout(250);
+  assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-title-screen')),'loading must not spend the journey clock');
+  release();await page.waitForFunction(()=>!document.querySelector('#play').disabled);
+  assert.equal(await page.locator('#journey-loading').count(),0);await page.locator('#play').click();
+  assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-playing')));
+  await ctx.close();console.log('PASS delayed paintings gate the start without consuming play time');
+ }
+ for(const asset of ['hero-body.webp','manifest.json']){
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
+  const pattern='**/paint/'+asset;await ctx.route(pattern,route=>route.abort());const page=await ctx.newPage();
+  await page.goto(base,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('#play').dataset.loadFailed);
+  assert.match(await page.locator('#journey-loading').innerText(),/読み込めません/);
+  await page.screenshot({path:path.join(out,`${engine}-loading-error-${asset.replace('.','-')}.png`)});
+  await ctx.unroute(pattern);await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#play').click()]);
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled&&!document.querySelector('#play').dataset.loadFailed);
+  assert.equal(await page.locator('#collection-progress').innerText(),'結末 1 / 5');await ctx.close();console.log('PASS failed painting reload preserves discoveries',asset);
+ }
  for(const size of [{width:390,height:844},{width:360,height:640}]){
   const tag=size.width+'x'+size.height;
   {
    const {ctx,page,errors}=await open(size,'',{save:true});
    assert.equal(await page.locator('#collection-progress').innerText(),'結末 2 / 5');
    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide'))),['dawn','wish']);
+   await page.waitForFunction(()=>!document.querySelector('#play').disabled&&!document.querySelector('#play').dataset.loadFailed);
    await noShortTail(page,'#curtain-description');
    const titleSpace=await page.evaluate(()=>({button:document.querySelector('#open-collection').getBoundingClientRect().bottom,kicker:document.querySelector('#curtain-kicker').getBoundingClientRect().top}));
    assert.ok(titleSpace.button+4<=titleSpace.kicker,'title menu must not overlap the title caption');

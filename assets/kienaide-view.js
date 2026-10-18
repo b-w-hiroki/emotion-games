@@ -21,8 +21,10 @@ function create(base){
  const dir=base+'assets/kienaide/paint/';
  const names=[];for(const c of CH)for(const l of [...BANDS,'lights'])names.push(c+'-'+l);
  names.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
- for(const n of names){const img=new Image();img.decoding='async';img.onerror=()=>{failed++};img.src=dir+n+'.webp';imgs[n]=img}
- fetch(dir+'manifest.json').then(r=>r.json()).then(m=>{manifest=m}).catch(()=>{failed++});
+ const pending=[];
+ for(const n of names){const img=new Image();img.decoding='async';pending.push(new Promise(resolve=>{img.onload=()=>resolve(true);img.onerror=()=>{failed++;resolve(false)}}));img.src=dir+n+'.webp';imgs[n]=img}
+ pending.push(fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false}));
+ const loaded=Promise.all(pending).then(results=>results.every(Boolean));
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
  // A fixed paper grain helps separately generated paintings sit inside the same film.
  // It is deterministic (no digital sparkle); only the tile offset drifts slightly.
@@ -425,7 +427,7 @@ function create(base){
   for(const ch of text){if(ctx.measureText(row+ch).width>max&&row){rows.push(row);row=''}row+=ch;if((ch==='、'||ch==='。')&&ctx.measureText(row).width>max*.45&&rows.length<2){rows.push(row);row=''}}
   if(row)rows.push(row);return rows;
  }
- return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,imgs,failed:()=>failed,names,manifest:()=>manifest};
+ return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,loaded,imgs,failed:()=>failed,names,manifest:()=>manifest};
 }
 root.KienaideView={create};
 })(typeof window!=='undefined'?window:globalThis);

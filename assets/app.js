@@ -107,6 +107,8 @@ if(candle){
  const startArt=document.createElement('img');startArt.src=base+'assets/kienaide-v3/start-button.webp';startArt.alt='';startArt.setAttribute('aria-hidden','true');
  const startLabel=document.createElement('span');startLabel.className='sr-only';startLabel.textContent='旅をはじめる';
  $('play').replaceChildren(startArt,startLabel);
+ $('play').disabled=true;$('play').setAttribute('aria-busy','true');
+ const loading=document.createElement('p');loading.id='journey-loading';loading.className='journey-loading';loading.setAttribute('role','status');loading.textContent='絵を準備しています…';curtain.append(loading);
 }
 function clearKienaideTitle(){if(!candle)return;document.body.classList.remove('kienaide-title-screen');curtain.classList.remove('journey-title');curtain.querySelectorAll('.journey-title-hero,.journey-title-note').forEach(el=>el.remove())}
 const actionCue=candle?action.querySelector('.action-cue'):null,actionMain=candle?action.querySelector('.action-main b'):null,actionSub=candle?action.querySelector('.action-main em'):null;
@@ -137,6 +139,10 @@ try{high=Number(localStorage.getItem('emotion-v1-'+slug))||0}catch(_){}if(!candl
 const state={};
 // 004 uses dedicated modules: rules (kienaide-core.js), layered art (kienaide-view.js), sound (kienaide-audio.js).
 const K=candle?window.KienaideCore:null,KV=candle?window.KienaideView.create(base):null,KA=candle?window.KienaideAudio.create():null;
+if(candle){
+ const titleImages=[...curtain.querySelectorAll('img')].map(img=>img.decode().then(()=>true,()=>false));
+ Promise.all([KV.loaded,...titleImages]).then(results=>{const play=$('play');play.disabled=false;play.removeAttribute('aria-busy');if(results.every(Boolean))$('journey-loading').remove();else{$('journey-loading').textContent='絵を読み込めませんでした。通信を確認して読み直してください。';play.dataset.loadFailed='1';play.textContent='読み直す ↻'}});
+}
 const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 let endingAt=0,runCount=0;
@@ -278,7 +284,7 @@ function showKienaideIntro(){
   if(t>=iv.INTRO_LENGTH)return done();introRaf=requestAnimationFrame(loop)};
  introRaf=requestAnimationFrame(loop);skip.focus({preventScroll:true});mark('intro_start');
 }
-$('play').addEventListener('click',()=>{if(mode==='end'){mark('game_retry');run()}else if(candle)showKienaideIntro();else run()});
+$('play').addEventListener('click',()=>{if(candle&&$('play').dataset.loadFailed){location.reload();return}if(mode==='end'){mark('game_retry');run()}else if(candle)showKienaideIntro();else run()});
 $('reset').addEventListener('click',()=>{if(mode!=='intro')mark('game_retry');run()});
 $('share').addEventListener('click',()=>share(points?points+'点':''));
 let candlePointer=null,candleKey=null;
