@@ -79,7 +79,7 @@ async function chooseFork(page,route='rest'){
   console.log('PASS: first-play prologue, skip and repeat-play persistence');
  }
  {
-   const t=await pageFor('kienaide','?qa=1&speed=6');
+  const t=await pageFor('kienaide','?qa=1&speed=6');
   assert.ok(await t.page.locator('#story-beat').isVisible());
   const layers=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8')).files;
   const artLoaded=await t.page.evaluate(async files=>Promise.all(files.map(name=>new Promise(ok=>{
@@ -122,16 +122,16 @@ async function chooseFork(page,route='rest'){
   await t.ctx.close();console.log('PASS: readable wind telegraph supports a complete night journey');
  }
  {
-  const t=await pageFor('kienaide','?qa=1');
+   const t=await pageFor('kienaide','?qa=1&speed=2');
   // Memories appear at seeded positions; the canvas exposes where the current one is drawn.
   const box=await t.page.locator('#action').boundingBox(),stage=await t.page.locator('#stage').boundingBox();let holding=false,shot=false;
-   for(let i=0;i<350&&!await t.page.locator('#stage').getAttribute('data-ending');i++){
+   for(let i=0;i<1500&&!await t.page.locator('#stage').getAttribute('data-ending');i++){
    if(await chooseFork(t.page,'rest'))holding=false;
    const hint=await t.page.locator('#hint').innerText(),mote=await t.page.locator('#stage').getAttribute('data-mote');
    if(mote){if(holding){await t.page.mouse.up();holding=false}if(!shot){shot=true;await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'})}const [x,y]=mote.split(',').map(Number);await t.page.mouse.click(stage.x+x,stage.y+y);continue}
     if(!holding&&(hint.includes('長押し')||(hint.includes('かばって')&&!hint.includes('息苦しくなる前に離す')))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
    if(holding&&(hint.includes('離して')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
-   await t.page.waitForTimeout(55);
+    await t.page.waitForTimeout(25);
   }
   if(holding)await t.page.mouse.up();
   await t.page.waitForFunction(()=>!document.getElementById('curtain').classList.contains('hidden'));
