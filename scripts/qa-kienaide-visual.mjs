@@ -262,7 +262,7 @@ try{
  // Guarding the last gust without opening the hands must not award the homecoming,
  // even when all memories and enough flame survive the night.
  for(const routeSize of sizes){
-  const {ctx,page,errors}=await open(routeSize,'?qa=1&seed=5&speed=3&t=82&mem=3');
+  const {ctx,page,errors}=await open(routeSize,'?qa=1&seed=5&speed=3&t=82&mem=3&vital=flame-full');
   await page.locator('#play').click();
   await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='gust-active');
   const box=await page.locator('#action').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();

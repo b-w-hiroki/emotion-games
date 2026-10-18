@@ -355,7 +355,7 @@ function startCandle(){
  momentCard.reset();
  releaseCandleInput();KA.init();KA.resume();KA.startJourney();runCount++;
  const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
- Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
+ Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='flame-full')state.flame=100;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
  if(qa&&params.has('mem')){for(const m of state.slots.slice(0,Math.min(3,Number(params.get('mem'))||0)))state.memoryGot.add(m.id);state.memories=state.memoryGot.size}
  if(qa&&params.has('t')){elapsed=Math.max(0,Math.min(89,Number(params.get('t'))||0));state.chapter=state.previousChapter=K.chapterAt(elapsed)}
  $('moment-save').hidden=true;$('next-hint').hidden=true;delete canvas.dataset.ending;$('story-beat').hidden=false;curtain.classList.remove('tableau');best.textContent=state.memories+' / 3';
