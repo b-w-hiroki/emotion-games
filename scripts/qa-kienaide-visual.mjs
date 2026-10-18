@@ -259,6 +259,26 @@ try{
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-card.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('ending '+id);
  }
+ // Guarding the last gust without opening the hands must not award the homecoming,
+ // even when all memories and enough flame survive the night.
+ for(const routeSize of sizes){
+  const {ctx,page,errors}=await open(routeSize,'?qa=1&seed=5&speed=3&t=82&mem=3&vital=flame-full');
+  await page.locator('#play').click();
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='gust-active');
+  const box=await page.locator('#action').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.reply==='faint');await page.mouse.up();
+  await page.waitForFunction(()=>!!document.querySelector('#stage').dataset.ending);
+  assert.equal(await page.locator('#stage').getAttribute('data-ending'),'wish');
+  await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
+  const reason=await page.locator('#ending-reason').innerText();
+  assert.match(reason,/静寂で手を開かなかった/);
+  assert.ok(Number(reason.match(/灯り (\d+)%/)?.[1])>=70,'the final flame is ample; only the missed reply determines this ending: '+reason);
+  const lines=await page.locator('#ending-reason').evaluate(el=>{const rows=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);for(let node=walker.nextNode();node;node=walker.nextNode())for(let i=0;i<node.length;i++){const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);const box=range.getBoundingClientRect();let row=rows.find(r=>Math.abs(r.top-box.top)<1);if(!row){row={top:box.top,text:''};rows.push(row)}row.text+=node.textContent[i]}return rows.map(r=>r.text.trim())});
+  assert.ok(lines.length<=1||lines.at(-1).length>5,'ending reason must not strand a short tail: '+JSON.stringify(lines));
+  await page.waitForFunction(()=>document.querySelector('#moment-save').dataset.state==='ready');await page.waitForTimeout(400);
+  await page.screenshot({path:path.join(out,`${engine}-${routeSize.width}-ending-unanswered-window.png`)});
+  assert.deepEqual(errors,[]);await ctx.close();done('unanswered window cannot award dawn '+routeSize.width);
+ }
  // Sound: OFF and volume persist across reloads; play still works with sound off.
  {
   const {ctx,page,errors}=await open(size,'?qa=1&seed=2');

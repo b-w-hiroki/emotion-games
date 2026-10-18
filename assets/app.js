@@ -33,9 +33,9 @@ const endings={
  kienaide:[
   {id:'blown',title:'風にさらわれた。',desc:'炎の精は風に消え、家へ届けられなかった。少女は暗い雪道にひとり残された。',hint:'風の予兆を見落とすと…'},
   {id:'smother',title:'守りすぎた。',desc:'風から守り続けた代わりに少女の息が尽き、旅はそこで終わった。守るだけでは、ふたりとも帰れない。',hint:'強く守り続けるだけでは届かない'},
-  {id:'wish',title:'わすれない。',desc:'三つの記憶は取り戻したが、炎は家へ届く前に消えた。約束だけが、次の夜への道しるべになった。',hint:'道に浮かぶ三つの記憶に触れる'},
+  {id:'wish',title:'わすれない。',desc:'三つの記憶は取り戻したが、約束はまだ果たせなかった。その記憶が、次の夜への道しるべになった。',hint:'三つの記憶を集め、最後の窓の返事にも注目する'},
   {id:'survive',title:'まだ、ここに。',desc:'炎の精を家まで届けた。しかし失った記憶が残り、窓の向こうで待つ相手を思い出せなかった。',hint:'炎と呼吸を残して夜を越える'},
-  {id:'dawn',title:'おかえり。',desc:'三つの記憶と炎の精を家まで届けた。待っていた誰かが窓を開け、「おかえり」と迎えた。',hint:'記憶を集め、明るい炎のまま届ける'}
+  {id:'dawn',title:'おかえり。',desc:'三つの記憶と炎の精を家まで届けた。待っていた誰かが窓を開け、「おかえり」と迎えた。',hint:'記憶を集め、最後の突風でかばい、静寂では手を開く'}
  ]
 };
 
@@ -249,9 +249,9 @@ function store(n){if(n<=high)return;high=n;if(!candle)best.textContent=String(hi
 function candleEndingMeaning(id,s){const flame=Math.max(0,Math.round(s.flame||0)),mem=s.memories||0;return {
  blown:{outcome:'炎の精を、家へ届けられなかった',reason:'灯り 0%　風の中で手を離していた'},
  smother:{outcome:'少女の息が尽き、旅を続けられなかった',reason:'息 0%　長くかばい続けて呼吸を失った'},
- wish:{outcome:'記憶は戻ったが、灯りは届かなかった',reason:'記憶 3 / 3　灯り '+flame+'%　家へ届くには弱かった'},
+ wish:{outcome:'記憶は戻ったが、約束は果たせなかった',reason:'記憶 3 / 3　灯り '+flame+'%　'+(s.replyLevel==='bright'?'届くには灯りが弱かった':s.gustShield<2.5?'最後の突風をかばえなかった':'静寂で手を開かなかった')},
  survive:{outcome:'炎の精は届いたが、大切な記憶が欠けていた',reason:'記憶 '+mem+' / 3　灯り '+flame+'%　道の記憶を取りこぼした'},
- dawn:{outcome:'記憶も灯りも、待つ人のもとへ届いた',reason:'記憶 3 / 3　灯り '+flame+'%　ふたりで夜を越えた'}
+ dawn:{outcome:'記憶も灯りも、待つ人のもとへ届いた',reason:'記憶 3 / 3　灯り '+flame+'%　窓が答え、ふたりで夜を越えた'}
  }[id]||{outcome:'夜はひとつの結末を迎えた',reason:'あなたの操作が、この夜を選んだ'}}
 function renderCandleEndingMeaning(){if(!candle)return;const el=$('ending-meaning');if(!lastEnding){el.hidden=true;return}const m=candleEndingMeaning(lastEnding,state);$('ending-outcome').textContent=m.outcome;$('ending-reason').textContent=m.reason;el.hidden=false}
 function display(title,description,kicker='YOUR RESULT'){mode='end';if(candle){clearKienaideTitle();document.body.classList.remove('kienaide-playing')}down=false;$('collection-panel').hidden=true;action.disabled=true;curtain.classList.remove('hidden');$('curtain-kicker').textContent=kicker;$('curtain-title').textContent=title;if(candle)$('curtain-description').innerHTML=guidanceMarkup(description);else $('curtain-description').textContent=description;$('play').textContent=candle?'もう一度、夜を歩く ↻':'もう一度遊ぶ ↻';$('play').classList.remove('art-start');$('share').hidden=false;$('related').hidden=false;if(candle){renderCandleEndingMeaning();$('moment-save').hidden=false;$('story-beat').classList.remove('show');$('hint').textContent='夜の記憶は、結末図鑑に残った。';candleEnding()}answer=title;mark('game_complete',{score:points,ending_id:lastEnding,outcome:points>0?'success':'lose',memories:state.memories||0,chapter:state.chapter||0,miracle:!!state.rescue,lowest_flame:state.lowestFlame??null})}
@@ -355,7 +355,7 @@ function startCandle(){
  momentCard.reset();
  releaseCandleInput();KA.init();KA.resume();KA.startJourney();runCount++;
  const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
- Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
+ Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='flame-full')state.flame=100;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
  if(qa&&params.has('mem')){for(const m of state.slots.slice(0,Math.min(3,Number(params.get('mem'))||0)))state.memoryGot.add(m.id);state.memories=state.memoryGot.size}
  if(qa&&params.has('t')){elapsed=Math.max(0,Math.min(89,Number(params.get('t'))||0));state.chapter=state.previousChapter=K.chapterAt(elapsed)}
  $('moment-save').hidden=true;$('next-hint').hidden=true;delete canvas.dataset.ending;$('story-beat').hidden=false;curtain.classList.remove('tableau');best.textContent=state.memories+' / 3';

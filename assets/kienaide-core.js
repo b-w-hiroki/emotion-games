@@ -66,7 +66,7 @@ function canTriggerMiracle(s,time){
 function chapterAt(time){let c=0;for(let i=1;i<CHAPTERS.length;i++)if(time>=CHAPTERS[i].at)c=i;return c}
 function finalePhaseAt(time,journey=JOURNEY){const f=time-(journey-10);return f<0?'approach':f<2?'gust-warning':f<7?'gust-active':f<8.5?'silence':'window-reply'}
 // The ending is resolved by one function so new presentation can never drift from the gallery IDs.
-function arrivalEnding(s){return s.memories===3?(s.flame>=68?'dawn':'wish'):'survive'}
+function arrivalEnding(s){return s.memories===3?(s.flame>=68&&s.replyLevel==='bright'?'dawn':'wish'):'survive'}
 function baseWind(time,chapter){
  const gustWave=Math.pow((Math.sin(time*(.42+chapter*.055)-.9)+1)/2,2.3);
  const crossWind=Math.pow((Math.sin(time*.19+1.8)+1)/2,4);

@@ -130,6 +130,7 @@ body[data-game=kienaide] .curtain.tableau>*{flex-shrink:0}
 .ending-meaning small{font-size:9px;font-weight:800;letter-spacing:.14em;color:#d9b77f}
 .ending-meaning strong{font-size:13px;line-height:1.45;color:#fff1d9}
 .ending-meaning span{font-size:10px;line-height:1.45;color:#bdc8d7}
+body[data-game=kienaide] .ending-meaning span{font-size:12px;line-height:1.55;text-wrap:balance}
 @media(max-height:720px){
 .game-shell.ember .curtain{padding:12px 16px}
 .game-shell.ember .curtain h2{font-size:clamp(24px,7vw,35px)}
