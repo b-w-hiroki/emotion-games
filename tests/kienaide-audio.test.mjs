@@ -6,17 +6,17 @@ import vm from 'node:vm';
 const source=fs.readFileSync('assets/kienaide-audio.js','utf8');
 
 function audioRig(saved='{}'){
- const stats={bufferStarts:0};
- const param=()=>({value:0,setValueAtTime(){},setTargetAtTime(){},exponentialRampToValueAtTime(){}});
+ const stats={bufferStarts:0,oscillatorStarts:0,gainTargets:[]};
+ const param=onTarget=>({value:0,setValueAtTime(v){this.value=v},setTargetAtTime(v){this.value=v;onTarget?.(v)},exponentialRampToValueAtTime(){}});
  const node=extra=>Object.assign({connect(){return this}},extra);
  class AudioContext{
   constructor(){this.currentTime=0;this.sampleRate=16;this.destination={};this.state='running'}
   resume(){this.state='running';return Promise.resolve()}
   suspend(){this.state='suspended';return Promise.resolve()}
-  createGain(){return node({gain:param()})}
+  createGain(){return node({gain:param(v=>stats.gainTargets.push(v))})}
   createDelay(){return node({delayTime:param()})}
   createBiquadFilter(){return node({frequency:param(),Q:param()})}
-  createOscillator(){return node({frequency:param(),start(){},stop(){}})}
+  createOscillator(){return node({frequency:param(),start(){stats.oscillatorStarts++},stop(){}})}
   createStereoPanner(){return node({pan:param()})}
   createBuffer(_,length){return {getChannelData(){return new Float32Array(length)}}}
   createBufferSource(){return node({buffer:null,start(){stats.bufferStarts++},stop(){},loop:false})}
@@ -59,6 +59,15 @@ test('breathing sound is scheduled only while audible play is in a low-oxygen st
  const muted=audioRig('{"muted":true}');
  muted.audio.update(state(20),0,options);
  assert.equal(muted.stats.bufferStarts,2,'mute suppresses the breath cue');
+});
+
+test('the window reply keeps the storm silent while its answer stinger plays',()=>{
+ const {audio,stats}=audioRig();
+ audio.update(state(80,'window-reply'),89,{playing:true,dt:1/60,ended:false});
+ assert.deepEqual(stats.gainTargets.slice(-6),[0,0,0,0,0,0],'wind, fire and the chapter pad stay silent through the reply');
+ const before=stats.oscillatorStarts;
+ audio.cues.reply('bright');
+ assert.equal(stats.oscillatorStarts-before,8,'the window still answers with its bright four-note stinger');
 });
 
 test('audio suspends in the background and resumes for both the intro and active play',async()=>{
