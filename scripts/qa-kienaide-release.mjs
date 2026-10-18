@@ -159,7 +159,11 @@ try{
  {
   const {ctx,page,errors}=await open({width:360,height:640},'?qa=1&speed=0.0001',{noAudio:true});
   assert.equal(await page.locator('#sound-toggle').innerText(),'音 非対応');assert.ok(await page.locator('#sound-toggle').isDisabled());
-  await page.locator('#play').click();assert.ok(await page.locator('#action').isEnabled());await page.locator('#journey-menu-open').click();assert.ok(await page.locator('#pause-sound').isDisabled());assert.ok(await page.locator('#pause-volume').isDisabled());assert.equal(await page.locator('#pause-sound').innerText(),'音 非対応');await page.locator('#pause-resume').click();assert.deepEqual(errors,[]);await ctx.close();console.log('PASS playable without Web Audio');
+  await page.locator('#play').click();assert.ok(await page.locator('#action').isEnabled());await page.locator('#journey-menu-open').click();assert.ok(await page.locator('#pause-sound').isDisabled());assert.ok(await page.locator('#pause-volume').isDisabled());assert.equal(await page.locator('#pause-sound').innerText(),'音 非対応');await page.locator('#pause-resume').click();
+  await page.goto(base+'?qa=1&speed=0.0001&vital=breath');await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await page.locator('#journey-menu-open').click();await page.locator('#pause-resume').click();assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'critical breath restores focus to an enabled control, not inside a hidden menu');
+  await page.locator('#open-collection').evaluate(el=>el.click());await page.keyboard.press('Escape');assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'collection uses the same safe fallback');
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS playable without Web Audio and critical-breath focus recovery');
  }
  {
   const {ctx,page}=await open({width:390,height:844});

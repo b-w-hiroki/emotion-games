@@ -116,6 +116,7 @@ let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
 let distancePanel=null,distanceValue=null,distanceFill=null,routePanel=null;
 let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
+function focusCandleAction(){(action.disabled?$('journey-menu-open'):action).focus()}
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
  if(open){holdRelease();candleDialog=panel;const isolate=parent=>{for(const el of parent.children){if(el===panel)continue;if(el.contains(panel))isolate(el);else{candleInert.push([el,el.inert]);el.inert=true}}};isolate(document.querySelector('.game-shell'))}
@@ -134,14 +135,14 @@ if(candle){
  const controls=document.querySelector('.play-controls');routePanel=document.createElement('section');routePanel.className='route-choice';routePanel.id='route-choice';routePanel.hidden=true;routePanel.setAttribute('aria-label','道を選ぶ');routePanel.setAttribute('role','dialog');routePanel.setAttribute('aria-modal','true');
  routePanel.innerHTML='<p>この先、道が分かれている。</p><div><button type="button" data-route="shortcut"><strong>吹雪の近道</strong><small>8秒早く・強風8秒</small></button><button type="button" data-route="rest"><strong>軒先でひと息</strong><small id="route-rest-effect"></small></button></div>';
  action.before(routePanel);
- routePanel.addEventListener('click',e=>{const btn=e.target.closest('[data-route]');if(!btn||!K.chooseRoute(state,btn.dataset.route,elapsed))return;setCandleDialog(routePanel,false);document.body.classList.remove('has-route-choice');const shortcut=btn.dataset.route==='shortcut';setStory(shortcut?'吹雪の坂へ':'軒先のあかり',''+(shortcut?'近道へ踏み出した。風が強まる。':'戸口が開いた。胸の奥まで、やっと息を吸えた。'));state.storyPause=elapsed+3;mark('route_selected',{route:btn.dataset.route,flame:Math.round(state.flame),oxygen:Math.round(state.oxygen)});action.focus()});
+ routePanel.addEventListener('click',e=>{const btn=e.target.closest('[data-route]');if(!btn||!K.chooseRoute(state,btn.dataset.route,elapsed))return;setCandleDialog(routePanel,false);document.body.classList.remove('has-route-choice');const shortcut=btn.dataset.route==='shortcut';setStory(shortcut?'吹雪の坂へ':'軒先のあかり',''+(shortcut?'近道へ踏み出した。風が強まる。':'戸口が開いた。胸の奥まで、やっと息を吸えた。'));state.storyPause=elapsed+3;mark('route_selected',{route:btn.dataset.route,flame:Math.round(state.flame),oxygen:Math.round(state.oxygen)});focusCandleAction()});
  const menuButton=document.createElement('button');menuButton.id='journey-menu-open';menuButton.className='journey-menu-open';menuButton.type='button';menuButton.textContent='休む';menuButton.setAttribute('aria-label','旅を休止してメニューを開く');menuButton.setAttribute('aria-haspopup','dialog');document.querySelector('.arena').append(menuButton);
  const tools=document.createElement('div');tools.className='journey-tools';tools.append(menuButton,$('sound-toggle'));document.querySelector('.arena').append(tools);
  const menu=document.createElement('section');menu.id='journey-menu';menu.className='journey-menu';menu.hidden=true;menu.setAttribute('role','dialog');menu.setAttribute('aria-modal','true');menu.setAttribute('aria-labelledby','journey-menu-title');
  menu.innerHTML='<div class="journey-menu-card"><small>PAUSE / 旅は止まっています</small><h2 id="journey-menu-title">ひと息つこう。</h2><div id="pause-normal"><p class="pause-guide">'+guidanceMarkup('強い風は長押しでかばう。凪いだら手を離して息を戻す。光る記憶はタップで拾う。')+'</p><button type="button" id="pause-resume" class="pause-primary">旅を続ける</button><div class="pause-audio"><button type="button" id="pause-sound">音 ON</button><label>音量<input id="pause-volume" type="range" min="0" max="100" step="5" aria-label="休止中の音量"></label></div><button type="button" id="pause-collection">結末図鑑を見る</button><button type="button" data-pause-action="restart">この旅をやり直す</button><button type="button" data-pause-action="title">タイトルへ戻る</button></div><div id="pause-confirm" hidden><p id="pause-confirm-text"></p><button type="button" id="pause-cancel" class="pause-primary">今の旅を残す</button><button type="button" id="pause-confirm-action"></button></div></div>';
  document.querySelector('.game-shell').append(menu);
  menuButton.addEventListener('click',openJourneyMenu);
- $('pause-resume').addEventListener('click',()=>{setCandleDialog(menu,false);last=0;if(!document.hidden&&!landscapeMode.matches)KA.resume();action.focus()});
+ $('pause-resume').addEventListener('click',()=>{setCandleDialog(menu,false);last=0;if(!document.hidden&&!landscapeMode.matches)KA.resume();focusCandleAction()});
  menu.querySelectorAll('[data-pause-action]').forEach(button=>button.addEventListener('click',()=>showJourneyMenuConfirm(button.dataset.pauseAction)));
  $('pause-cancel').addEventListener('click',()=>showJourneyMenuConfirm(''));
  $('pause-confirm-action').addEventListener('click',()=>{const next=journeyMenuAction;if(!next)return;if(next==='title'){mark('journey_exit',{elapsed:Math.round(elapsed)});location.assign('./');return}setCandleDialog(menu,false);last=0;mark('game_retry',{source:'pause-menu'});run();action.focus()});
@@ -232,7 +233,7 @@ function unlock(id){
 renderCollection();
 $('collection-awards').addEventListener('click',event=>{if(event.target.closest('[data-share-completion]'))shareComplete()});
 $('open-collection').addEventListener('click',()=>{renderCollection();if(candle)setCandleDialog($('collection-panel'),true);else $('collection-panel').hidden=false;$('close-collection').focus();mark('collection_open')});
-$('close-collection').addEventListener('click',()=>{ if(candle)setCandleDialog($('collection-panel'),false);else $('collection-panel').hidden=true;if(collectionFromMenu){collectionFromMenu=false;openJourneyMenu();return}(candle&&mode==='play'?action:$('open-collection')).focus()});
+$('close-collection').addEventListener('click',()=>{ if(candle)setCandleDialog($('collection-panel'),false);else $('collection-panel').hidden=true;if(collectionFromMenu){collectionFromMenu=false;openJourneyMenu();return}if(candle&&mode==='play')focusCandleAction();else $('open-collection').focus()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!candle)$('collection-panel').hidden=true});
 canvas.addEventListener('click',e=>{
  if(mode!=='play'||(candle&&(candleDialog||document.hidden||landscapeMode.matches)))return;
