@@ -12,6 +12,10 @@ const base='http://127.0.0.1:'+server.address().port+'/emotion-games/kienaide/';
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{args:['--no-sandbox']}:{})});
 const sizes=[{width:390,height:844},{width:360,height:640}];
 const results=[];
+const appSource=fs.readFileSync('assets/app.js','utf8');
+const guidanceSource=appSource.match(/^function guidanceMarkup\(text\)\{.*\}$/m)[0];
+const storyCopy=[...appSource.slice(appSource.indexOf('function candleEvents('),appSource.indexOf('function candleCaption(')).matchAll(/'([^']*[\u3040-\u9fff][^']*)'/g)].map(m=>m[1]);
+const captionCopy=[...appSource.slice(appSource.indexOf('function candleCaption('),appSource.indexOf('function drawCandle(')).matchAll(/'([^']*[\u3040-\u9fff][^']*)'/g)].map(m=>m[1]);
 const done=x=>{results.push(x);console.log('step ok:',x)};
 const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
  const d=c.getContext('2d').getImageData(Math.round((x-40)*k),Math.round((y-50)*k),Math.round(80*k),Math.round(80*k)).data;let w=0;for(let i=0;i<d.length;i+=4)w+=d[i]-d[i+2];return w/(d.length/4)});
@@ -35,6 +39,37 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // Measure rendered character lines, not just CSS properties: no <=5-character orphan.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=8');
+   await page.locator('#play').click();await page.waitForTimeout(500);
+   const violations=await page.evaluate(({storyCopy,captionCopy,guidanceSource})=>{
+    const markup=new Function('esc',guidanceSource+';return guidanceMarkup;')(text=>{const span=document.createElement('span');span.textContent=text;return span.innerHTML});
+    const K=window.KienaideCore,events=Array.from({length:8},(_,i)=>K.eventSchedule(i+1)).flat().map(e=>e.tip);
+    const story=[...storyCopy,...K.CHAPTERS.map(c=>c.line),...events];
+    const failures=[];
+    for(const [selector,texts] of [['#story-beat strong',story],['.action-cue',[...captionCopy,...events]]]){
+     const el=document.querySelector(selector),original=el.innerHTML;
+     for(const text of new Set(texts)){
+      el.innerHTML=markup(text);const lines=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+      if(el.textContent!==text)failures.push({selector,text,reason:'copy changed'});
+      for(let node=walker.nextNode();node;node=walker.nextNode())for(let i=0;i<node.length;i++){
+       const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);
+       const rect=range.getBoundingClientRect();let line=lines.find(l=>Math.abs(l.top-rect.top)<1);
+       if(!line){line={top:rect.top,text:''};lines.push(line)}line.text+=node.textContent[i];
+      }
+      const box=el.getBoundingClientRect();
+      if(el.scrollWidth>el.clientWidth+1||box.right>innerWidth||box.left<0)failures.push({selector,text,reason:'overflow'});
+      if(lines.length>1&&lines.at(-1).text.trim().length<=5)failures.push({selector,text,lines:lines.map(l=>l.text)});
+     }
+     el.innerHTML=original;
+    }
+    return failures;
+   },{storyCopy,captionCopy,guidanceSource});
+   assert.deepEqual(violations,[],'guidance must retain readable type without short orphan lines '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-guidance-wrap.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('guidance line balance '+tag);
+  }
   // Chapters: frozen at a moment inside each chapter (speed=0.0001 keeps the frame still).
   for(const [i,t] of [[1,8],[2,30],[3,56],[4,76]]){
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t='+t);

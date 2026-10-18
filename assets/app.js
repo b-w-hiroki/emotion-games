@@ -127,8 +127,9 @@ const K=candle?window.KienaideCore:null,KV=candle?window.KienaideView.create(bas
 const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 let endingAt=0,runCount=0;
+function guidanceMarkup(text){return text.split(/(?<=[、。])|(?<= — )/u).map(part=>'<span class="guidance-phrase">'+esc(part)+'</span>').join('')}
 function setStory(chapter,text){
- if(!candle)return;const el=$('story-beat');if(!el||state.story===chapter)return;state.story=chapter;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+esc(text)+'</strong>';el.classList.add('show');
+ if(!candle)return;const el=$('story-beat');if(!el||state.story===chapter)return;state.story=chapter;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+guidanceMarkup(text)+'</strong>';el.classList.add('show');
 }
 if(candle){
  const sound=$('sound-toggle'),vol=$('volume');
@@ -364,7 +365,7 @@ function drawCandle(dt){
  const [text,warn]=candleCaption(s);
  $('hint').textContent=text;
   const mainText=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる',subText=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る',disableHold=s.oxygen<=22&&!s.shield;
-  if(actionCue.textContent!==text)actionCue.textContent=text;if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;if(action.disabled!==disableHold)action.disabled=disableHold;
+  if(actionCue.textContent!==text)actionCue.innerHTML=guidanceMarkup(text);if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;if(action.disabled!==disableHold)action.disabled=disableHold;
   action.classList.toggle('is-held',!!s.shield);action.classList.toggle('is-warning',!!warn);
  const recordText=Math.max(0,Math.round(s.flame))+'%',remaining=Math.max(0,Math.ceil(s.journey-elapsed)),timerText=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');if(record.textContent!==recordText)record.textContent=recordText;if(timer.textContent!==timerText)timer.textContent=timerText;
  const distance=K.routeDistance(s,elapsed);if(state.displayDistance!==distance){state.displayDistance=distance;distanceValue.textContent=String(distance);distancePanel.setAttribute('aria-label','家まで '+distance+' メートル');distanceFill.style.width=(100-Math.min(100,distance))+'%'}
