@@ -43,7 +43,7 @@ function create(base){
  const view={W:360,scale:1,ox:0,oy:0,dpr:1,cssW:0,cssH:0};
  function resize(canvas){
   const box=canvas.getBoundingClientRect(),cssW=Math.max(1,box.width),cssH=Math.max(1,box.height);
-  const dpr=Math.max(1,Math.min(2,root.devicePixelRatio||1)*perf.quality);
+  const dpr=Math.max(.8,Math.min(2,root.devicePixelRatio||1)*perf.quality);
   // Follow the actual portrait aspect ratio. The previous 300px floor letterboxed tall phones,
   // leaving large black bands above and below the painting.
   const W=Math.max(220,Math.min(480,cssW/cssH*H));
@@ -51,7 +51,7 @@ function create(base){
   if(cssW===view.cssW&&cssH===view.cssH&&dpr===view.dpr)return view;
   Object.assign(view,{W,scale,dpr,cssW,cssH,ox:(cssW-W*scale)/2,oy:(cssH-H*scale)/2});
   canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
-  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';
   return view;
  }
  function toWorld(canvas,clientX,clientY){const b=canvas.getBoundingClientRect();return {x:(clientX-b.left-view.ox)/view.scale,y:(clientY-b.top-view.oy)/view.scale}}
@@ -153,9 +153,11 @@ function create(base){
  // Each chapter's ambient light is multiplied into the painted figure so she sits inside the scene.
  const AMBIENT=['#b9c3dd','#a9b3d4','#94a6d6','#c1b5d0'];
  function heroLit(name,ci){
-  const key='hero|'+name+'|'+ci;if(cache.has(key))return cache.get(key);if(!ready(name))return null;
-  const i=imgs[name],c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;const g=c.getContext('2d');
-  g.drawImage(i,0,0);g.globalCompositeOperation='multiply';g.fillStyle=AMBIENT[ci]||'#fff';g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(i,0,0);
+  if(!ready(name))return null;const i=imgs[name],h=Math.min(i.naturalHeight,Math.ceil(heroBox().h*view.scale*view.dpr/128)*128),key='hero|'+name+'|'+ci;
+  if(cache.has(key)&&cache.get(key).height===h)return cache.get(key);
+  // Prefilter once near the display size. Per-frame high-quality resampling is too costly in WebKit.
+  const c=document.createElement('canvas');c.width=Math.round(h*i.naturalWidth/i.naturalHeight);c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.drawImage(i,0,0,c.width,c.height);g.globalCompositeOperation='multiply';g.fillStyle=AMBIENT[ci]||'#fff';g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='destination-in';g.drawImage(i,0,0,c.width,c.height);
   cache.set(key,c);return c;
  }
  function heroPose(st){
@@ -185,7 +187,7 @@ function create(base){
   // Soft contact shadow so she stands on the snow, not on top of the picture.
   ctx.fillStyle='rgba(6,10,22,.45)';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,H-4,b.w*.38,7,0,0,6.283);ctx.fill();
   const body=heroLit(pose,st.ci??0)||heroLit('hero-body',st.ci??0);
-  if(body){const previous=poseFx.previous&&fade<1?heroLit(poseFx.previous,st.ci??0):null;if(previous){blendPose(poseMixCtx,previous,body,fade);ctx.drawImage(poseMix,pb.x,pb.y,pb.w,pb.h)}else ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h)}
+  if(body){const previous=poseFx.previous&&fade<1?heroLit(poseFx.previous,st.ci??0):null;if(previous){if(poseMix.height!==body.height){poseMix.width=body.width;poseMix.height=body.height}blendPose(poseMixCtx,previous,body,fade);ctx.drawImage(poseMix,pb.x,pb.y,pb.w,pb.h)}else ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h)}
   else{ctx.fillStyle='#1b2338';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,b.y+b.h*.6,b.w*.32,b.h*.38,0,0,6.283);ctx.fill()}
   ctx.restore();
   return bob;
