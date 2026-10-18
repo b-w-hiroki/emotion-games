@@ -204,6 +204,17 @@ try{
   assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('intro '+(reduced?'reduced':'motion'));
  }
+ if(size.width===390){
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=7&speed=1&t=8');
+  await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#action').disabled===false);
+  await page.waitForTimeout(1100);const before=await page.locator('#timer').innerText();
+  await page.setViewportSize({width:844,height:390});await page.waitForFunction(()=>getComputedStyle(document.querySelector('.orientation-notice')).display==='flex');
+  await page.screenshot({path:path.join(out,engine+'-landscape-pause.png')});await page.waitForTimeout(1400);
+  assert.equal(await page.locator('#timer').innerText(),before,'the journey pauses while the phone is sideways');
+  await page.setViewportSize(size);await page.waitForFunction(()=>getComputedStyle(document.querySelector('.orientation-notice')).display==='none');
+  await page.waitForFunction(t=>document.querySelector('#timer').innerText!==t,before,{timeout:3000});
+  assert.deepEqual(errors,[]);await ctx.close();done('landscape pause and portrait resume');
+ }
  if(engine==='chromium'){
   const ctx=await browser.newContext({viewport:size});
   await ctx.addInitScript(()=>{const proto=Object.getPrototypeOf(new AudioContext()),resume=proto.resume,suspend=proto.suspend;window.__audioLifecycle={resume:0,suspend:0};proto.resume=function(...args){window.__audioLifecycle.resume++;return resume.apply(this,args)};proto.suspend=function(...args){window.__audioLifecycle.suspend++;return suspend.apply(this,args)}});
