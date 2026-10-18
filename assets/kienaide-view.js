@@ -287,7 +287,7 @@ function create(base){
  function frame(ctx,s,t,o){
   begin(ctx);
   const W=view.W,ci=s.chapter,since=t-(s.sceneChangedAt??-999);
-  const chapterStart=[0,20,45,70][ci],chapterEnd=[20,45,70,90][ci],p=Math.max(0,Math.min(1,(t-chapterStart)/(chapterEnd-chapterStart)));
+  const chapterStart=[0,20,45,70][ci],chapterEnd=[20,45,70,s.journey||90][ci],p=Math.max(0,Math.min(1,(t-chapterStart)/(chapterEnd-chapterStart)));
   const reduced=o.reduced,wind=s.wind??.2;
   const cam={p,sway:reduced?0:Math.sin(t*.35)*.6+Math.min(1,wind)*.5};
   const light=Math.max(0,Math.min(1,s.flame/100))*(s.rescue||s.reply>0?1.15:1);
@@ -327,7 +327,7 @@ function create(base){
   if(s.mote)memoryMote(ctx,s.mote,t,reduced);
   memoryFlight(ctx,s,t);
   if(ci===1&&t<s.shelterUntil){ctx.fillStyle='rgba(255,222,165,.07)';ctx.fillRect(0,90,W,300);caption(ctx,'風をよけられる — 今のうちに息を戻す','',false)}
-  else caption(ctx,o.caption,'家まで '+Math.max(0,Math.ceil((1-Math.min(1,t/90))*100))+'m',o.warn);
+  else caption(ctx,o.caption,s.routeChoice==='pending'?'':'家まで '+root.KienaideCore.routeDistance(s,t)+'m',o.warn);
   hud(ctx,s);
   end(ctx);
  }

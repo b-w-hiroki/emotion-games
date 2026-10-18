@@ -5,9 +5,8 @@ import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 const app=fs.readFileSync('assets/app.js','utf8');
 const core=fs.readFileSync('assets/kienaide-core.js','utf8');
-const match=core.match(/function canTriggerMiracle\(s,time\)\{[\s\S]*?\n\}/);
-assert.ok(match,'Player-triggered near-miss rescue condition must exist');
-const eligible=vm.runInNewContext('('+match[0]+')');
+const sandbox={};vm.runInNewContext(core,sandbox);
+const eligible=sandbox.KienaideCore.canTriggerMiracle;
 const base={rescue:false,memories:2,flame:21,oxygen:51,shield:false,wind:.29,releaseAt:78.5};
 test("near-extinction recovery comes from the player's timely release, not RNG",()=>{
  assert.equal(eligible(base,79),true);

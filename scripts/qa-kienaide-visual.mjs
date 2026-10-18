@@ -68,21 +68,25 @@ try{
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
   const fork=await open(size,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
   const actionBox=await fork.page.locator('#action').boundingBox();await fork.page.mouse.move(actionBox.x+actionBox.width/2,actionBox.y+actionBox.height/2);await fork.page.mouse.down();
-  await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:4000});
+  await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:10000});
   await fork.page.mouse.up();
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
-  assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/16m短縮・風8秒/,'shortcut must explain its distance and wind tradeoff');
+  assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/8秒早く・強風8秒/,'shortcut must explain its time and wind tradeoff');
   const restEffect=await fork.page.locator('#route-choice [data-route="rest"] small').innerText();
-  assert.match(restEffect,/16m遠回り・息\+\d+%/,'rest must show the actual capped breath recovery');
-  assert.notEqual(restEffect,'16m遠回り・息+0%','holding to protect the flame should make the rest option meaningful');
+  assert.match(restEffect,/8秒遅く・息\+\d+%/,'rest must show the actual capped breath recovery');
+  assert.notEqual(restEffect,'8秒遅く・息+0%','holding to protect the flame should make the rest option meaningful');
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
+  assert.equal(await fork.page.locator('#story-beat small').innerText(),'分かれ道','the fork instructions must remain while the player decides');
   await fork.page.screenshot({path:path.join(out,`${engine}-route-choice.png`)});
   const routeTarget=await fork.page.locator('#route-choice button').first().evaluate(el=>el.getBoundingClientRect().height);
   assert.ok(routeTarget>=60,'route options must be comfortable thumb targets ('+routeTarget+'px)');
   await fork.page.locator('#route-choice [data-route="shortcut"]').click();
   await fork.page.waitForFunction(n=>Number(document.querySelector('#distance-value').textContent)<n,before,{timeout:2000});
   assert.ok(Number(await fork.page.locator('#distance-value').innerText())<before,'shortcut visibly cuts the route');
+  const seconds=text=>{const [m,s]=text.split(':').map(Number);return m*60+s};
+  assert.ok(seconds(await fork.page.locator('#timer').innerText())<=seconds(remaining)-8,'shortcut must also reduce time to actual arrival');
   assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
+  await fork.page.screenshot({path:path.join(out,`${engine}-shortcut-after-choice.png`)});
   assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice, distance, vital warnings');
   for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
    const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
@@ -130,7 +134,7 @@ try{
  const routes={
   blown:{query:'?qa=1&seed=2',policy:'none'},
   smother:{query:'?qa=1&seed=2',policy:'hold'},
-  survive:{query:'?qa=1&seed=2&speed=3',policy:'tele'},
+  survive:{query:'?qa=1&seed=2&speed=3',policy:'tele',route:'shortcut'},
   wish:{query:'?qa=1&seed=2&speed=6',policy:'tele',collect:true,skipReply:true},
   dawn:{query:'?qa=1&seed=1&speed=3',policy:'tele',collect:true}
  };
@@ -138,16 +142,17 @@ try{
  for(const [id,r] of Object.entries(routes)){
   const {ctx,page,errors}=await open(size,r.query);
   await page.locator('#play').click();
-  const box=await page.locator('#action').boundingBox();let holding=false;
+  const box=await page.locator('#action').boundingBox();let holding=false;const phases=new Set();
   const press=async on=>{if(on===holding)return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
    if(await page.locator('#route-choice').isVisible()){
-    const route=id==='blown'?'shortcut':'rest';await press(false);await page.locator('#route-choice [data-route="'+route+'"]').click();
+    const route=r.route||(id==='blown'?'shortcut':'rest');await press(false);await page.locator('#route-choice [data-route="'+route+'"]').click();
     if(r.policy==='hold')await press(true);
    }
    if(r.policy==='tele'){
    const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
+    phases.add(st.phase);
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
     // Drive the finale from its explicit phases, not transient prose that may update
     // between automation frames. Wish intentionally stays shielded through silence.
@@ -156,13 +161,14 @@ try{
     else if(st.phase==='silence')await press(!!r.skipReply);
     else if(st.phase==='window-reply')await press(false);
     else if(st.hint.includes('長押し')||(st.hint.includes('かばって')&&!st.hint.includes('息苦しくなる前に離す')))await press(true);
-    else if(st.hint.includes('離して')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
+    else if(st.hint.includes('離して')||st.hint.includes('はなして')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
    }
    await page.waitForTimeout(25);
   }
   await press(false);
   const got=await page.locator('#stage').getAttribute('data-ending');
   assert.equal(got,id,'route for '+id+' reached '+got);
+  if(r.policy==='tele'){for(const phase of ['gust-warning','gust-active','silence','window-reply'])assert.ok(phases.has(phase),'route '+(r.route||'rest')+' must keep '+phase);assert.equal(await page.locator('#timer').innerText(),'00:00','arrival resolves at the route-specific deadline')}
   await page.waitForTimeout(1500);
   assert.equal(await page.locator('#stage').getAttribute('data-pose'),'end-'+id,'ending must use its dedicated character painting');
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-scene.png`)});
