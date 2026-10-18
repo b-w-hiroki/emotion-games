@@ -20,6 +20,7 @@ jobs:
       - run: npm run build
       - run: node scripts/qa-kienaide-image-noise.mjs
       - run: node scripts/qa-kienaide-release.mjs chromium
+      - run: node scripts/qa-kienaide-card.mjs chromium
       - run: node scripts/capture-social.mjs
       - run: node scripts/qa-endings.mjs
       - run: node scripts/qa-20.mjs
@@ -46,6 +47,7 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - run: npm run build
       - run: node scripts/qa-kienaide-release.mjs webkit
+      - run: node scripts/qa-kienaide-card.mjs webkit
       - run: node scripts/qa-kienaide-visual.mjs webkit
       - if: always()
         uses: actions/upload-artifact@v4

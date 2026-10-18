@@ -211,7 +211,7 @@ try{
  for(const [id,r] of Object.entries(routes)){
   const {ctx,page,errors}=await open(size,r.query);
   await page.locator('#play').click();
-  const box=await page.locator('#action').boundingBox();let holding=false;const phases=new Set();
+  const box=await page.locator('#action').boundingBox();let holding=false;const phases=new Set(),trace=[];
   const press=async on=>{if(on===holding)return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
@@ -220,7 +220,8 @@ try{
     if(r.policy==='hold')await press(true);
    }
    if(r.policy==='tele'){
-   const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase}});
+   const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {at:performance.now(),hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase,timer:document.querySelector('#timer').textContent,light:document.querySelector('#record').textContent,breath:document.querySelector('#breath-meter').getAttribute('aria-valuenow'),held:document.querySelector('#action').classList.contains('is-held')}});
+    trace.push({...st,driverHeld:holding});if(trace.length>200)trace.shift();
     phases.add(st.phase);
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
     // Drive the finale from its explicit phases, not transient prose that may update
@@ -236,6 +237,7 @@ try{
   }
   await press(false);
   const got=await page.locator('#stage').getAttribute('data-ending');
+  if(got!==id){fs.writeFileSync(path.join(out,`${engine}-${id}-input-failure.json`),JSON.stringify({expected:id,actual:got,query:r.query,trace},null,2));await page.screenshot({path:path.join(out,`${engine}-${id}-input-failure.png`)})}
   assert.equal(got,id,'route for '+id+' reached '+got);
   if(r.policy==='tele'){for(const phase of ['gust-warning','gust-active','silence','window-reply'])assert.ok(phases.has(phase),'route '+(r.route||'rest')+' must keep '+phase);assert.equal(await page.locator('#timer').innerText(),'00:00','arrival resolves at the route-specific deadline')}
   await page.waitForTimeout(1500);
@@ -243,6 +245,8 @@ try{
   await page.screenshot({path:path.join(out,`${engine}-ending-${id}-scene.png`)});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
   await page.waitForTimeout(400);
+  await page.waitForFunction(()=>document.querySelector('#moment-save').dataset.state==='ready');
+  assert.ok(await page.locator('#moment-save').isEnabled(),id+' ending PNG must be prepared before sharing');
   const explanation=await page.locator('#ending-meaning').innerText();
   for(const fact of endingFacts[id])assert.ok(explanation.includes(fact),id+' must explain '+fact+': '+explanation);
   const copy=await page.locator('#curtain-description').evaluate(el=>{

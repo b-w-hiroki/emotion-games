@@ -175,41 +175,37 @@ if(candle){
  // Background tabs must not keep playing or double the timers when they come back.
  document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden)KA.suspend();else if((mode==='play'||mode==='intro')&&candleDialog?.id!=='journey-menu'&&!collectionFromMenu)KA.resume()});
 }
+let momentCard=null;
 if(candle){
- const save=$('moment-save');
- save.addEventListener('click',async()=>{
-  if(mode!=='end')return;
+ const save=$('moment-save'),status=document.createElement('p');status.id='moment-status';status.className='moment-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.hidden=true;save.after(status);
+ if(typeof window.KienaideCard?.create==='function'){
+ momentCard=window.KienaideCard.create({change:({state:phase,message,ready})=>{save.dataset.state=phase;save.disabled=phase==='idle'||phase==='preparing'||phase==='saving';save.setAttribute('aria-busy',String(phase==='preparing'||phase==='saving'));save.textContent=phase==='preparing'?'カードを準備中…':phase==='saving'?'共有・保存中…':phase==='error'?(ready?'もう一度、保存・共有':'カード作成を再試行'):'結末カードを保存・共有 ↗';status.hidden=!message;status.innerHTML=guidanceMarkup(message);if(phase==='ready'&&!message)mark('moment_card_created',{ending_id:lastEnding,rescue:!!state.rescue})},make:()=>{
+  const endingId=lastEnding,memories=state.memories||0,rescue=!!state.rescue;
   const card=document.createElement('canvas');card.width=900;card.height=1200;
   const g=card.getContext('2d');
+  g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
   const gradient=g.createLinearGradient(0,0,0,1200);
   gradient.addColorStop(0,'#111a32');gradient.addColorStop(.6,'#182a40');gradient.addColorStop(1,'#101524');
   g.fillStyle=gradient;g.fillRect(0,0,900,1200);
   g.fillStyle='#d3c9ba';g.font='bold 27px system-ui,sans-serif';g.textAlign='center';g.fillText('BIRDMAN STUDIO   /   EMOTION GAMES',450,66);
   g.font='bold 67px system-ui,sans-serif';g.fillStyle='#ffe0a2';g.fillText('きえないで。',450,152);
   const box={x:90,y:208,w:720,h:800};
-  g.save();g.beginPath();g.roundRect(box.x,box.y,box.w,box.h,25);g.clip();{const cw=canvas.width,ch=canvas.height,k=Math.max(box.w/cw,box.h/ch),sw=box.w/k,sh=box.h/k;g.drawImage(canvas,(cw-sw)/2,(ch-sh)/2,sw,sh,box.x,box.y,box.w,box.h)}g.restore();
+  const tableau=document.createElement('canvas'),density=KV.view.dpr,factor=Math.min(900/canvas.width,2400/canvas.height);tableau.width=Math.max(1,Math.round(canvas.width*factor));tableau.height=Math.max(1,Math.round(canvas.height*factor));
+  try{KV.view.dpr=density*factor;KV.endingFrame(tableau.getContext('2d'),{...state},endingId,3.2,{reduced:true})}finally{KV.view.dpr=density}
+  g.save();g.beginPath();g.roundRect(box.x,box.y,box.w,box.h,25);g.clip();{const cw=tableau.width,ch=tableau.height,k=Math.max(box.w/cw,box.h/ch),sw=box.w/k,sh=box.h/k;g.drawImage(tableau,(cw-sw)/2,(ch-sh)/2,sw,sh,box.x,box.y,box.w,box.h)}g.restore();
   g.strokeStyle='#b9a18b';g.lineWidth=3;g.strokeRect(box.x,box.y,box.w,box.h);
   g.fillStyle='#fff0d7';g.font='bold 35px system-ui,sans-serif';
-  const ending=endingList.find(e=>e.id===lastEnding);
+  const ending=endingList.find(e=>e.id===endingId);
   g.fillText(ending?.title||'あなたの夜',450,1071);
   g.font='24px system-ui,sans-serif';g.fillStyle='#e7caad';
-  const memoryText='記憶 '+(state.memories||0)+'/3'+(state.rescue?'   •   奇跡の灯り':'');
+  const memoryText='記憶 '+memories+'/3'+(rescue?'   •   奇跡の灯り':'');
   g.fillText(memoryText,450,1111);
   g.font='20px system-ui,sans-serif';g.fillStyle='#b8becd';
   g.fillText('play.birdman-studio.com/kienaide/',450,1163);
-  const blob=await new Promise(ok=>card.toBlob(ok,'image/png'));
-  if(!blob)return;
-  mark('moment_card_created',{ending_id:lastEnding,rescue:!!state.rescue});
-  const filename='kienaide-'+(lastEnding||'ending')+'.png';
-  const file=new File([blob],filename,{type:'image/png'});
-  if(navigator.canShare?.({files:[file]})&&navigator.share){
-   try{await navigator.share({title:'きえないで。',files:[file],text:'私の夜の結末。あなたならどう守る？ '+currentUrl()});return}
-   catch(e){if(e.name==='AbortError')return}
-  }
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),3000);
- });
+  return {canvas:card,filename:'kienaide-'+endingId+'.png',title:'きえないで。',text:'私の夜の結末。あなたならどう守る？ '+currentUrl()};
+ }});
+ save.addEventListener('click',()=>{if(mode!=='end')return;const token=endingAt,focused=document.activeElement===save;momentCard.save().then(()=>{if(focused&&mode==='end'&&endingAt===token&&!save.disabled&&(document.activeElement===document.body||document.activeElement===save))save.focus()})});
+ }else{momentCard={reset(){save.disabled=true;status.hidden=true},prepare(){save.dataset.state='unavailable';save.disabled=true;save.textContent='カード機能を利用できません';status.hidden=false;status.innerHTML=guidanceMarkup('カード機能を読み込めませんでした。ページを読み直してください。')}};momentCard.reset()}
 }
 function renderCollection(){
  $('collection-progress').textContent='結末 '+collected.length+' / '+endingList.length;
@@ -356,6 +352,7 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
 
 let lastShield=false;
 function startCandle(){
+ momentCard.reset();
  releaseCandleInput();KA.init();KA.resume();KA.startJourney();runCount++;
  const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
  Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
@@ -431,7 +428,7 @@ function candleEnding(){
  KA.update(s,elapsed,{playing:false,dt:0,ended:true});KA.cues.ending(lastEnding);
  const missing=endingList.filter(e=>!collected.includes(e.id));
  $('next-hint').hidden=!missing.length;if(missing.length){const next=missing[(runCount+missing.length)%missing.length];$('next-hint').textContent='まだ見ぬ結末のヒント：'+next.hint}
- const token=endingAt;setTimeout(()=>{if(mode==='end'&&endingAt===token)curtain.classList.remove('hidden')},reduced?500:2600);
+ const token=endingAt;momentCard.reset();setTimeout(()=>{if(mode==='end'&&endingAt===token){curtain.classList.remove('hidden');curtain.scrollTop=0;momentCard.prepare()}},reduced?500:2600);
 }
 function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;const orientationPaused=!!(candle&&(landscapeMode.matches||document.hidden));if(orientationPaused)dt=0;if(mode==='play'&&$('collection-panel').hidden){if(!(candle&&(state.routeChoice==='pending'||orientationPaused||candleDialog)))elapsed+=dt*(candle?(state.qaSpeed||1):1);if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide'){drawCandle(dt);if(mode==='play')KV.sample(dt*1000)}else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);raf=requestAnimationFrame(tick)}
 raf=requestAnimationFrame(tick);

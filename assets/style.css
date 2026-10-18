@@ -117,6 +117,11 @@ html[data-study="1"] .card-info .emotion{visibility:hidden}
 /* Shareable moment, kept in the game result overlay and not the play HUD. */
 .moment-save{border:1px solid #d8bb83;border-radius:9px;padding:9px 13px;background:linear-gradient(145deg,#433526,#2d292b);color:#ffe7b6;font-size:12px;font-weight:800;margin-top:8px}
 .moment-save:hover{border-color:#ffe3a0;background:#51402c}
+body[data-game=kienaide] .moment-save{min-height:44px}
+body[data-game=kienaide] .moment-save:disabled{opacity:.65;cursor:wait}
+body[data-game=kienaide] .curtain p.moment-status{font-size:12px;line-height:1.6;margin:8px 0 0;color:#f4d5a9}
+body[data-game=kienaide] .game-shell.ember .curtain.tableau{overflow-y:auto;overscroll-behavior:contain;padding-top:max(72px,calc(env(safe-area-inset-top) + 60px))}
+body[data-game=kienaide] .curtain.tableau>*{flex-shrink:0}
 .game-shell.ember .curtain{overflow-y:auto;overscroll-behavior:contain}
 .game-shell.ember .curtain .btn{min-height:48px;margin-top:9px}
 .game-shell.ember .curtain .share-btn{margin-top:9px}
