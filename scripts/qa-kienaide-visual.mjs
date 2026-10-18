@@ -100,7 +100,7 @@ try{
  const routes={
   blown:{query:'?qa=1&seed=2',policy:'none'},
   smother:{query:'?qa=1&seed=2',policy:'hold'},
-  survive:{query:'?qa=1&seed=2&speed=6',policy:'tele'},
+  survive:{query:'?qa=1&seed=2&speed=3',policy:'tele'},
   wish:{query:'?qa=1&seed=2&speed=6',policy:'tele',collect:true,skipReply:true},
   dawn:{query:'?qa=1&seed=1&speed=3',policy:'tele',collect:true}
  };
@@ -121,7 +121,7 @@ try{
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
     // wish: keep holding through the silence so the window does not answer.
     if(r.skipReply&&st.phase==='silence'){await press(true)}
-    else if(st.hint.includes('長押し')||st.hint.includes('かばって'))await press(true);
+    else if(st.hint.includes('長押し')||(st.hint.includes('かばって')&&!st.hint.includes('息苦しくなる前に離す')))await press(true);
     else if(st.hint.includes('離して')||st.hint.includes('ひらいて')||st.hint.includes('息を'))await press(false);
    }
    await page.waitForTimeout(25);
