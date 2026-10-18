@@ -27,7 +27,7 @@ function create(base){
  const loaded=Promise.all(pending).then(results=>results.every(Boolean));
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
  // A fixed paper grain helps separately generated paintings sit inside the same film.
- // It is deterministic (no digital sparkle); only the tile offset drifts slightly.
+ // Keep it fixed: stepping the tile made fine painted edges appear to crawl.
  const grain=document.createElement('canvas');grain.width=grain.height=64;
  const grainCtx=grain.getContext('2d'),grainData=grainCtx.createImageData(64,64);let grainSeed=90421;
  for(let i=0;i<grainData.data.length;i+=4){grainSeed=(grainSeed*1664525+1013904223)>>>0;const v=112+(grainSeed>>>24)%96;grainData.data[i]=v;grainData.data[i+1]=v+3;grainData.data[i+2]=v+8;grainData.data[i+3]=34}
@@ -43,7 +43,7 @@ function create(base){
  const view={W:360,scale:1,ox:0,oy:0,dpr:1,cssW:0,cssH:0};
  function resize(canvas){
   const box=canvas.getBoundingClientRect(),cssW=Math.max(1,box.width),cssH=Math.max(1,box.height);
-  const dpr=Math.min(2,root.devicePixelRatio||1)*perf.quality;
+  const dpr=Math.max(1,Math.min(2,root.devicePixelRatio||1)*perf.quality);
   // Follow the actual portrait aspect ratio. The previous 300px floor letterboxed tall phones,
   // leaving large black bands above and below the painting.
   const W=Math.max(220,Math.min(480,cssW/cssH*H));
@@ -51,6 +51,7 @@ function create(base){
   if(cssW===view.cssW&&cssH===view.cssH&&dpr===view.dpr)return view;
   Object.assign(view,{W,scale,dpr,cssW,cssH,ox:(cssW-W*scale)/2,oy:(cssH-H*scale)/2});
   canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   return view;
  }
  function toWorld(canvas,clientX,clientY){const b=canvas.getBoundingClientRect();return {x:(clientX-b.left-view.ox)/view.scale,y:(clientY-b.top-view.oy)/view.scale}}
@@ -140,7 +141,7 @@ function create(base){
   if(light>0){const a=flameAnchor(),flicker=reduced?1:.96+Math.sin(t*7.3)*.025;ctx.save();ctx.globalCompositeOperation='screen';const warm=ctx.createRadialGradient(a.x,a.y,2,a.x,a.y,70+light*65);warm.addColorStop(0,'rgba(255,173,90,'+(.055*light*flicker)+')');warm.addColorStop(1,'rgba(255,150,70,0)');ctx.fillStyle=warm;ctx.fillRect(a.x-150,a.y-150,300,300);ctx.restore()}
  }
  function paperGrain(ctx,t,reduced){
-  const W=view.W;ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.15;const p=ctx.createPattern(grain,'repeat'),d=reduced?0:Math.floor(t*3)%64;ctx.translate(d,d*.5);ctx.fillStyle=p;ctx.fillRect(-64,-64,W+128,H+128);ctx.restore();
+  const W=view.W;ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.06;const p=ctx.createPattern(grain,'repeat');ctx.fillStyle=p;ctx.fillRect(0,0,W,H);ctx.restore();
  }
  // ---------- traveller ----------
  // The traveller is the emotional focal point, not a small marker inside a background plate.

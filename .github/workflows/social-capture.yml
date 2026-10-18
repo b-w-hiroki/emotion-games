@@ -18,6 +18,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npm run build
+      - run: node scripts/qa-kienaide-image-noise.mjs
       - run: node scripts/qa-kienaide-release.mjs chromium
       - run: node scripts/capture-social.mjs
       - run: node scripts/qa-endings.mjs
