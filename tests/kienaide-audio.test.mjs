@@ -97,6 +97,17 @@ test('the window reply keeps the storm silent while its answer stinger plays',()
  assert.equal(stats.oscillatorStarts-before,8,'the window still answers with its bright four-note stinger');
 });
 
+test('pausing mutes the scene and schedules no footsteps, breath or melody until resuming',()=>{
+ const {audio,stats}=audioRig(),options={playing:true,dt:1/60,ended:false};
+ audio.update(state(20),1,options);
+ const before={buffers:stats.bufferStarts,melody:stats.melodyStarts};
+ for(const time of [2,10,20])audio.update(state(20),time,{...options,paused:true});
+ assert.equal(stats.bufferStarts,before.buffers);assert.equal(stats.melodyStarts,before.melody);
+ assert.deepEqual(stats.gainTargets.slice(-6),[0,0,0,0,0,0]);
+ audio.update(state(80),4,options);
+ assert.equal(stats.bufferStarts,before.buffers+1);assert.equal(stats.melodyStarts,before.melody+2);
+});
+
 test('audio suspends in the background and resumes for both the intro and active play',async()=>{
  const {audio}=audioRig();
  audio.suspend();assert.equal(audio.state,'suspended');

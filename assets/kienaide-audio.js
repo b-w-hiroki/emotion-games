@@ -62,7 +62,7 @@ function create(){
  }
  // Called every frame with the simulation state; drives continuous layers and the melody clock.
  function update(s,time,o){
-  if(!ac)return;const t=ac.currentTime,quiet=s.finalePhase==='silence'||s.finalePhase==='window-reply'||(s.rescue&&time-s.rescueAt<.5)||o.ended;
+  if(!ac)return;const t=ac.currentTime,quiet=o.paused||s.finalePhase==='silence'||s.finalePhase==='window-reply'||(s.rescue&&time-s.rescueAt<.5)||o.ended;
   if(s.chapter!==chapter){chapter=s.chapter;setPad(chapter)}
   const w=Math.min(1.15,s.wind||0);
   wind.g.gain.setTargetAtTime(quiet?0:.03+w*.16,t,.12);wind.f.frequency.setTargetAtTime(380+w*900,t,.3);if(wind.p)wind.p.pan.setTargetAtTime(Math.sin(time*.4)*.5*w,t,.3);

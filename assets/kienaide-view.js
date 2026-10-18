@@ -5,6 +5,8 @@
 (function(root){'use strict';
 const H=480,PW=900,PH=1200;
 const CH=['ch1','ch2','ch3','ch4'],BANDS=['sky','far','mid','fore'];
+// Weighted premultiplied layers keep their opaque overlap solid instead of leaking the scenery.
+function blendPose(g,previous,current,fade){g.clearRect(0,0,g.canvas.width,g.canvas.height);g.save();g.globalAlpha=1-fade;g.drawImage(previous,0,0,g.canvas.width,g.canvas.height);g.globalCompositeOperation='lighter';g.globalAlpha=fade;g.drawImage(current,0,0,g.canvas.width,g.canvas.height);g.restore()}
 const HERO_POSES=['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
 const END_POSES=['end-blown','end-smother','end-wish','end-survive','end-dawn'];
 const FLAME_POSES=['flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'];
@@ -167,6 +169,7 @@ function create(base){
   return 'hero-body';
  }
  const poseFx={current:'',previous:'',changedAt:0};
+ const poseMix=document.createElement('canvas');poseMix.width=PW;poseMix.height=PH;const poseMixCtx=poseMix.getContext('2d');
  function drawTraveller(ctx,st){
   const b=heroBox(),pose=heroPose(st),pb={x:view.W/2-b.h*(PW/PH)/2,y:b.y,w:b.h*(PW/PH),h:b.h},bob=st.reduced||!st.walking?0:Math.abs(Math.sin(st.t*2.6))*-2.2;
   const now=(root.performance?.now?.()??Date.now())/1000;
@@ -179,8 +182,7 @@ function create(base){
   // Soft contact shadow so she stands on the snow, not on top of the picture.
   ctx.fillStyle='rgba(6,10,22,.45)';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,H-4,b.w*.38,7,0,0,6.283);ctx.fill();
   const body=heroLit(pose,st.ci??0)||heroLit('hero-body',st.ci??0);
-  if(poseFx.previous&&fade<1){const previous=heroLit(poseFx.previous,st.ci??0);if(previous){ctx.globalAlpha=1-fade;ctx.drawImage(previous,pb.x,pb.y,pb.w,pb.h)}}
-  ctx.globalAlpha=fade;if(body)ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h);
+  if(body){const previous=poseFx.previous&&fade<1?heroLit(poseFx.previous,st.ci??0):null;if(previous){blendPose(poseMixCtx,previous,body,fade);ctx.drawImage(poseMix,pb.x,pb.y,pb.w,pb.h)}else ctx.drawImage(body,pb.x,pb.y,pb.w,pb.h)}
   else{ctx.fillStyle='#1b2338';ctx.beginPath();ctx.ellipse(b.x+b.w*.5,b.y+b.h*.6,b.w*.32,b.h*.38,0,0,6.283);ctx.fill()}
   ctx.restore();
   return bob;
