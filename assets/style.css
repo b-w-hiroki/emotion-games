@@ -341,6 +341,34 @@ body[data-game=kienaide] .game-shell.ember .action.art-hold.is-breath-critical{b
 @media(max-width:390px){body[data-game=kienaide] .distance-panel{min-width:178px;padding:9px 16px 15px}body[data-game=kienaide] .distance-panel strong{font-size:33px}}
 @media(max-height:700px){body[data-game=kienaide] .distance-panel{bottom:calc(110px + env(safe-area-inset-bottom));padding-block:7px 13px}body[data-game=kienaide] .distance-panel strong{font-size:30px}}
 @media(prefers-reduced-motion:reduce){body[data-game=kienaide] .distance-panel[data-danger="flame-critical"],body[data-game=kienaide] .distance-panel[data-danger="breath-critical"]{animation:none}}
+/* 004 keeps the painting visible: one control, one distance marker, contextual story. */
+body.kienaide-title-screen #curtain-kicker{display:none}
+body[data-game=kienaide] .journey-tools .sound-toggle{display:none}
+body[data-game=kienaide] .action-main em{display:none}
+body[data-game=kienaide] .action-main{grid-template-rows:auto}
+body[data-game=kienaide] .action-main i{grid-row:1}
+body.kienaide-playing[data-game=kienaide] .game-shell.ember .action.art-hold{min-height:98px;padding-top:11px;padding-bottom:max(13px,env(safe-area-inset-bottom))}
+body[data-game=kienaide] .game-shell.ember .story-beat.show{animation:kienaide-story-brief 4.2s ease both}
+@keyframes kienaide-story-brief{0%{opacity:0;transform:translateY(7px)}12%,72%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(0)}}
+body[data-game=kienaide] .curtain:not(.journey-title) #curtain-kicker{display:none}
+body[data-game=kienaide] .curtain:not(.journey-title) .ending-meaning small{display:none}
+body[data-game=kienaide] .curtain:not(.journey-title) .ending-meaning{border-left:0;border-top:1px solid #e7bd7b88;text-align:center;background:#172235a8;padding:9px 12px;margin:5px auto}
+body[data-game=kienaide] .curtain:not(.journey-title) .ending-meaning strong{font-size:13px}
+body[data-game=kienaide] .curtain:not(.journey-title) .discovery-result{min-height:0;width:auto;margin:5px auto;padding:6px 11px;border-radius:999px;gap:5px;background:#3c3028c9}
+body[data-game=kienaide] .curtain:not(.journey-title) .discovery-glyph{font-size:13px}
+body[data-game=kienaide] .curtain:not(.journey-title) .discovery-info{flex:initial;display:flex;flex-direction:row;align-items:center;gap:7px}
+body[data-game=kienaide] .curtain:not(.journey-title) .discovery-sparks{display:none}
+body[data-game=kienaide] .curtain:not(.journey-title) .discovery-info strong{font-size:10px}
+body[data-game=kienaide] .curtain:not(.journey-title) .discovery-info small{font-size:10px}
+body[data-game=kienaide] .result-more{width:min(320px,100%);margin:8px auto 0;color:#d7e2ed;text-align:left}
+body[data-game=kienaide] .result-more summary{min-height:44px;display:grid;place-items:center;border:1px solid #a9b9c866;border-radius:12px;background:#122034c9;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
+body[data-game=kienaide] .result-more summary::-webkit-details-marker{display:none}
+body[data-game=kienaide] .result-more summary::after{content:' ＋';color:#e6c389}
+body[data-game=kienaide] .result-more[open] summary::after{content:' −'}
+body[data-game=kienaide] .result-more .share-btn,body[data-game=kienaide] .result-more .related{display:block;width:100%;min-height:44px;margin:8px 0 0;text-align:center}
+body[data-game=kienaide] .result-more .volume-row{justify-content:center;min-height:44px}
+body[data-game=kienaide] .result-more .next-hint{text-align:center}
+@media(prefers-reduced-motion:reduce){body[data-game=kienaide] .game-shell.ember .story-beat.show{animation:none;opacity:1}}
 .orientation-notice{position:fixed;z-index:30;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;background:#07101df5;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .orientation-notice>span{display:grid;place-items:center;width:58px;height:82px;border:2px solid #f1c98f;border-radius:12px;color:#f1c98f;font-size:24px;transform:rotate(90deg)}
 .orientation-notice strong{font-size:23px;color:#fff1d9}
