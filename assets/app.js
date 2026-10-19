@@ -166,8 +166,9 @@ const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 let endingAt=0,runCount=0;
 function guidanceMarkup(text){return text.split(/(?<=[、。])|(?<= — )/u).map(part=>'<span class="guidance-phrase">'+esc(part)+'</span>').join('')}
+let storyHideTimer=0;
 function setStory(chapter,text){
- if(!candle)return;const el=$('story-beat');if(!el||state.story===chapter)return;state.story=chapter;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+guidanceMarkup(text)+'</strong>';el.classList.add('show');
+ if(!candle)return;const el=$('story-beat');if(!el||(state.story===chapter&&state.storyText===text))return;state.story=chapter;state.storyText=text;clearTimeout(storyHideTimer);el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+guidanceMarkup(text)+'</strong>';el.classList.add('show');storyHideTimer=setTimeout(()=>el.classList.remove('show'),4200);
 }
 if(candle){
  const sounds=[$('sound-toggle'),$('pause-sound')],volumes=[$('volume'),$('pause-volume')];
