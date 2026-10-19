@@ -268,7 +268,7 @@ function finish(id,n,description){
  display(ending.title,description||ending.desc,newly?'NEW ENDING DISCOVERED':'ENDING COLLECTED');
  $('discovery-result').hidden=false;
  $('discovery-state').textContent=newly?'✦ 新しい結末を発見':'発見済みの結末';
- $('discovery-counter').textContent='COLLECTION　'+count+' / '+endingList.length;
+ $('discovery-counter').textContent=count+' / '+endingList.length;
  const milestone=newly&&count===3?'「余韻の手紙」解放':newly&&count===5?'「'+rewardSets[slug].all.title+'」獲得':'';
  $('discovery-milestone').textContent=milestone;
  curtain.classList.toggle('found-new',newly);

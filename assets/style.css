@@ -361,10 +361,10 @@ body[data-game=kienaide] .curtain:not(.journey-title) .discovery-sparks{display:
 body[data-game=kienaide] .curtain:not(.journey-title) .discovery-info strong{font-size:10px}
 body[data-game=kienaide] .curtain:not(.journey-title) .discovery-info small{font-size:10px}
 body[data-game=kienaide] .result-more{width:min(320px,100%);margin:8px auto 0;color:#d7e2ed;text-align:left}
-body[data-game=kienaide] .result-more summary{min-height:44px;display:grid;place-items:center;border:1px solid #a9b9c866;border-radius:12px;background:#122034c9;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
+body[data-game=kienaide] .result-more summary{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border:1px solid #a9b9c866;border-radius:12px;background:#122034c9;font-size:13px;font-weight:700;cursor:pointer;list-style:none}
 body[data-game=kienaide] .result-more summary::-webkit-details-marker{display:none}
-body[data-game=kienaide] .result-more summary::after{content:' ＋';color:#e6c389}
-body[data-game=kienaide] .result-more[open] summary::after{content:' −'}
+body[data-game=kienaide] .result-more summary::after{content:'＋';color:#e6c389}
+body[data-game=kienaide] .result-more[open] summary::after{content:'−'}
 body[data-game=kienaide] .result-more .share-btn,body[data-game=kienaide] .result-more .related{display:block;width:100%;min-height:44px;margin:8px 0 0;text-align:center}
 body[data-game=kienaide] .result-more .volume-row{justify-content:center;min-height:44px}
 body[data-game=kienaide] .result-more .next-hint{text-align:center}
