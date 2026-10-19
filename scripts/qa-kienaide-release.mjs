@@ -156,6 +156,8 @@ try{
   assert.equal(await page.locator('#share').isVisible(),false,'secondary actions start collapsed');
   assert.ok(await page.locator('#moment-save').isVisible(),'card save stays directly available');
   assert.ok((await page.locator('#result-more summary').boundingBox()).height>=44,'more actions have a full touch target');
+  assert.equal(await page.locator('#result-more summary').evaluate(el=>getComputedStyle(el).whiteSpace),'nowrap','the plus sign stays on the same line');
+  assert.doesNotMatch(await page.locator('#discovery-counter').innerText(),/COLLECTION/,'the count does not repeat an English label');
   await page.locator('#result-more summary').click();
   assert.ok(await page.locator('#related').isVisible());assert.ok(await page.locator('#volume').isVisible());
   await page.locator('#share').click();const shared=await page.evaluate(()=>window.sharedResult);
