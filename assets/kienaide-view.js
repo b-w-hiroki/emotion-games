@@ -269,7 +269,6 @@ function create(base){
   ctx.save();ctx.translate(x,y);ctx.scale(p,p);ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(0,0,1,0,0,30);g.addColorStop(0,'rgba(255,236,186,.95)');g.addColorStop(1,'rgba(255,190,110,0)');ctx.fillStyle=g;ctx.fillRect(-32,-32,64,64);ctx.restore();
   if(ready('flame')){ctx.save();ctx.globalAlpha=.85;ctx.drawImage(imgs.flame,x-11,y-14,22,24);ctx.restore()}
-  ctx.save();ctx.font='bold 11px system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff1cf';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText('記憶にふれる',x,y+38);ctx.restore();
  }
  // A collected memory flies into the flame as a small spark.
  const fx={mem:-1,from:null,t0:0};
