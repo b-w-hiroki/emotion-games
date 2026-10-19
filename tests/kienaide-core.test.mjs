@@ -174,15 +174,16 @@ test('memory expiry reports one missed chance but never reports a collected memo
  assert.equal(K.step(saved,slot.at+8.01,DT,{}).some(e=>e.type==='memory-lost'),false);
 });
 
-test('the route fork pauses for a real choice; shortcut trades distance for wind, shelter restores breath at a distance cost',()=>{
+test('the route fork preserves visible distance; shortcut speeds progress, rest slows it while restoring breath',()=>{
  const a=K.create({seed:11}),b=K.create({seed:11});
  assert.equal(K.step(a,27.9,DT,{}).some(e=>e.type==='route-choice'),false);
  assert.equal(K.step(a,28,DT,{}).some(e=>e.type==='route-choice'),true);
  assert.equal(a.routeChoice,'pending');assert.equal(K.step(a,28,DT,{}).length,0);
- assert.equal(K.chooseRoute(a,'shortcut',28),true);assert.equal(K.routeDistance(a,28),Math.ceil(100*(90-28)/90)-16);
+ const before=K.routeDistance(a,28);assert.equal(K.chooseRoute(a,'shortcut',28),true);assert.equal(K.routeDistance(a,28),before);
  a.shelterReady=false;a.shelterUntil=-1;const beforeWind=K.baseWind(29,1);K.step(a,29,DT,{});assert.ok(a.wind>beforeWind,'the shortcut exposes the flame to harsher wind');
- b.flame=60;b.oxygen=60;K.step(b,28,DT,{});const oldFlame=b.flame,oldOxygen=b.oxygen,shortDistance=K.routeDistance(a,28);
- assert.equal(K.chooseRoute(b,'rest',28),true);assert.equal(b.flame,oldFlame);assert.ok(b.oxygen>oldOxygen);assert.ok(K.routeDistance(b,28)>shortDistance);
+ b.flame=60;b.oxygen=60;K.step(b,28,DT,{});const oldFlame=b.flame,oldOxygen=b.oxygen;
+ assert.equal(K.chooseRoute(b,'rest',28),true);assert.equal(b.flame,oldFlame);assert.ok(b.oxygen>oldOxygen);assert.equal(K.routeDistance(b,28),before);
+ for(const time of [29,36,50,70]){const near=K.routeDistance(a,time),far=K.routeDistance(b,time);assert.ok(near<=far,'shortcut must not lag behind at '+time);if(time>29)assert.ok(near<far,'shortcut must make faster progress at '+time);assert.ok(near<=before&&far<=before,'distance must never jump backward')}
  assert.equal(K.chooseRoute(b,'shortcut',28),false,'a fork is resolved once');
 });
 test('rest shields from wind for four seconds even at full breath, without consuming the natural shelter',()=>{

@@ -148,9 +148,9 @@ function chooseRoute(s,choice,time){
  const remaining=Math.max(0,100*(s.journey-time)/s.journey);
  s.routeChoice=choice;s.routeChoiceAt=time;
  if(choice==='shortcut'){
-  s.routeStartMeters=Math.max(0,remaining-16);s.shortcutUntil=time+8;s.journey=JOURNEY-8;
+  s.routeStartMeters=remaining;s.shortcutUntil=time+8;s.journey=JOURNEY-8;
  }else{
-  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);s.restUntil=time+4;s.journey=JOURNEY+8;
+  s.routeStartMeters=remaining;s.oxygen=Math.min(100,s.oxygen+28);s.restUntil=time+4;s.journey=JOURNEY+8;
  }
  return true;
 }

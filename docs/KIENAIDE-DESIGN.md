@@ -20,11 +20,13 @@
 
 ## 状態と時刻
 
+分岐時の `routeStartMeters` は選択直前の連続値を保存する。近道・休息で16mの加減算はせず、`journey` の82秒／98秒への変更によって以降の距離減少速度だけを変える。距離表示は選択直前・直後で同値となり、両ルートとも到着時に0mとなる。
+
 coreの `create({seed})` が周回状態を作り、`step(state, elapsed, dt, {shield, wasShield})` が更新とイベント列を返す。主な状態は `flame`、`oxygen`、`wind`、`memories`、`memoryGot`、`mote`、`chapter`、`routeChoice`、`journey`、`finalePhase`、`gustShield`、`silenceRelease`、`replyLevel`、`ended`。初期値は灯り72、息100、距離100m、到着90秒。同じseedと入力列から同じ進行・結末を得る。小風イベントは各種類を一周に一度ずつseedで並べ替える。
 
 `requestAnimationFrame` の経過は1フレーム最大0.035秒に制限する。休止ダイアログ、選択待ち、画面非表示、短い横向きでは `elapsed` とcore更新を止める。再開時には前フレーム時刻をリセットし、裏で経過した時間を加算しない。導入と結果演出はゲーム本編と別の時間管理を持つ。
 
-道の選択は約28秒で `routeChoice='pending'` となる。`chooseRoute` は近道なら `journey=82`、残距離を16m減らし風を8秒強化、休息なら `journey=98`、残距離を16m増やして息を最大28回復する。休息中の `restUntil` は選択後4秒間だけ風を弱め、息が満タンでも防風効果を残す。自然発生の `shelterUntil` と混同せず、休息中に自然の安全地帯を消費しない。`routeDistance` が表示距離を返す。最終10秒は `finalePhaseAt` に集約する。
+道の選択は約28秒で `routeChoice='pending'` となる。`chooseRoute` は近道なら `journey=82`、風を8秒強化し、休息なら `journey=98`、息を最大28回復する。残距離は選択時に加減算しない。休息中の `restUntil` は選択後4秒間だけ風を弱め、息が満タンでも防風効果を残す。自然発生の `shelterUntil` と混同せず、休息中に自然の安全地帯を消費しない。`routeDistance` が表示距離を返す。最終10秒は `finalePhaseAt` に集約する。
 
 第二章の自然の安全地帯は、弱風（`wind < 0.44`）中に指またはキーを意図して離した時だけ一度発火する。`releaseIntent` は通常のpointerup／keyupだけが渡し、pointercancel・フォーカス喪失・画面非表示による強制解除では渡さない。手放したままの待機、道の休息中、灯りイベントによる防風だけでも消費しない。かばっていて条件が揃うと主ボタンで軒先への手放しを促す。
 
