@@ -35,7 +35,7 @@ function memorySlots(seed){
 function create(opts={}){
  const seed=(opts.seed>>>0)||1;
  return {seed,shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:JOURNEY,
-  story:'',storyPause:0,shelterReady:true,shelterUntil:-1,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
+  story:'',storyPause:0,shelterReady:true,shelterUntil:-1,bridgeFrost:0,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
   routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,restUntil:-1,
   lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),eddyReleasedEvent:'',
   finalePhase:'approach',previousFinalePhase:'approach',gustShield:0,gustExposed:0,silenceRelease:0,reply:0,replyLevel:'',
@@ -114,7 +114,9 @@ function step(s,time,dt,input){
  const resting=time<s.restUntil;
  if(chapter===1&&!resting&&s.shelterReady&&s.wind<.44&&!s.shield&&input.wasShield&&input.releaseIntent&&!(live&&ev.kind==='lantern')){s.shelterReady=false;s.shelterUntil=Math.min(time+3.5,CHAPTERS[2].at);emit('shelter');}
  const sheltered=resting||time<s.shelterUntil;if(sheltered)s.wind*=.2;
- const bridgeCold=chapter===2?.62:1;
+ // Exposed hands let bridge frost creep inward; protecting the flame clears it but costs breath.
+ s.bridgeFrost=chapter===2?Math.max(0,Math.min(1,s.bridgeFrost+(s.shield?-.3:s.wind>.42?(s.wind-.42)*.35:-.06)*dt)):0;
+ const bridgeCold=chapter===2?.85+s.bridgeFrost*.55:1;
  if(s.shield){
   const eddyCost=live&&ev.kind==='eddy'?1.6:1;
   s.oxygen=Math.max(0,s.oxygen-(4.5+s.wind*3.8+(chapter===2?1.2:0))*eddyCost*dt);
@@ -122,7 +124,7 @@ function step(s,time,dt,input){
  }else{
   s.oxygen=Math.min(100,s.oxygen+(sheltered||(live&&ev.kind==='lull')?23:15)*dt);
   const warm=live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut'?2.6:0;
-  s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45:0)+warm)*dt));
+  s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45+s.bridgeFrost*1.4:0)+warm)*dt));
  }
  if(!s.shield&&input.wasShield)s.releaseAt=time;
  if(!s.shield&&input.wasShield&&live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;
