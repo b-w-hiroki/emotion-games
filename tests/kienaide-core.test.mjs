@@ -123,6 +123,13 @@ test('the route fork pauses for a real choice; shortcut trades distance for wind
  assert.equal(K.chooseRoute(b,'rest',28),true);assert.equal(b.flame,oldFlame);assert.ok(b.oxygen>oldOxygen);assert.ok(K.routeDistance(b,28)>shortDistance);
  assert.equal(K.chooseRoute(b,'shortcut',28),false,'a fork is resolved once');
 });
+test('rest shields from wind for four seconds even at full breath, without consuming the natural shelter',()=>{
+ const s=K.create({seed:4});s.events=[];s.oxygen=100;K.step(s,28,DT,{});
+ assert.equal(K.chooseRoute(s,'rest',28),true);assert.equal(s.oxygen,100);assert.equal(s.restUntil,32);
+ K.step(s,29,DT,{});assert.ok(s.wind<K.baseWind(29,1)*.21,'rest must lower actual wind');assert.equal(s.shelterReady,true);
+ K.step(s,31.9,DT,{});assert.ok(s.wind<K.baseWind(31.9,1)*.21,'rest lasts through the fourth second');
+ s.shelterReady=false;s.shelterUntil=-1;K.step(s,32.1,DT,{});assert.equal(s.wind,K.baseWind(32.1,1),'rest shelter expires');
+});
 test('both routes change actual arrival time and preserve all memories and the complete finale',()=>{
  const policy=(s,t,h)=>{const phase=K.finalePhaseAt(t,s.journey);return phase==='gust-active'?true:phase==='gust-warning'||phase==='silence'||phase==='window-reply'?false:tele(s,t,h)};
  for(const route of ['shortcut','rest']){

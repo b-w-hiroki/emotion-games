@@ -160,8 +160,7 @@ try{
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
   assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/8秒早く・強風8秒/,'shortcut must explain its time and wind tradeoff');
   const restEffect=await fork.page.locator('#route-choice [data-route="rest"] small').innerText();
-  assert.match(restEffect,/8秒遅く・息\+\d+%/,'rest must show the actual capped breath recovery');
-  assert.notEqual(restEffect,'8秒遅く・息+0%','holding to protect the flame should make the rest option meaningful');
+  assert.match(restEffect,/8秒遅く・息\+\d+%・風よけ4秒/,'rest must show its capped breath recovery and wind shelter');
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
   assert.equal(await fork.page.locator('#story-beat small').innerText(),'分かれ道','the fork instructions must remain while the player decides');
   await fork.page.screenshot({path:path.join(out,`${engine}-route-choice${suffix}.png`)});
@@ -174,8 +173,16 @@ try{
   const arrival=seconds(await fork.page.locator('#timer').innerText());assert.ok(choice==='shortcut'?arrival<=seconds(remaining)-8:arrival>=seconds(remaining)+7,'the tapped choice must change actual arrival time');
   assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
   await fork.page.screenshot({path:path.join(out,`${engine}-${choice}-after-choice${suffix}.png`)});
+  if(choice==='rest')assert.ok(Number(await fork.page.locator('#stage').getAttribute('data-wind'))<=.23,'rest must shelter from actual wind after choosing');
   assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice touch targets '+routeSize.width);
   }
+  const full=await open(sizes[1],'?qa=1&seed=3&speed=1&t=27');await full.page.locator('#play').click();
+  await full.page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible',timeout:10000});
+  assert.equal(await full.page.locator('#route-rest-effect').innerText(),'8秒遅く・息+0%・風よけ4秒','rest still offers shelter at full breath');
+  await full.page.locator('#route-choice [data-route="rest"]').tap();
+  await full.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)<=.23,null,{timeout:2000});
+  await full.page.screenshot({path:path.join(out,`${engine}-rest-full-breath.png`)});
+  assert.deepEqual(full.errors,[]);await full.ctx.close();done('rest shelters at full breath');
   for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
    const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
    await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});
