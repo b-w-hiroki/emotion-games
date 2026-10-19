@@ -342,8 +342,7 @@ function create(base){
   ctx.canvas.dataset.vfx=['grade','grain','snow-depth',hasBreath&&'breath',hasEmbers&&'embers',hasFrost&&'frost'].filter(Boolean).join(' ');
   if(s.mote)memoryMote(ctx,s.mote,t,reduced);
   memoryFlight(ctx,s,t);
-  if(ci===1&&t<s.shelterUntil){ctx.fillStyle='rgba(255,222,165,.07)';ctx.fillRect(0,90,W,300);caption(ctx,'風をよけられる — 今のうちに息を戻す','',false)}
-  else caption(ctx,o.caption,s.routeChoice==='pending'?'':'家まで '+root.KienaideCore.routeDistance(s,t)+'m',o.warn);
+  caption(ctx,o.caption,s.routeChoice==='pending'?'':'家まで '+root.KienaideCore.routeDistance(s,t)+'m',o.warn);
   hud(ctx,s);
   end(ctx);
  }

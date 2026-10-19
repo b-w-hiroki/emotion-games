@@ -128,6 +128,16 @@ test('the tunnel shelter is earned by releasing into a lull, not by idling in on
  assert.ok(K.baseWind(20,1)>.44);
  assert.equal(K.step(exposed,20,DT,{shield:false,wasShield:true}).some(e=>e.type==='shelter'),false,'a release into stronger wind does not discover safety');
 });
+test('the tunnel shelter cannot protect the exposed bridge',()=>{
+ const s=K.create({seed:9});s.events=[];s.chapter=1;
+ // A lull at the tunnel exit lets the player discover shelter just before the bridge.
+ s.events=[{id:'exit-lull',kind:'lull',at:44.8,end:45,warnAt:44.8}];
+ const found=K.step(s,44.9,DT,{shield:false,wasShield:true,releaseIntent:true});
+ assert.equal(found.filter(e=>e.type==='shelter').length,1);
+ assert.equal(s.shelterUntil,45,'the shelter ends at the chapter boundary');
+ K.step(s,45.1,DT,{shield:false,wasShield:false});
+ assert.equal(s.chapter,2);assert.equal(s.wind,K.baseWind(45.1,2),'the bridge starts fully exposed');
+});
 test('the shortcut passes the lantern without sheltering from its promised strong wind',()=>{
  const s=K.create({seed:3}),e=s.events.find(x=>x.kind==='lantern');s.events=[{...e,at:29,end:32,warnAt:29}];s.chapter=1;s.routeChoice='shortcut';s.shortcutUntil=36;s.shelterReady=false;
  K.step(s,29.5,DT,{});
