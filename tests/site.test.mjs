@@ -67,10 +67,14 @@ test('Kienaide controls use live type instead of generated button lettering',()=
  const app=fs.readFileSync('assets/app.js','utf8'),view=fs.readFileSync('assets/kienaide-view.js','utf8');
  assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*hold-button\.webp/);
  assert.doesNotMatch(css,/\.btn\.art-start\{[^}]*start-button\.webp/);
+ assert.doesNotMatch(app,/start-button\.webp/,'the generated title button must not be loaded at runtime');
+ assert.match(app,/\$\('play'\)\.textContent='旅をはじめる'/,'the title action uses visible, editable live type');
  assert.match(css,/\.action\.art-hold\{[^}]*color:#fff0d2/);
  assert.match(css,/\.action\.art-hold\{[^}]*min-height:112px/,'the primary input is a full thumb deck, not a thin pill');
  assert.match(app,/class="action-cue"/,'the live cue belongs to the control surface');
  assert.match(view,/dataset\.transition=changing\?'blizzard'/,'chapter art changes are masked by a staged transition');
+ assert.match(view,/dataset\.poseTransition=fade<1\?'dissolve'/,'meaningful pose changes dissolve instead of snapping');
+ assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*border:1px/,'the control deck must not be enclosed by a decorative frame');
 });
 
 test('character finishing does not add filters on every frame',()=>{

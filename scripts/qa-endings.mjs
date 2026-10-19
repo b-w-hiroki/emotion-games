@@ -23,6 +23,11 @@ try{
   assert.equal(await page.locator('#collection-progress').innerText(),'結末 '+count+' / 5');
   assert.deepEqual(errors,[]);
  }
+async function chooseFork(page,route='rest'){
+ const option=page.locator('#route-choice [data-route="'+route+'"]');
+ if(await option.isVisible()){await page.mouse.up();await option.click();return true}
+ return false;
+}
  {
   const t=await pageFor('micha-dame');
   for(let i=0;i<3;i++)await t.page.locator('#stage').click({timeout:2000});
@@ -74,7 +79,7 @@ try{
   console.log('PASS: first-play prologue, skip and repeat-play persistence');
  }
  {
-  const t=await pageFor('kienaide','?qa=1');
+  const t=await pageFor('kienaide','?qa=1&speed=6');
   assert.ok(await t.page.locator('#story-beat').isVisible());
   const layers=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8')).files;
   const artLoaded=await t.page.evaluate(async files=>Promise.all(files.map(name=>new Promise(ok=>{
@@ -88,6 +93,7 @@ try{
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-art-scene01-390.png'});
   console.log('PASS: all four illustrated chapter backgrounds loaded in Chromium');
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
+  await t.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await chooseFork(t.page,'shortcut');
   await t.page.waitForTimeout(7600);
   await check(t,'風にさらわれた。');
   assert.ok(await t.page.locator('#moment-save').isVisible(),'candle ending must offer image card');
@@ -100,32 +106,38 @@ try{
   await t.ctx.close();console.log('PASS: four-chapter flame journey, sound control, failure and persistence');
  }
  {
-  // Sixfold time still keeps CI short while leaving enough frames to observe each wind warning.
-  const t=await pageFor('kienaide','?qa=1&speed=6');
+   // Threefold time leaves enough frames to react to each wind warning while keeping CI short.
+   const t=await pageFor('kienaide','?qa=1&speed=3');
   const box=await t.page.locator('#action').boundingBox();let holding=false;
-  for(let i=0;i<300&&!await t.page.locator('#curtain').evaluate(e=>!e.classList.contains('hidden'));i++){
+  const deadline=performance.now()+90000;
+  while(performance.now()<deadline&&!await t.page.locator('#stage').getAttribute('data-ending')){
+   if(await chooseFork(t.page,'rest'))holding=false;
    const hint=await t.page.locator('#hint').innerText();
-   if(!holding&&hint.includes('長押し')){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
-   if(holding&&hint.includes('離して')){await t.page.mouse.up();holding=false}
+   if(!holding&&(hint.includes('長押し')||(hint.includes('かばって')&&!hint.includes('息苦しくなる前に離す')))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
+   if(holding&&(hint.includes('離して')||hint.includes('はなして')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
    await t.page.waitForTimeout(60);
   }
   if(holding)await t.page.mouse.up();
+  assert.ok(await t.page.locator('#stage').getAttribute('data-ending'),'controller must keep playing until an ending');
   await check(t,'まだ、ここに。');
   assert.ok(Number((await t.page.locator('#record').innerText()).replace('%',''))>0);
   await t.ctx.close();console.log('PASS: readable wind telegraph supports a complete night journey');
  }
  {
-  const t=await pageFor('kienaide','?qa=1');
+   const t=await pageFor('kienaide','?qa=1&speed=2');
   // Memories appear at seeded positions; the canvas exposes where the current one is drawn.
   const box=await t.page.locator('#action').boundingBox(),stage=await t.page.locator('#stage').boundingBox();let holding=false,shot=false;
-  for(let i=0;i<220&&!await t.page.locator('#stage').getAttribute('data-ending');i++){
+   const deadline=performance.now()+120000;
+   while(performance.now()<deadline&&!await t.page.locator('#stage').getAttribute('data-ending')){
+   if(await chooseFork(t.page,'rest'))holding=false;
    const hint=await t.page.locator('#hint').innerText(),mote=await t.page.locator('#stage').getAttribute('data-mote');
    if(mote){if(holding){await t.page.mouse.up();holding=false}if(!shot){shot=true;await t.page.screenshot({path:'artifacts/screenshots/kienaide-journey-390.png'})}const [x,y]=mote.split(',').map(Number);await t.page.mouse.click(stage.x+x,stage.y+y);continue}
-   if(!holding&&(hint.includes('長押し')||hint.includes('かばって'))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
-   if(holding&&(hint.includes('離して')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
-   await t.page.waitForTimeout(55);
+    if(!holding&&(hint.includes('長押し')||(hint.includes('かばって')&&!hint.includes('息苦しくなる前に離す')))){await t.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await t.page.mouse.down();holding=true}
+   if(holding&&(hint.includes('離して')||hint.includes('はなして')||hint.includes('ひらいて'))){await t.page.mouse.up();holding=false}
+    await t.page.waitForTimeout(25);
   }
   if(holding)await t.page.mouse.up();
+  assert.ok(await t.page.locator('#stage').getAttribute('data-ending'),'memory controller must keep playing until an ending');
   await t.page.waitForFunction(()=>!document.getElementById('curtain').classList.contains('hidden'));
   const title=await t.page.locator('#curtain-title').innerText();assert.ok(['わすれない。','おかえり。'].includes(title),title);
   assert.equal(await t.page.locator('#best').innerText(),'3 / 3');assert.deepEqual(t.errors,[]);

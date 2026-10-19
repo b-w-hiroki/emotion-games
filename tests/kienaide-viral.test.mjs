@@ -5,9 +5,8 @@ import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 const app=fs.readFileSync('assets/app.js','utf8');
 const core=fs.readFileSync('assets/kienaide-core.js','utf8');
-const match=core.match(/function canTriggerMiracle\(s,time\)\{[\s\S]*?\n\}/);
-assert.ok(match,'Player-triggered near-miss rescue condition must exist');
-const eligible=vm.runInNewContext('('+match[0]+')');
+const sandbox={};vm.runInNewContext(core,sandbox);
+const eligible=sandbox.KienaideCore.canTriggerMiracle;
 const base={rescue:false,memories:2,flame:21,oxygen:51,shield:false,wind:.29,releaseAt:78.5};
 test("near-extinction recovery comes from the player's timely release, not RNG",()=>{
  assert.equal(eligible(base,79),true);
@@ -21,8 +20,10 @@ test("near-extinction recovery comes from the player's timely release, not RNG",
  assert.equal(eligible(base,40),false,'no arbitrary early shortcut');
 });
 test('highlight is shareable but never auto-posted',()=>{
- for(const x of ['moment_card_created','moment-save','card.toBlob','navigator.canShare','miracle_triggered'])
+ for(const x of ['moment_card_created','moment-save','KienaideCard.create','miracle_triggered'])
   assert.ok(app.includes(x),x);
+ const card=fs.readFileSync('assets/kienaide-card.js','utf8');for(const x of ['canvas.toBlob','navigator.canShare','navigator.share'])assert.ok(card.includes(x),x);
+ assert.equal(spawnSync(process.execPath,['--check','assets/kienaide-card.js'],{encoding:'utf8'}).status,0);
  assert.ok(core.includes('if(!s.shield&&input.wasShield)s.releaseAt=time'));
  assert.equal(spawnSync(process.execPath,['--check','assets/app.js'],{encoding:'utf8'}).status,0);
 });

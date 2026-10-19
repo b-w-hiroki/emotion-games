@@ -6,11 +6,19 @@
   "assets/kienaide-v3/flame-spirit.webp"
  ],
  "characterArtVersion": "repaint-v2",
+ "characterCleanup": {
+  "version": "clean-v1",
+  "sources": [
+   "clean-v1/hero-walk.png",
+   "clean-v1/hero-shield.png"
+  ],
+  "note": "Noise cleanup only; original repaint-v2 masters retained."
+ },
  "characterSources": [
   "repaint-v2/hero-body.png",
-  "repaint-v2/hero-shield.png",
+  "clean-v1/hero-shield.png",
   "repaint-v2/hero-blink.png",
-  "repaint-v2/hero-walk.png",
+  "clean-v1/hero-walk.png",
   "repaint-v2/hero-brace.png",
   "repaint-v2/hero-cold.png",
   "repaint-v2/hero-breathless.png",

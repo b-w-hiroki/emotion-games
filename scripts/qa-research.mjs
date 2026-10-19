@@ -70,6 +70,8 @@ try{
  await page.goto(origin+'kienaide/?study=1&qa=1&seed=2&speed=12');
  await page.evaluate(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));await page.reload();
  await page.locator('#play').click();
+ await page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible',timeout:10000});
+ await page.locator('#route-choice [data-route="rest"]').click();
  await page.waitForFunction(()=>!document.querySelector('#study-feedback').hidden,null,{timeout:15000});
  await page.locator('#study-feedback summary').click();
  assert.equal(await page.locator('.study-questions fieldset').count(),4);

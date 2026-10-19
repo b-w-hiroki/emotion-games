@@ -5,9 +5,9 @@ import '../assets/kienaide-core.js';
 const K=globalThis.KienaideCore;
 const DT=1/30;
 // Replays a whole night. policy(state,time,holding) → holding; collect=true taps every memory.
-function play(seed,policy,{collect=false,until=95}={}){
+function play(seed,policy,{collect=false,until=95,route}={}){
  const s=K.create({seed}),log=[];let t=0,hold=false;
- while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was}))log.push({...e,t});if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
+ while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was}))log.push({...e,t});if(s.routeChoice==='pending'){if(route)K.chooseRoute(s,route,t);else s.routeChoice='legacy-test'}if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
  return {s,log};
 }
 const tele=(s,t,h)=>(!h&&s.wind>.61)?true:(h&&(s.wind<.44||s.oxygen<28))?false:h;
@@ -25,12 +25,22 @@ test('the five endings are reachable by distinct play styles',()=>{
  assert.equal(wish.s.memories,3);assert.equal(wish.s.ended,'wish','memories without the window reply stay わすれない');
 });
 test('ending resolution is the single gallery source of truth',()=>{
- assert.equal(K.arrivalEnding({memories:3,flame:68}),'dawn');
- assert.equal(K.arrivalEnding({memories:3,flame:67}),'wish');
- assert.equal(K.arrivalEnding({memories:2,flame:100}),'survive');
+ assert.equal(K.arrivalEnding({memories:3,flame:68,replyLevel:'bright'}),'dawn');
+ assert.equal(K.arrivalEnding({memories:3,flame:67,replyLevel:'bright'}),'wish');
+ assert.equal(K.arrivalEnding({memories:3,flame:100,replyLevel:'faint'}),'wish','a missed silence cannot become a homecoming through flame alone');
+ assert.equal(K.arrivalEnding({memories:3,flame:100,replyLevel:'dark'}),'wish');
+ assert.equal(K.arrivalEnding({memories:2,flame:100,replyLevel:'bright'}),'survive');
+});
+test('opening the hands in the final silence changes the ending with the same memories and ample flame',()=>{
+ const run=open=>{const s=K.create({seed:5});Object.assign(s,{flame:100,oxygen:100,memories:3});let holding=false;
+  for(let t=79;t<=90.1&&!s.ended;t+=DT){const before=holding;holding=t>=81.5&&(!open||t<87);K.step(s,t,DT,{shield:holding,wasShield:before})}return s};
+ const closed=run(false),opened=run(true);
+ assert.ok(closed.flame>=68&&opened.flame>=68,'both paths must have enough light to isolate the input decision');
+ assert.equal(closed.replyLevel,'faint');assert.equal(closed.ended,'wish');
+ assert.equal(opened.replyLevel,'bright');assert.equal(opened.ended,'dawn');
 });
 test('finale phases follow the contract timing and storm strength',()=>{
- assert.deepEqual([79.9,80,81.9,82,86.9,87,88.4,88.5].map(K.finalePhaseAt),['approach','gust-warning','gust-warning','gust-active','gust-active','silence','silence','window-reply']);
+ assert.deepEqual([79.9,80,81.9,82,86.9,87,88.4,88.5].map(t=>K.finalePhaseAt(t)),['approach','gust-warning','gust-warning','gust-active','gust-active','silence','silence','window-reply']);
  const s=K.create({seed:4});K.step(s,84,DT,{shield:true});assert.equal(s.wind,1.15);
  const q=K.create({seed:4});K.step(q,87.5,DT,{shield:false});assert.ok(q.wind<.1,'silence drops the wind');
 });
@@ -63,6 +73,8 @@ test("near-extinction recovery comes from the player's timely release, not RNG",
  assert.equal(eligible({...base,flame:60},79),false,'needs a real near miss');
  assert.equal(eligible({...base,rescue:true},79),false,'once per play');
  assert.equal(eligible(base,40),false,'no arbitrary early shortcut');
+ assert.equal(eligible({...base,journey:98,releaseAt:93},93.5),true,'the rest route keeps its late rescue opportunity');
+ assert.equal(eligible({...base,journey:82,releaseAt:83},83.5),false,'the shortcut cannot trigger a rescue after arrival');
  const s=K.create({seed:2});Object.assign(s,{flame:20,oxygen:60,memories:2});
  K.step(s,75,DT,{shield:true,wasShield:false});K.step(s,75.1,DT,{shield:false,wasShield:true});
  assert.equal(s.releaseAt,75.1,'releasing the button records the moment');
@@ -99,10 +111,42 @@ test('memories: seeded positions in reach, collected only while shown, and once'
  assert.ok(s.mote);assert.equal(K.collect(s,s.mote.id),true);assert.equal(s.memories,1);
  assert.equal(K.collect(s,s.slots[0].id),false,'no double collection');
 });
+
+test('the route fork pauses for a real choice; shortcut trades distance for wind, shelter restores breath at a distance cost',()=>{
+ const a=K.create({seed:11}),b=K.create({seed:11});
+ assert.equal(K.step(a,27.9,DT,{}).some(e=>e.type==='route-choice'),false);
+ assert.equal(K.step(a,28,DT,{}).some(e=>e.type==='route-choice'),true);
+ assert.equal(a.routeChoice,'pending');assert.equal(K.step(a,28,DT,{}).length,0);
+ assert.equal(K.chooseRoute(a,'shortcut',28),true);assert.equal(K.routeDistance(a,28),Math.ceil(100*(90-28)/90)-16);
+ a.shelterReady=false;a.shelterUntil=-1;const beforeWind=K.baseWind(29,1);K.step(a,29,DT,{});assert.ok(a.wind>beforeWind,'the shortcut exposes the flame to harsher wind');
+ b.flame=60;b.oxygen=60;K.step(b,28,DT,{});const oldFlame=b.flame,oldOxygen=b.oxygen,shortDistance=K.routeDistance(a,28);
+ assert.equal(K.chooseRoute(b,'rest',28),true);assert.equal(b.flame,oldFlame);assert.ok(b.oxygen>oldOxygen);assert.ok(K.routeDistance(b,28)>shortDistance);
+ assert.equal(K.chooseRoute(b,'shortcut',28),false,'a fork is resolved once');
+});
+test('both routes change actual arrival time and preserve all memories and the complete finale',()=>{
+ const policy=(s,t,h)=>{const phase=K.finalePhaseAt(t,s.journey);return phase==='gust-active'?true:phase==='gust-warning'||phase==='silence'||phase==='window-reply'?false:tele(s,t,h)};
+ for(const route of ['shortcut','rest']){
+  const expected=route==='shortcut'?82:98;
+  const {s,log}=play(1,policy,{collect:true,until:105,route});
+  assert.ok(['dawn','wish'].includes(s.ended),route+' must arrive alive with memories: '+s.ended);
+  assert.equal(s.journey,expected);assert.equal(s.memories,3);assert.equal(s.replyLevel,'bright');
+  assert.deepEqual(log.filter(e=>e.type==='finale').map(e=>e.phase),['gust-warning','gust-active','silence','window-reply']);
+  const arrival=log.find(e=>e.type==='end').t;assert.ok(arrival>=expected&&arrival<expected+DT*2,route+' arrival at '+arrival);
+  assert.equal(K.routeDistance(s,arrival),0);
+  assert.equal(log.find(e=>e.type==='finale').t>=70,true,'finale starts after the final chapter');
+ }
+});
 test('flame personality follows state and shows nothing when out',()=>{
  assert.equal(K.flameExpression({flame:0}),'out');
  assert.equal(K.flameExpression({flame:50,rescue:true}),'hope');
  assert.equal(K.flameExpression({flame:50,oxygen:10}),'suffocating');
  assert.equal(K.flameExpression({flame:20,oxygen:80}),'afraid');
  assert.equal(K.flameExpression({flame:50,oxygen:80,shield:true}),'comfort');
+});
+test('near-empty flame and breath have separate accessible danger states',()=>{
+ assert.equal(K.vitalState({flame:20,oxygen:100}),'flame-critical');
+ assert.equal(K.vitalState({flame:80,oxygen:22}),'breath-critical');
+ assert.equal(K.vitalState({flame:34,oxygen:80}),'flame-warning');
+ assert.equal(K.vitalState({flame:80,oxygen:36}),'breath-warning');
+ assert.equal(K.vitalState({flame:35,oxygen:37}),'');
 });
