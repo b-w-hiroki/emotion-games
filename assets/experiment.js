@@ -38,7 +38,7 @@ function survey(){
  if(!curtain)return;
  const panel=document.createElement('section');panel.className='study-feedback';panel.hidden=true;panel.id='study-feedback';
  panel.innerHTML='<details><summary>今回の体験を記録（任意・4問）</summary><div class="study-questions"></div></details><small id="study-saved" aria-live="polite"></small>';
- const actions=curtain.querySelector('#share');actions.parentElement.insertBefore(panel,actions);
+ const actions=curtain.querySelector('#result-more')||curtain.querySelector('#share');actions.before(panel);
  const wrap=panel.querySelector('.study-questions');
  for(const q of questions){
   const field=document.createElement('fieldset');field.dataset.question=q.key;field.innerHTML='<legend>'+q.label+'</legend><div class="study-options"></div>';
