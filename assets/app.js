@@ -400,6 +400,7 @@ function candleCaption(s){
  if(s.finalePhase==='silence')return [s.shield?'静かになった — いま離して':'手をひらいて、窓に灯りを見せて',false];
  if(s.finalePhase==='window-reply')return [s.reply>0?'窓が答えている':'あと少し',false];
  if(ev&&elapsed<ev.at)return [ev.tip,true];
+ if(s.chapter===2&&s.bridgeFrost>.3&&s.wind>.5)return [s.shield?'橋の霜をしのいでいる':'橋の霜が迫る — 長押しでかばって',!s.shield];
  if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['渦がほどけた — いま離して',false];
  if(ev?.kind==='eddy'&&s.eddyReleasedEvent===ev.id)return ['渦の隙間 — 息を整える',false];
  if(ev?.kind==='eddy'&&!s.shield&&elapsed>=ev.at)return ['渦風 — 一瞬かばって',true];
@@ -432,6 +433,7 @@ function drawCandle(dt){
  KA.update(s,elapsed,{playing:true,paused,dt:step,ended:false});
  KV.frame(ctx,s,elapsed,{reduced:reducedMotion(),playing:true,caption:text,warn,expression:K.flameExpression(s)});
  // Test/QA hooks: plain data attributes, no globals.
+ canvas.dataset.bridgeFrost=s.bridgeFrost.toFixed(2);
  const m=s.mote?KV.toCss(s.mote.u*KV.view.W,s.mote.y):null;
  const memoryVisible=!!m&&!paused;if(memoryTouch.hidden===memoryVisible)memoryTouch.hidden=!memoryVisible;
  if(memoryVisible){const left=Math.max(80,Math.min(KV.view.cssW-80,m.x))+'px',top=Math.max(150,Math.min(KV.view.cssH-180,m.y+42))+'px',label=s.mote.title+'にふれる';if(memoryTouch.style.left!==left)memoryTouch.style.left=left;if(memoryTouch.style.top!==top)memoryTouch.style.top=top;if(memoryTouch.getAttribute('aria-label')!==label)memoryTouch.setAttribute('aria-label',label)}

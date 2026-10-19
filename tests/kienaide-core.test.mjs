@@ -87,6 +87,21 @@ test('chapters change play conditions: tunnel shelter, bridge exposure, foreshad
  const near=K.create({seed:9});Object.assign(near,{flame:30,memories:2});const ev=K.step(near,72,DT,{shield:false});
  assert.ok(ev.some(e=>e.type==='foreshadow'));
 });
+test('bridge frost makes prolonged exposure costly and shielding clears it at a breath cost',()=>{
+ const exposed=K.create({seed:9}),protectedRun=K.create({seed:9});
+ for(const s of [exposed,protectedRun]){s.events=[];s.chapter=2;s.flame=90;s.oxygen=90}
+ for(let t=62;t<65;t+=DT)K.step(exposed,t,DT,{shield:false});
+ assert.ok(exposed.bridgeFrost>.3,'wind should visibly build frost on the bridge');
+ const fresh=K.create({seed:9});fresh.events=[];fresh.chapter=2;fresh.flame=exposed.flame;fresh.oxygen=exposed.oxygen;
+ K.step(exposed,65,DT,{shield:false});K.step(fresh,65,DT,{shield:false});
+ assert.ok(exposed.flame<fresh.flame,'accumulated frost makes the next exposed gust more dangerous');
+ protectedRun.bridgeFrost=exposed.bridgeFrost;
+ const frostBefore=protectedRun.bridgeFrost,breathBefore=protectedRun.oxygen;
+ for(let t=65;t<66;t+=DT)K.step(protectedRun,t,DT,{shield:true});
+ assert.ok(protectedRun.bridgeFrost<frostBefore,'shielding melts the buildup');
+ assert.ok(protectedRun.oxygen<breathBefore,'the safer choice spends breath');
+ K.step(protectedRun,70,DT,{shield:false});assert.equal(protectedRun.bridgeFrost,0,'bridge frost cannot follow the player into the finale');
+});
 test('small events: every kind once per run, seeded order, no kind dominating the opening',()=>{
  const firsts={};
  for(let seed=1;seed<=400;seed++){

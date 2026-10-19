@@ -190,6 +190,21 @@ try{
    await page.screenshot({path:path.join(out,`${engine}-${tag}-chapter${i}.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('chapter '+i+' '+tag);
   }
+  // Bridge frost is earned by exposed play and recedes when the player spends breath to shield.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=9&speed=3&t=62');
+   await page.locator('#play').click();
+   await page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.bridgeFrost)>.32,null,{timeout:6000});
+   const frosted=Number(await page.locator('#stage').getAttribute('data-bridge-frost'));
+   assert.match(await page.locator('.action-cue').innerText(),/橋の霜/,'the bridge explains the accumulating danger '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-bridge-frost-exposed.png`)});
+   const breath=Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'));
+   await page.locator('#action').focus();await page.keyboard.down('Space');
+   await page.waitForFunction(before=>Number(document.querySelector('#stage').dataset.bridgeFrost)<before-.15,frosted,{timeout:4000});
+   assert.ok(Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'))<breath,'clearing frost must consume breath '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-bridge-frost-shielded.png`)});
+   await page.keyboard.up('Space');assert.deepEqual(errors,[]);await ctx.close();done('bridge frost responds to play '+tag);
+  }
  // Chapter changes are masked by a short blizzard passage rather than a naked image swap.
  if(size.width===390){
   const finale=await open(size,'?qa=1&seed=3&speed=3&t=79&mem=3&vital=flame-full');await finale.page.locator('#play').click();
