@@ -379,6 +379,7 @@ function candleEvents(list){
   if(e.type==='event'){mark('wind_event',{kind:e.event.kind});KA.cues.event(e.event.kind);if(e.event.kind==='gust'||e.event.kind==='eddy')navigator.vibrate?.(40);setStory(e.event.label,e.event.tip);s.storyPause=elapsed+3}
   if(e.type==='route-choice'){holdRelease();lastShield=false;$('route-rest-effect').textContent='8秒遅く・息+'+Math.min(28,Math.round(100-s.oxygen))+'%・風よけ4秒';setCandleDialog(routePanel,true);document.body.classList.add('has-route-choice');setStory('分かれ道','吹雪の坂を急ぐか、灯りを借りて休むか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
   if(e.type==='shelter'){mark('shelter_discovered',{chapter:2});setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3}
+  if(e.type==='memory-lost'){setStory('記憶','記憶の灯りが、雪の中に消えた。');s.storyPause=elapsed+2.6;KA.cues.memoryLost();mark('memory_missed',{memory_id:e.id,count:s.memories})}
   if(e.type==='foreshadow'){setStory('夜明け前　小さな予感','向こうの窓が、こちらの灯りを見ている。');s.storyPause=elapsed+4;mark('rescue_foreshadowed',{flame:Math.round(s.flame)})}
   if(e.type==='miracle'){s.storyPause=elapsed+6;setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');KA.cues.miracle();mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)})}
   if(e.type==='finale'){
@@ -432,6 +433,7 @@ function drawCandle(dt){
  const m=s.mote?KV.toCss(s.mote.u*KV.view.W,s.mote.y):null;
  const memoryVisible=!!m&&!paused;if(memoryTouch.hidden===memoryVisible)memoryTouch.hidden=!memoryVisible;
  if(memoryVisible){const left=Math.max(80,Math.min(KV.view.cssW-80,m.x))+'px',top=Math.max(150,Math.min(KV.view.cssH-180,m.y+42))+'px',label=s.mote.title+'にふれる';if(memoryTouch.style.left!==left)memoryTouch.style.left=left;if(memoryTouch.style.top!==top)memoryTouch.style.top=top;if(memoryTouch.getAttribute('aria-label')!==label)memoryTouch.setAttribute('aria-label',label)}
+ const remainingMemory=s.mote?(s.mote.expiresAt-elapsed).toFixed(1):'';if(canvas.dataset.memoryRemaining!==remainingMemory)canvas.dataset.memoryRemaining=remainingMemory;
  if(s.mote&&s.announced!==s.mote.id){s.announced=s.mote.id;$('memory-live').textContent='記憶が浮かんでいる。タップかMキーでふれる。'}canvas.dataset.chapter=String(s.chapter+1);canvas.dataset.quality=String(KV.perf.quality);canvas.dataset.wind=s.wind.toFixed(2);canvas.dataset.phase=s.finalePhase;canvas.dataset.event=s.event&&elapsed>=s.event.warnAt?s.event.kind:'';canvas.dataset.mote=m?Math.round(m.x)+','+Math.round(m.y):'';canvas.dataset.reply=s.replyLevel||'';const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);
 }
 // Each ending plays its own short scene before the result card slides in.

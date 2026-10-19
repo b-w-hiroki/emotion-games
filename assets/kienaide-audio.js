@@ -88,6 +88,7 @@ function create(){
   gustWarning(){whoosh(1.8,true,.22)},
   shield(on){thump(on?.05:.03,on?320:520)},
   memory(n){bell(76+n*2,0,.1);bell(83+n*2,.18,.07)},
+  memoryLost(){bell(67,0,.035);bell(62,.18,.025)},
   chapter(){bell(64,0,.06)},
   reply(level){if(level==='bright'){bell(72,.1,.1);bell(76,.5,.09);bell(79,.9,.09);bell(84,1.3,.08)}else if(level==='faint')bell(72,.2,.06)},
   miracle(){[67,71,74,79].forEach((n,i)=>bell(n,i*.18,.08))},
