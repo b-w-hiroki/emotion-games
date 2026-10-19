@@ -111,6 +111,19 @@ try{
    assert.deepEqual(errors,[]);await ctx.close();console.log('PASS unique save and collection focus',tag);
   }
   {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=0.0001&t=12.8');await page.locator('#play').click();
+   await page.locator('#memory-touch').waitFor({state:'visible'});
+   const target=await page.locator('#memory-touch').boundingBox(),distance=await page.locator('#distance-panel').boundingBox();
+   assert.ok(target.width>=44&&target.height>=44&&target.x>=8&&target.x+target.width<=size.width-8,'memory touch target must fit the phone: '+JSON.stringify(target));
+   assert.ok(target.y>=110&&target.y+target.height<distance.y-8,'memory prompt must clear the story and distance signpost');
+   await noShortTail(page,'#memory-touch');await page.screenshot({path:path.join(out,`${engine}-${tag}-memory-touch.png`)});
+   assert.match(await page.locator('#memory-touch').getAttribute('aria-label'),/記憶/);
+   await page.locator('#journey-menu-open').click();assert.equal(await page.locator('#memory-touch').isVisible(),false,'pause must hide the memory action');
+   await page.locator('#pause-resume').click();await page.locator('#memory-touch').waitFor({state:'visible'});
+   await page.locator('#memory-touch').click();assert.equal(await page.locator('#best').innerText(),'1 / 3');assert.equal(await page.locator('#memory-touch').isVisible(),false);assert.ok(await page.locator('#action').isEnabled());
+   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS contextual memory touch target',tag);
+  }
+  {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=12.8');await page.locator('#play').click();
    await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
    await page.locator('#action').focus();await page.keyboard.down('Space');
