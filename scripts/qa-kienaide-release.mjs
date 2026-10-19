@@ -95,6 +95,11 @@ try{
    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide'))),['dawn','wish']);
    await page.waitForFunction(()=>!document.querySelector('#play').disabled&&!document.querySelector('#play').dataset.loadFailed);
    await noShortTail(page,'#curtain-description');
+   assert.equal(await page.locator('#play').innerText(),'旅をはじめる');
+   assert.equal(await page.locator('#play img').count(),0,'title action must not show generated lettering');
+   const startBox=await page.locator('#play').boundingBox();
+   assert.ok(startBox.width>=240&&startBox.height>=60&&startBox.x>=16&&startBox.y>=0&&startBox.x+startBox.width<=size.width-16&&startBox.y+startBox.height<=size.height,'title action must fit and remain thumb-sized: '+JSON.stringify(startBox));
+   await noShortTail(page,'#play');
    const titleSpace=await page.evaluate(()=>({button:document.querySelector('#open-collection').getBoundingClientRect().bottom,title:document.querySelector('#curtain-title').getBoundingClientRect().top}));
    assert.ok(titleSpace.button+4<=titleSpace.title,'title menu must not overlap the title');
    await page.screenshot({path:path.join(out,`${engine}-${tag}-title-collection.png`)});

@@ -102,9 +102,7 @@ if(candle){
  $('curtain-kicker').textContent='EMOTION 04　/　切なさ';
  $('curtain-description').innerHTML=guidanceMarkup('吹雪の町を抜け、消えかけた灯りを家まで届けよう。');
  const hero=document.createElement('img');hero.className='journey-title-hero';hero.src=base+'assets/kienaide-v3/traveller-flame.webp';hero.alt='';hero.setAttribute('aria-hidden','true');curtain.prepend(hero);
- const startArt=document.createElement('img');startArt.src=base+'assets/kienaide-v3/start-button.webp';startArt.alt='';startArt.setAttribute('aria-hidden','true');
- const startLabel=document.createElement('span');startLabel.className='sr-only';startLabel.textContent='旅をはじめる';
- $('play').replaceChildren(startArt,startLabel);
+ $('play').textContent='旅をはじめる';
  $('play').disabled=true;$('play').setAttribute('aria-busy','true');
  const loading=document.createElement('p');loading.id='journey-loading';loading.className='journey-loading';loading.setAttribute('role','status');loading.textContent='絵を準備しています…';curtain.append(loading);
 }
