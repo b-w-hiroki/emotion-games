@@ -7,7 +7,7 @@ const DT=1/30;
 // Replays a whole night. policy(state,time,holding) → holding; collect=true taps every memory.
 function play(seed,policy,{collect=false,until=95,route}={}){
  const s=K.create({seed}),log=[];let t=0,hold=false;
- while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was}))log.push({...e,t});if(s.routeChoice==='pending'){if(route)K.chooseRoute(s,route,t);else s.routeChoice='legacy-test'}if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
+ while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was,releaseIntent:was&&!hold}))log.push({...e,t});if(s.routeChoice==='pending'){if(route)K.chooseRoute(s,route,t);else s.routeChoice='legacy-test'}if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
  return {s,log};
 }
 const tele=(s,t,h)=>(!h&&s.wind>.61)?true:(h&&(s.wind<.44||s.oxygen<28))?false:h;
@@ -112,6 +112,21 @@ test('lantern shelter ends on time and does not consume the tunnel shelter',()=>
  assert.ok(s.wind<K.baseWind(30.5,1)*.21,'lantern shelter applies only while active');
  s.shelterReady=false;K.step(s,33.1,DT,{});
  assert.equal(s.wind,K.baseWind(33.1,1),'wind returns to the normal chapter pattern');
+});
+test('the tunnel shelter is earned by releasing into a lull, not by idling in one',()=>{
+ const s=K.create({seed:9});s.events=[];s.chapter=1;
+ assert.ok(K.baseWind(22.5,1)<.44);
+ assert.equal(K.step(s,22.5,DT,{shield:false,wasShield:false}).some(e=>e.type==='shelter'),false);
+ assert.equal(s.shelterReady,true,'idle breathing does not spend the one shelter');
+ K.step(s,22.55,DT,{shield:true,wasShield:false});
+ assert.equal(K.step(s,22.6,DT,{shield:false,wasShield:true,releaseIntent:true}).filter(e=>e.type==='shelter').length,1);
+ assert.equal(s.shelterReady,false);assert.ok(s.wind<K.baseWind(22.6,1)*.21);
+ assert.equal(K.step(s,22.7,DT,{shield:false,wasShield:false}).some(e=>e.type==='shelter'),false);
+ const canceled=K.create({seed:9});canceled.events=[];canceled.chapter=1;
+ assert.equal(K.step(canceled,22.6,DT,{shield:false,wasShield:true,releaseIntent:false}).some(e=>e.type==='shelter'),false,'a forced hold cancellation cannot claim the shelter');
+ const exposed=K.create({seed:9});exposed.events=[];exposed.chapter=1;
+ assert.ok(K.baseWind(20,1)>.44);
+ assert.equal(K.step(exposed,20,DT,{shield:false,wasShield:true}).some(e=>e.type==='shelter'),false,'a release into stronger wind does not discover safety');
 });
 test('the shortcut passes the lantern without sheltering from its promised strong wind',()=>{
  const s=K.create({seed:3}),e=s.events.find(x=>x.kind==='lantern');s.events=[{...e,at:29,end:32,warnAt:29}];s.chapter=1;s.routeChoice='shortcut';s.shortcutUntil=36;s.shelterReady=false;

@@ -40,6 +40,36 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A tunnel lull becomes a safe place only after a deliberate release.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');
+   await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.wind);
+   const idle=Number(await page.locator('#stage').getAttribute('data-wind'));
+   assert.ok(idle>.1,'idling alone must not grant tunnel shelter '+tag);
+   await page.locator('#action').focus();await page.keyboard.down('Space');
+   await page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('軒先の陰'));
+   await page.waitForTimeout(500);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-shelter-release-hint.png`)});
+   await page.keyboard.up('Space');
+   await page.waitForFunction(()=>document.querySelector('#story-beat').textContent.includes('建物の陰'));
+   assert.ok(Number(await page.locator('#stage').getAttribute('data-wind'))<idle*.25,'the deliberate release must reach actual shelter '+tag);
+   await page.waitForFunction(()=>getComputedStyle(document.querySelector('#story-beat')).opacity>.8);
+   await page.waitForTimeout(500);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-shelter-earned.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('earned tunnel shelter '+tag);
+   const canceled=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');
+   await canceled.page.locator('#play').click();await canceled.page.locator('#action').focus();await canceled.page.keyboard.down('Space');
+   await canceled.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('軒先の陰'));
+   await canceled.page.locator('#stage').focus();await canceled.page.keyboard.up('Space');await canceled.page.waitForTimeout(150);
+   assert.ok(Number(await canceled.page.locator('#stage').getAttribute('data-wind'))>.1,'losing focus must not claim the shelter '+tag);
+   assert.doesNotMatch(await canceled.page.locator('#story-beat').innerText(),/建物の陰/);
+   await canceled.page.locator('#action').focus();await canceled.page.keyboard.down('Space');
+   await canceled.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('軒先の陰'));
+   await canceled.page.evaluate(()=>window.dispatchEvent(new Event('blur')));await canceled.page.keyboard.up('Space');await canceled.page.waitForTimeout(150);
+   assert.ok(Number(await canceled.page.locator('#stage').getAttribute('data-wind'))>.1,'window blur must not claim the shelter '+tag);
+   assert.doesNotMatch(await canceled.page.locator('#story-beat').innerText(),/建物の陰/);
+   assert.deepEqual(canceled.errors,[]);await canceled.ctx.close();done('cancelled hold keeps shelter available '+tag);
+  }
   // The neighbour's window is a real place to release, but the shortcut passes it by.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=1&speed=0.0001&t=9.5');

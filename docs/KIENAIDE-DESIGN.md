@@ -26,6 +26,8 @@ coreの `create({seed})` が周回状態を作り、`step(state, elapsed, dt, {s
 
 道の選択は約28秒で `routeChoice='pending'` となる。`chooseRoute` は近道なら `journey=82`、残距離を16m減らし風を8秒強化、休息なら `journey=98`、残距離を16m増やして息を最大28回復する。休息中の `restUntil` は選択後4秒間だけ風を弱め、息が満タンでも防風効果を残す。自然発生の `shelterUntil` と混同せず、休息中に自然の安全地帯を消費しない。`routeDistance` が表示距離を返す。最終10秒は `finalePhaseAt` に集約する。
 
+第二章の自然の安全地帯は、弱風（`wind < 0.44`）中に指またはキーを意図して離した時だけ一度発火する。`releaseIntent` は通常のpointerup／keyupだけが渡し、pointercancel・フォーカス喪失・画面非表示による強制解除では渡さない。手放したままの待機、道の休息中、灯りイベントによる防風だけでも消費しない。かばっていて条件が揃うと主ボタンで軒先への手放しを促す。
+
 ## 入力と結果の流れ
 
 ```text
