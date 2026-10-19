@@ -40,6 +40,27 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // The neighbour's window is a real place to release, but the shortcut passes it by.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=1&speed=0.0001&t=9.5');
+   await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='lantern');
+   const reading=await page.evaluate(()=>({wind:Number(document.querySelector('#stage').dataset.wind),base:window.KienaideCore.baseWind(9.5,0),caption:document.querySelector('.action-cue').textContent}));
+   assert.ok(reading.wind<reading.base*.25,'the lantern must visibly shelter the player '+tag);
+   assert.match(reading.caption,/息を戻そう/,'the prompt should explain the safe release '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-lantern-shelter.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('lantern shelter '+tag);
+  }
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=0.0001&t=28.9');
+   await page.locator('#play').click();await page.locator('#route-choice [data-route="shortcut"]').click();
+   await page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='lantern');
+   const reading=await page.evaluate(()=>({wind:Number(document.querySelector('#stage').dataset.wind),base:window.KienaideCore.baseWind(28.9,1),caption:document.querySelector('.action-cue').textContent,story:document.querySelector('#story-beat').textContent}));
+   assert.ok(reading.wind>reading.base,'the shortcut must retain its wind risk '+tag);
+   assert.doesNotMatch(reading.caption,/窓が風をさえぎる/,'the shortcut cannot offer the skipped shelter '+tag);
+   assert.match(reading.story,/近道からは、あの窓に寄れない/,'story should explain the missed shelter '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-lantern-shortcut.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('lantern shortcut tradeoff '+tag);
+  }
   // Measure rendered character lines, not just CSS properties: no <=5-character orphan.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=8');

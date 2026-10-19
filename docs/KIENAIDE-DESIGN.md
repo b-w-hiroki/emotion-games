@@ -16,6 +16,8 @@
 
 `kienaide-core.js` はDOM・音・保存を知らない決定論的なルール層。`app.js` が入力をcoreへ渡し、返されたイベントをview/audio/DOM/計測へ配る。表示やサウンドを変更しても、結末判定の正本を別に作らない。
 
+小風イベントの `lantern` は見た目の琥珀色と字幕だけでなく、発生中の風を0.2倍にする。`lull` の0.3倍や道の休息・自然の安全地帯とは独立した一時的な防風効果で、炎の温かさは従来どおり手放し中に加算する。近道選択中は窓の防風を適用せず、近道の風リスクを維持する。灯りの防風だけで第二章の自然の安全地帯を消費しない。イベント終了後は通常の風へ戻り、最終10秒の固定された風と窓の返事には介入しない。
+
 ## 状態と時刻
 
 coreの `create({seed})` が周回状態を作り、`step(state, elapsed, dt, {shield, wasShield})` が更新とイベント列を返す。主な状態は `flame`、`oxygen`、`wind`、`memories`、`memoryGot`、`mote`、`chapter`、`routeChoice`、`journey`、`finalePhase`、`gustShield`、`silenceRelease`、`replyLevel`、`ended`。初期値は灯り72、息100、距離100m、到着90秒。同じseedと入力列から同じ進行・結末を得る。小風イベントは各種類を一周に一度ずつseedで並べ替える。
