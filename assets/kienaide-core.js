@@ -112,7 +112,7 @@ function step(s,time,dt,input){
  if(phase==='silence'&&!s.shield)s.silenceRelease+=dt;
  s.wind=Math.min(1.15,wind);
  const resting=time<s.restUntil;
- if(chapter===1&&!resting&&s.shelterReady&&s.wind<.29&&!s.shield&&!(live&&ev.kind==='lantern')){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
+ if(chapter===1&&!resting&&s.shelterReady&&s.wind<.44&&!s.shield&&input.wasShield&&input.releaseIntent&&!(live&&ev.kind==='lantern')){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
  const sheltered=resting||time<s.shelterUntil;if(sheltered)s.wind*=.2;
  const bridgeCold=chapter===2?.62:1;
  if(s.shield){
