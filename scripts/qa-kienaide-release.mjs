@@ -124,6 +124,21 @@ try{
    assert.deepEqual(errors,[]);await ctx.close();console.log('PASS contextual memory touch target',tag);
   }
   {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=2&t=12.8');await page.locator('#play').click();
+   await page.locator('#memory-touch').waitFor({state:'visible'});
+   assert.ok(Number(await page.locator('#stage').getAttribute('data-memory-remaining'))>0,'a visible memory has time left');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-memory-countdown.png`)});
+   await page.locator('#journey-menu-open').click();const remaining=await page.locator('#stage').getAttribute('data-memory-remaining');await page.waitForTimeout(3500);
+   assert.equal(await page.locator('#stage').getAttribute('data-memory-remaining'),remaining,'the memory countdown freezes while paused');
+   await page.locator('#pause-resume').click();
+   await page.waitForFunction(()=>document.querySelector('#story-beat strong')?.textContent==='記憶の灯りが、雪の中に消えた。',null,{timeout:6000});
+   await page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#story-beat')).opacity)>=.8,null,{timeout:2000});
+   await noShortTail(page,'#story-beat strong');
+   assert.equal(await page.locator('#memory-touch').isVisible(),false);assert.equal(await page.locator('#best').innerText(),'0 / 3');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-memory-missed.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS memory countdown, pause and missed feedback',tag);
+  }
+  {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=12.8');await page.locator('#play').click();
    await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
    await page.locator('#action').focus();await page.keyboard.down('Space');

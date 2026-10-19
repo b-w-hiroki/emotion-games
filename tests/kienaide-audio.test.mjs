@@ -97,6 +97,12 @@ test('the window reply keeps the storm silent while its answer stinger plays',()
  assert.equal(stats.oscillatorStarts-before,8,'the window still answers with its bright four-note stinger');
 });
 
+test('a missed memory has a quiet cue that obeys mute',()=>{
+ const audible=audioRig();const before=audible.stats.oscillatorStarts;audible.audio.cues.memoryLost();
+ assert.equal(audible.stats.oscillatorStarts-before,4,'two soft descending bells are scheduled');
+ const muted=audioRig('{"muted":true}');const mutedBefore=muted.stats.oscillatorStarts;muted.audio.cues.memoryLost();assert.equal(muted.stats.oscillatorStarts,mutedBefore);
+});
+
 test('pausing mutes the scene and schedules no footsteps, breath or melody until resuming',()=>{
  const {audio,stats}=audioRig(),options={playing:true,dt:1/60,ended:false};
  audio.update(state(20),1,options);

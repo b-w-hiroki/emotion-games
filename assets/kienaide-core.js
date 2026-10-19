@@ -128,8 +128,9 @@ function step(s,time,dt,input){
  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){s.miracleHint=true;emit('foreshadow');}
  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,s.wind);
  if(canTriggerMiracle(s,time)){s.rescue=true;s.rescueAt=time;s.flame=Math.min(100,s.flame+24);emit('miracle');}
- const slot=s.slots.find(m=>time>=m.at&&time<m.at+8&&!s.memoryGot.has(m.id));
- s.mote=slot?{id:slot.id,u:slot.u,y:slot.y,title:slot.title,line:slot.line}:null;
+ const previousMote=s.mote,slot=s.slots.find(m=>time>=m.at&&time<m.at+8&&!s.memoryGot.has(m.id));
+ s.mote=slot?{id:slot.id,u:slot.u,y:slot.y,title:slot.title,line:slot.line,expiresAt:slot.at+8}:null;
+ if(previousMote&&previousMote.id!==s.mote?.id&&!s.memoryGot.has(previousMote.id))emit('memory-lost',{id:previousMote.id});
  if(s.oxygen<=0){s.ended='smother';emit('end',{ending:'smother'});return out}
  if(s.flame<=0){s.ended='blown';emit('end',{ending:'blown'});return out}
  if(time>=s.journey){s.ended=arrivalEnding(s);emit('end',{ending:s.ended});}

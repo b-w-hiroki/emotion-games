@@ -111,6 +111,15 @@ test('memories: seeded positions in reach, collected only while shown, and once'
  assert.ok(s.mote);assert.equal(K.collect(s,s.mote.id),true);assert.equal(s.memories,1);
  assert.equal(K.collect(s,s.slots[0].id),false,'no double collection');
 });
+test('memory expiry reports one missed chance but never reports a collected memory as lost',()=>{
+ const missed=K.create({seed:4});missed.events=[];const slot=missed.slots[0];
+ K.step(missed,slot.at+.1,DT,{});assert.equal(missed.mote.expiresAt,slot.at+8);
+ assert.equal(K.step(missed,slot.at+7.9,DT,{}).some(e=>e.type==='memory-lost'),false);
+ assert.deepEqual(K.step(missed,slot.at+8.01,DT,{}).filter(e=>e.type==='memory-lost').map(e=>e.id),[slot.id]);
+ assert.equal(K.step(missed,slot.at+8.1,DT,{}).some(e=>e.type==='memory-lost'),false);
+ const saved=K.create({seed:4});saved.events=[];K.step(saved,slot.at+.1,DT,{});assert.equal(K.collect(saved,slot.id),true);
+ assert.equal(K.step(saved,slot.at+8.01,DT,{}).some(e=>e.type==='memory-lost'),false);
+});
 
 test('the route fork pauses for a real choice; shortcut trades distance for wind, shelter restores breath at a distance cost',()=>{
  const a=K.create({seed:11}),b=K.create({seed:11});

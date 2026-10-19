@@ -268,6 +268,8 @@ function create(base){
   const x=m.u*view.W,y=m.y,p=reduced?1:1+Math.sin(t*5)*.16;
   ctx.save();ctx.translate(x,y);ctx.scale(p,p);ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(0,0,1,0,0,30);g.addColorStop(0,'rgba(255,236,186,.95)');g.addColorStop(1,'rgba(255,190,110,0)');ctx.fillStyle=g;ctx.fillRect(-32,-32,64,64);ctx.restore();
+  const remaining=Math.max(0,Math.min(1,(m.expiresAt-t)/8));
+  ctx.save();ctx.strokeStyle='rgba(255,221,159,.9)';ctx.lineWidth=2.5;ctx.shadowColor='rgba(255,185,96,.75)';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(x,y,22,-Math.PI/2,-Math.PI/2+Math.PI*2*remaining);ctx.stroke();ctx.restore();
   if(ready('flame')){ctx.save();ctx.globalAlpha=.85;ctx.drawImage(imgs.flame,x-11,y-14,22,24);ctx.restore()}
  }
  // A collected memory flies into the flame as a small spark.
