@@ -102,6 +102,12 @@ test('a missed memory has a quiet cue that obeys mute',()=>{
  assert.equal(audible.stats.oscillatorStarts-before,4,'two soft descending bells are scheduled');
  const muted=audioRig('{"muted":true}');const mutedBefore=muted.stats.oscillatorStarts;muted.audio.cues.memoryLost();assert.equal(muted.stats.oscillatorStarts,mutedBefore);
 });
+test('discovering shelter has a restrained cue that obeys mute',()=>{
+ const audible=audioRig();const before=audible.stats.oscillatorStarts;audible.audio.cues.shelter();
+ assert.equal(audible.stats.oscillatorStarts-before,4,'two soft bells mark the shelter');
+ const muted=audioRig('{"muted":true}');const mutedBefore=muted.stats.oscillatorStarts;muted.audio.cues.shelter();
+ assert.equal(muted.stats.oscillatorStarts,mutedBefore);
+});
 
 test('pausing mutes the scene and schedules no footsteps, breath or melody until resuming',()=>{
  const {audio,stats}=audioRig(),options={playing:true,dt:1/60,ended:false};

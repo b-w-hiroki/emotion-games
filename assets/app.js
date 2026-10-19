@@ -378,7 +378,7 @@ function candleEvents(list){
   if(e.type==='chapter'){mark('chapter_reached',{chapter:e.chapter+1});KA.cues.chapter()}
   if(e.type==='event'){mark('wind_event',{kind:e.event.kind});KA.cues.event(e.event.kind);if(e.event.kind==='gust'||e.event.kind==='eddy')navigator.vibrate?.(40);setStory(e.event.kind==='lantern'&&s.routeChoice==='shortcut'?'遠くの灯り':e.event.label,e.event.kind==='lantern'&&s.routeChoice==='shortcut'?'近道からは、あの窓に寄れない。':e.event.tip);s.storyPause=elapsed+3}
   if(e.type==='route-choice'){holdRelease();lastShield=false;$('route-rest-effect').textContent='8秒遅く・息+'+Math.min(28,Math.round(100-s.oxygen))+'%・風よけ4秒';setCandleDialog(routePanel,true);document.body.classList.add('has-route-choice');setStory('分かれ道','吹雪の坂を急ぐか、灯りを借りて休むか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
-  if(e.type==='shelter'){mark('shelter_discovered',{chapter:2});setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3}
+  if(e.type==='shelter'){mark('shelter_discovered',{chapter:2});setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3;KA.cues.shelter()}
   if(e.type==='memory-lost'){setStory('記憶','記憶の灯りが、雪の中に消えた。');s.storyPause=elapsed+2.6;KA.cues.memoryLost();mark('memory_missed',{memory_id:e.id,count:s.memories})}
   if(e.type==='foreshadow'){setStory('夜明け前　小さな予感','向こうの窓が、こちらの灯りを見ている。');s.storyPause=elapsed+4;mark('rescue_foreshadowed',{flame:Math.round(s.flame)})}
   if(e.type==='miracle'){s.storyPause=elapsed+6;setStory('夜明け前　窓の向こう','手を離した瞬間、あの窓から光が返ってきた。');KA.cues.miracle();mark('miracle_triggered',{memories:s.memories,lowest_flame:Math.round(s.lowestFlame)})}

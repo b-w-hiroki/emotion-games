@@ -29,7 +29,7 @@ test('highlight is shareable but never auto-posted',()=>{
 });
 
 test('the four chapters differ in shelter, bridge exposure and rescue foreshadowing',()=>{
- for(const marker of ["tunnelGust=chapter===1", "s.shelterUntil=time+3.5", "chapter===2?1.2:0", "bridgeCold=chapter===2?.62:1", "s.miracleHint=true"]){assert.ok(core.includes(marker),marker)}
+ for(const marker of ["tunnelGust=chapter===1", "s.shelterUntil=Math.min(time+3.5,CHAPTERS[2].at)", "chapter===2?1.2:0", "bridgeCold=chapter===2?.62:1", "s.miracleHint=true"]){assert.ok(core.includes(marker),marker)}
  assert.ok(app.includes("rescue_foreshadowed"));
 });
 

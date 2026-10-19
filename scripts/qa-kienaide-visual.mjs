@@ -53,6 +53,10 @@ try{
    await page.keyboard.up('Space');
    await page.waitForFunction(()=>document.querySelector('#story-beat').textContent.includes('建物の陰'));
    assert.ok(Number(await page.locator('#stage').getAttribute('data-wind'))<idle*.25,'the deliberate release must reach actual shelter '+tag);
+   const distance=await page.locator('#distance-panel').evaluate(el=>({visible:getComputedStyle(el).visibility,text:el.textContent,box:el.getBoundingClientRect().toJSON()}));
+   assert.equal(distance.visible,'visible','distance stays visible during shelter '+tag);
+   assert.match(distance.text,/\d+m/,'distance remains readable during shelter '+tag);
+   assert.ok(distance.box.width>=170,'the shelter must not shrink the journey marker '+tag);
    await page.waitForFunction(()=>getComputedStyle(document.querySelector('#story-beat')).opacity>.8);
    await page.waitForTimeout(500);
    await page.screenshot({path:path.join(out,`${engine}-${tag}-shelter-earned.png`)});
