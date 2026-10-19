@@ -71,6 +71,16 @@ try{
    await page.screenshot({path:path.join(out,`${engine}-${tag}-guidance-wrap.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('guidance line balance '+tag);
   }
+  // Narrative beats leave the painting clear after one reading, including reduced motion.
+  {
+   const reduced=size.width===360,{ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=8',{reduced});
+   await page.locator('#play').click();await page.waitForFunction(()=>getComputedStyle(document.querySelector('#story-beat')).opacity>.5);
+   await page.waitForFunction(()=>!document.querySelector('#story-beat').classList.contains('show'),null,{timeout:6000});
+   assert.ok(Number(await page.locator('#story-beat').evaluate(el=>getComputedStyle(el).opacity))<.05,'story text must clear the painting '+tag);
+   await page.waitForTimeout(250);assert.ok(await page.locator('#story-beat').evaluate(el=>!el.classList.contains('show')),'unchanged chapter text must not reappear each frame');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-story-cleared.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('story clears '+tag+(reduced?' reduced':''));
+  }
   // Interrupted holds must release; unrelated fingers/keys must not release the owner.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=7&speed=0.0001&t=8');
@@ -126,6 +136,14 @@ try{
   }
  // Chapter changes are masked by a short blizzard passage rather than a naked image swap.
  if(size.width===390){
+  const finale=await open(size,'?qa=1&seed=3&speed=3&t=79&mem=3&vital=flame-full');await finale.page.locator('#play').click();
+  await finale.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='gust-warning');
+  assert.match(await finale.page.locator('#story-beat strong').innerText(),/次の一息に備えて/);
+  await finale.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='gust-active');
+  assert.match(await finale.page.locator('#story-beat strong').innerText(),/守るか、息を残すか/,'the active gust must replace the warning even though the heading is unchanged');
+  await finale.page.waitForFunction(()=>getComputedStyle(document.querySelector('#story-beat')).opacity>.5);
+  await finale.page.screenshot({path:path.join(out,`${engine}-finale-gust-story.png`)});
+  assert.deepEqual(finale.errors,[]);await finale.ctx.close();done('finale warning becomes active guidance');
   const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=.5&t=19.8');
   await page.locator('#play').click();
   await page.waitForFunction(()=>document.querySelector('#stage').dataset.transition==='blizzard',{timeout:4000});
