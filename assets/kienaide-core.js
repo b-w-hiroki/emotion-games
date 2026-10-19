@@ -93,6 +93,7 @@ function step(s,time,dt,input){
  if(live&&ev.kind==='gust')wind+=.55;
  if(live&&ev.kind==='eddy')wind=s.eddyReleasedEvent===ev.id?Math.min(wind,.38):Math.max(wind,.5+Math.abs(Math.sin(time*7))*.35);
  if(live&&ev.kind==='lull')wind*=.3;
+ if(live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut')wind*=.2;
  if(s.routeChoice==='shortcut'&&time<s.shortcutUntil)wind=Math.min(1.15,wind+.2);
  // Finale: deterministic storm tied to the player's shielding decision.
  const phase=finalePhaseAt(time,s.journey);s.finalePhase=phase;
@@ -111,7 +112,7 @@ function step(s,time,dt,input){
  if(phase==='silence'&&!s.shield)s.silenceRelease+=dt;
  s.wind=Math.min(1.15,wind);
  const resting=time<s.restUntil;
- if(chapter===1&&!resting&&s.shelterReady&&s.wind<.29&&!s.shield){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
+ if(chapter===1&&!resting&&s.shelterReady&&s.wind<.29&&!s.shield&&!(live&&ev.kind==='lantern')){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
  const sheltered=resting||time<s.shelterUntil;if(sheltered)s.wind*=.2;
  const bridgeCold=chapter===2?.62:1;
  if(s.shield){
@@ -120,7 +121,7 @@ function step(s,time,dt,input){
   s.flame=Math.min(100,s.flame+(.7-s.wind*.25)*dt);
  }else{
   s.oxygen=Math.min(100,s.oxygen+(sheltered||(live&&ev.kind==='lull')?23:15)*dt);
-  const warm=live&&ev.kind==='lantern'?2.6:0;
+  const warm=live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut'?2.6:0;
   s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45:0)+warm)*dt));
  }
  if(!s.shield&&input.wasShield)s.releaseAt=time;

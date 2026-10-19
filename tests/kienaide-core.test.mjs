@@ -103,7 +103,20 @@ test('events have real effects on the rules',()=>{
  {const {s,t}=at('gust');K.step(s,t,DT,{shield:false});assert.ok(s.wind>=.6,'gusts raise the wind')}
  {const {s,t}=at('lull');const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;K.step(s,t,DT,{});K.step(b,t,DT,{});assert.ok(s.wind<b.wind,'lulls calm the wind')}
  {const {s,t}=at('eddy');s.oxygen=80;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.oxygen=80;K.step(s,t,1,{shield:true});K.step(b,t,1,{shield:true});assert.ok(s.oxygen<b.oxygen,'eddies make holding cost more breath')}
- {const {s,t}=at('lantern');s.flame=50;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.flame=50;K.step(s,t,1,{});K.step(b,t,1,{});if(b.wind<=.5)assert.ok(s.flame>b.flame,'a neighbour lantern warms the flame')}
+ {const {s,t}=at('lantern');s.flame=50;s.oxygen=50;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.flame=50;b.oxygen=50;K.step(s,t,1,{});K.step(b,t,1,{});assert.ok(s.wind<b.wind*.21,'a neighbour lantern actually blocks the wind');assert.ok(s.flame>b.flame,'the shelter keeps the flame warmer');assert.ok(s.oxygen>=b.oxygen,'releasing remains safe for breath recovery')}
+});
+test('lantern shelter ends on time and does not consume the tunnel shelter',()=>{
+ const s=K.create({seed:3}),e=s.events.find(x=>x.kind==='lantern');s.events=[{...e,at:30,end:33,warnAt:30}];s.chapter=1;
+ const active=K.step(s,30.5,DT,{});assert.equal(active.some(x=>x.type==='shelter'),false);
+ assert.equal(s.shelterReady,true,'the separate tunnel shelter remains available');
+ assert.ok(s.wind<K.baseWind(30.5,1)*.21,'lantern shelter applies only while active');
+ s.shelterReady=false;K.step(s,33.1,DT,{});
+ assert.equal(s.wind,K.baseWind(33.1,1),'wind returns to the normal chapter pattern');
+});
+test('the shortcut passes the lantern without sheltering from its promised strong wind',()=>{
+ const s=K.create({seed:3}),e=s.events.find(x=>x.kind==='lantern');s.events=[{...e,at:29,end:32,warnAt:29}];s.chapter=1;s.routeChoice='shortcut';s.shortcutUntil=36;s.shelterReady=false;
+ K.step(s,29.5,DT,{});
+ assert.ok(s.wind>K.baseWind(29.5,1),'the faster exposed route retains its wind cost');
 });
 test('memories: seeded positions in reach, collected only while shown, and once',()=>{
  for(let seed=1;seed<50;seed++)for(const m of K.memorySlots(seed)){assert.ok(m.u>=.2&&m.u<=.8);assert.ok(m.y>150&&m.y<300)}
