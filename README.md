@@ -29,6 +29,8 @@ npx serve dist
 ## 004｜きえないで。
 「消えてほしくない」という感情を、約90秒の夜の旅にした縦持ち短編。風の予兆を読み、長押しで炎をかばい、凪いだら手を離して呼吸を戻す。道中の三つの記憶、四章の物語変化、環境音と反応音、5種類の結末を収録。初回は導入「最後の灯り」（約19秒・いつでもスキップ可）。終盤は「大突風を長押しで耐え、静寂で手をひらく」と窓が光で答える。結末ごとに専用の場面と音がある。
 
+現行の振る舞いは [仕様書](docs/KIENAIDE-SPEC.md)、実装の責務と互換性は [設計書](docs/KIENAIDE-DESIGN.md) を正本とする。今後の変更では [文書更新ワークフロー](docs/DOCUMENTATION-WORKFLOW.md) に従い、影響する文書を同じPRで更新する。
+
 - 構成: `assets/kienaide-core.js`（ルール・決定論的）／`kienaide-view.js`（描画）／`kienaide-audio.js`（音）／`assets/kienaide/paint/`（途中版の画風に統一した絵画レイヤー、`scripts/art/kienaide-paint.mjs` で原本から再生成。アート基準は `assets/kienaide-v3/`）
 - QA: `?qa=1` は12倍速。`&seed=` `&speed=` `&t=`（開始秒）`&mem=`（記憶数）はQA・動画収録専用
 - 検証: `npm test`、`node scripts/qa-kienaide-visual.mjs chromium|webkit`、`node scripts/capture-kienaide-clip.mjs`（12秒の縦動画）
