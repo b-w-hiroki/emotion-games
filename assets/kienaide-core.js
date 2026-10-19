@@ -36,7 +36,7 @@ function create(opts={}){
  const seed=(opts.seed>>>0)||1;
  return {seed,shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:JOURNEY,
   story:'',storyPause:0,shelterReady:true,shelterUntil:-1,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
-  routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,
+  routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,restUntil:-1,
   lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),eddyReleasedEvent:'',
   finalePhase:'approach',previousFinalePhase:'approach',gustShield:0,gustExposed:0,silenceRelease:0,reply:0,replyLevel:'',
   previousChapter:0,sceneChangedAt:-999,shieldTime:0,ended:''};
@@ -110,8 +110,9 @@ function step(s,time,dt,input){
  if(phase==='gust-active'){if(s.shield)s.gustShield+=dt;else s.gustExposed+=dt}
  if(phase==='silence'&&!s.shield)s.silenceRelease+=dt;
  s.wind=Math.min(1.15,wind);
- if(chapter===1&&s.shelterReady&&s.wind<.29&&!s.shield){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
- const sheltered=time<s.shelterUntil;if(sheltered)s.wind*=.2;
+ const resting=time<s.restUntil;
+ if(chapter===1&&!resting&&s.shelterReady&&s.wind<.29&&!s.shield){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
+ const sheltered=resting||time<s.shelterUntil;if(sheltered)s.wind*=.2;
  const bridgeCold=chapter===2?.62:1;
  if(s.shield){
   const eddyCost=live&&ev.kind==='eddy'?1.6:1;
@@ -145,7 +146,7 @@ function chooseRoute(s,choice,time){
  if(choice==='shortcut'){
   s.routeStartMeters=Math.max(0,remaining-16);s.shortcutUntil=time+8;s.journey=JOURNEY-8;
  }else{
-  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);s.journey=JOURNEY+8;
+  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);s.restUntil=time+4;s.journey=JOURNEY+8;
  }
  return true;
 }

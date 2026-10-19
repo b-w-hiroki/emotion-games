@@ -22,7 +22,7 @@ coreの `create({seed})` が周回状態を作り、`step(state, elapsed, dt, {s
 
 `requestAnimationFrame` の経過は1フレーム最大0.035秒に制限する。休止ダイアログ、選択待ち、画面非表示、短い横向きでは `elapsed` とcore更新を止める。再開時には前フレーム時刻をリセットし、裏で経過した時間を加算しない。導入と結果演出はゲーム本編と別の時間管理を持つ。
 
-道の選択は約28秒で `routeChoice='pending'` となる。`chooseRoute` は近道なら `journey=82`、残距離を16m減らし風を8秒強化、休息なら `journey=98`、残距離を16m増やして息を最大28回復する。`routeDistance` が表示距離を返す。最終10秒は `finalePhaseAt` に集約する。
+道の選択は約28秒で `routeChoice='pending'` となる。`chooseRoute` は近道なら `journey=82`、残距離を16m減らし風を8秒強化、休息なら `journey=98`、残距離を16m増やして息を最大28回復する。休息中の `restUntil` は選択後4秒間だけ風を弱め、息が満タンでも防風効果を残す。自然発生の `shelterUntil` と混同せず、休息中に自然の安全地帯を消費しない。`routeDistance` が表示距離を返す。最終10秒は `finalePhaseAt` に集約する。
 
 ## 入力と結果の流れ
 
