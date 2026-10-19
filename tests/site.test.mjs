@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import cp from 'node:child_process';
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import cp from 'node:child_process';import vm from 'node:vm';
 const games=JSON.parse(fs.readFileSync('catalog.json')).games;
 test('catalog has twenty distinct safe slugs',()=>{assert.equal(games.length,20);assert.equal(new Set(games.map(g=>g.slug)).size,games.length);for(const g of games){assert.match(g.slug,/^[a-z][a-z0-9-]+$/);assert.ok(g.feature.length>=10)}});
 test('runtime provides result sharing and replay',()=>{const src=fs.readFileSync('assets/app.js','utf8');for(const snippet of ['navigator.share','game_retry','game_complete','pointerdown','pointercancel','requestAnimationFrame'])assert.ok(src.includes(snippet),snippet)});
@@ -75,6 +75,12 @@ test('Kienaide controls use live type instead of generated button lettering',()=
  assert.match(view,/dataset\.transition=changing\?'blizzard'/,'chapter art changes are masked by a staged transition');
  assert.match(view,/dataset\.poseTransition=fade<1\?'dissolve'/,'meaningful pose changes dissolve instead of snapping');
  assert.doesNotMatch(css,/\.action\.art-hold\{[^}]*border:1px/,'the control deck must not be enclosed by a decorative frame');
+});
+
+test('Kienaide prologue lines follow phrases without a stranded short tail',()=>{
+ const context={window:{}};vm.runInNewContext(fs.readFileSync('assets/kienaide-view.js','utf8'),context);
+ const script=context.window.KienaideView.INTRO;assert.equal(script.length,6);
+ for(const cue of script){assert.equal(cue.rows.join(''),cue.text,'spoken and painted copy must match');assert.ok(cue.rows.every(row=>[...row].length>5),'short prologue fragment: '+JSON.stringify(cue.rows));assert.ok(cue.rows.every(row=>!row.startsWith('。')&&!row.startsWith('、')),'punctuation must not begin a line')}
 });
 
 test('character finishing does not add filters on every frame',()=>{

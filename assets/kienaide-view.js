@@ -16,6 +16,14 @@ const DEPTH={sky:0,far:.012,mid:.03,fore:.06};
 const FOCUS=[{x:540,y:640},{x:672,y:650},{x:452,y:430},{x:486,y:592}];
 const WINDOW={x:486,y:592};
 const LAMP={x:810,y:534};
+const INTRO=[
+ {at:0,text:'雪の夜。小さな家の暖炉が、消えかけていた。',rows:['雪の夜。小さな家の暖炉が、','消えかけていた。']},
+ {at:4,text:'灰の中で、最後の灯りだけが震えていた。',rows:['灰の中で、最後の灯りだけが','震えていた。']},
+ {at:8,text:'灯りは、少女の手に飛び込んだ。',rows:['灯りは、少女の手に','飛び込んだ。']},
+ {at:11.5,text:'遠い窓を、じっと見つめている。',rows:['遠い窓を、じっと','見つめている。']},
+ {at:14,text:'「……あそこに、帰りたいの？」',rows:['「……あそこに、帰りたいの？」']},
+ {at:16.5,text:'きえないで。',rows:['きえないで。']}
+];
 function create(base){
  const imgs={},cache=new Map();let manifest=null,failed=0;
  const dir=base+'assets/kienaide/paint/';
@@ -379,14 +387,6 @@ function create(base){
   end(ctx);
  }
  // ---------- prologue「最後の灯り」 ----------
- const INTRO=[
-  {at:0,text:'雪の夜。小さな家の暖炉が、消えかけていた。'},
-  {at:4,text:'灰の中で、最後の灯りだけが震えていた。'},
-  {at:8,text:'灯りは、少女の手に飛び込んだ。'},
-  {at:11.5,text:'遠い窓を、じっと見つめている。'},
-  {at:14,text:'「……あそこに、帰りたいの？」'},
-  {at:16.5,text:'きえないで。'}
- ];
  const INTRO_LENGTH=19;
  function introFrame(ctx,t,o){
   begin(ctx);
@@ -420,17 +420,10 @@ function create(base){
   const line=[...INTRO].reverse().find(l=>t>=l.at);
   if(line){const age=t-line.at,alpha=Math.min(1,age/.6);ctx.save();ctx.globalAlpha=alpha;ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=10;
    if(line.at===16.5){ctx.font='bold 38px system-ui,sans-serif';ctx.fillStyle='#ffe3a8';ctx.fillText(line.text,W/2,130)}
-   else{ctx.font='600 15px system-ui,sans-serif';ctx.fillStyle='#fff2d8';wrap(ctx,line.text,W-36).forEach((row,i)=>ctx.fillText(row,W/2,64+i*24))}ctx.restore()}
+   else{ctx.font='600 15px system-ui,sans-serif';ctx.fillStyle='#fff2d8';line.rows.forEach((row,i)=>ctx.fillText(row,W/2,64+i*24))}ctx.restore()}
   end(ctx);
- }
- // Break Japanese text after punctuation first, then by width.
- function wrap(ctx,text,max){
-  if(ctx.measureText(text).width<=max)return [text];
-  const rows=[];let row='';
-  for(const ch of text){if(ctx.measureText(row+ch).width>max&&row){rows.push(row);row=''}row+=ch;if((ch==='、'||ch==='。')&&ctx.measureText(row).width>max*.45&&rows.length<2){rows.push(row);row=''}}
-  if(row)rows.push(row);return rows;
  }
  return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,loaded,imgs,failed:()=>failed,names,manifest:()=>manifest};
 }
-root.KienaideView={create};
+root.KienaideView={create,INTRO};
 })(typeof window!=='undefined'?window:globalThis);

@@ -352,6 +352,8 @@ try{
   const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001',{intro:true,reduced});
   await page.locator('#play').click();
   await page.waitForSelector('#kienaide-intro canvas');
+  const introRows=await page.evaluate(()=>{const ctx=document.createElement('canvas').getContext('2d');return window.KienaideView.INTRO.map(cue=>{ctx.font=cue.at===16.5?'bold 38px system-ui,sans-serif':'600 15px system-ui,sans-serif';return {at:cue.at,text:cue.text,rows:cue.rows,widths:cue.rows.map(row=>ctx.measureText(row).width)}})});
+  for(const cue of introRows){assert.equal(cue.rows.join(''),cue.text,'prologue screen-reader and painted copy must match');for(let i=0;i<cue.rows.length;i++){assert.ok([...cue.rows[i]].length>5,'prologue leaves a short line at '+cue.at+': '+JSON.stringify(cue.rows));assert.ok(cue.widths[i]<=324,'prologue line overflows 360px canvas at '+cue.at+': '+JSON.stringify(cue))}}
   let waited=0;for(const at of [2.4,6,9,12.5,15.5]){const ms=at/6*1000-waited;waited+=ms;await page.waitForTimeout(ms);await page.screenshot({path:path.join(out,`${engine}-intro-${reduced?'reduced-':''}${at}.png`)})}
   await page.locator('#kienaide-intro button').click({timeout:3000}).catch(()=>{});
   assert.equal(await page.locator('#kienaide-intro').count(),0,'prologue must end (skip or completion)');
