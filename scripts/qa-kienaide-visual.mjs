@@ -57,6 +57,7 @@ try{
    const reading=await page.evaluate(()=>({wind:Number(document.querySelector('#stage').dataset.wind),base:window.KienaideCore.baseWind(28.9,1),caption:document.querySelector('.action-cue').textContent,story:document.querySelector('#story-beat').textContent}));
    assert.ok(reading.wind>reading.base,'the shortcut must retain its wind risk '+tag);
    assert.doesNotMatch(reading.caption,/窓が風をさえぎる/,'the shortcut cannot offer the skipped shelter '+tag);
+   assert.match(reading.caption,/近道の風/,'the control must not call the exposed shortcut a lull '+tag);
    assert.match(reading.story,/近道からは、あの窓に寄れない/,'story should explain the missed shelter '+tag);
    await page.screenshot({path:path.join(out,`${engine}-${tag}-lantern-shortcut.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('lantern shortcut tradeoff '+tag);
