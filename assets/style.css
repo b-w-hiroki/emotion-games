@@ -190,8 +190,8 @@ body[data-game=kienaide] .game-shell.ember{flex:1 1 auto;display:flex;flex-direc
 body[data-game=kienaide] .game-shell.ember .arena{flex:1 1 auto;aspect-ratio:auto;height:auto;min-height:300px;max-height:760px;background:#070b14}
 body[data-game=kienaide] .game-shell.ember .arena canvas{position:absolute;inset:0;width:100%;height:100%}
 body.kienaide-playing[data-game=kienaide]{height:100svh;overflow:hidden}
-body[data-game=kienaide] .game-shell.ember .curtain.tableau{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(180deg,transparent 0%,#0a132033 26%,#0a1320e6 52%,#0a1320f5);justify-content:flex-start;padding-bottom:18px}
-body[data-game=kienaide] .game-shell.ember .curtain.tableau>:first-child{margin-top:auto}
+body[data-game=kienaide] .game-shell.ember .curtain.tableau{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(180deg,#07101de0 0%,#07101d99 29%,transparent 48%,transparent 62%,#07101d99 78%,#07101df0 100%);justify-content:flex-start;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+body[data-game=kienaide] .game-shell.ember .curtain.tableau #play{margin-top:auto}
 .next-hint{font-size:11px!important;color:#f3d9ae;margin:6px 0 0!important}
 .volume-row{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11px;color:#c9d2de}
 .volume-row input{width:120px;accent-color:#f4a85f;min-height:28px}

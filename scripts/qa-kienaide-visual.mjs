@@ -2,7 +2,7 @@
 // 390x844 and 360x640, with layout assertions. Screenshots go to artifacts/kienaide/.
 // Usage: node scripts/qa-kienaide-visual.mjs [chromium|webkit]
 import fs from 'node:fs';import path from 'node:path';import http from 'node:http';import assert from 'node:assert/strict';
-import * as pw from 'playwright';
+import sharp from 'sharp';import * as pw from 'playwright';
 const engine=process.argv[2]||'chromium';
 const root=path.resolve('dist'),out=path.resolve('artifacts/kienaide');fs.mkdirSync(out,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.svg':'image/svg+xml','.json':'application/json','.webp':'image/webp'};
@@ -243,7 +243,8 @@ try{
   if(r.policy==='tele'){for(const phase of ['gust-warning','gust-active','silence','window-reply'])assert.ok(phases.has(phase),'route '+(r.route||'rest')+' must keep '+phase);assert.equal(await page.locator('#timer').innerText(),'00:00','arrival resolves at the route-specific deadline')}
   await page.waitForTimeout(1500);
   assert.equal(await page.locator('#stage').getAttribute('data-pose'),'end-'+id,'ending must use its dedicated character painting');
-  await page.screenshot({path:path.join(out,`${engine}-ending-${id}-scene.png`)});
+  const scenePath=path.join(out,`${engine}-ending-${id}-scene.png`);
+  await page.screenshot({path:scenePath});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
   await page.waitForTimeout(400);
   await page.waitForFunction(()=>document.querySelector('#moment-save').dataset.state==='ready');
@@ -257,7 +258,14 @@ try{
   });
   assert.equal(copy.overflow,false,id+' ending copy must fit');
   assert.ok(copy.lines.length<=1||copy.lines.at(-1).length>5,id+' ending must not strand a short tail: '+JSON.stringify(copy.lines));
-  await page.screenshot({path:path.join(out,`${engine}-ending-${id}-card.png`)});
+  const cardPath=path.join(out,`${engine}-ending-${id}-card.png`);
+  await page.screenshot({path:cardPath});
+  // The result copy may frame the painting, but it must not veil its central character.
+  const crop={left:105,top:350,width:180,height:200};
+  const [scenePixels,cardPixels]=await Promise.all([scenePath,cardPath].map(file=>sharp(file).extract(crop).removeAlpha().raw().toBuffer()));
+  let difference=0;for(let i=0;i<scenePixels.length;i++)difference+=Math.abs(scenePixels[i]-cardPixels[i]);
+  const meanDifference=difference/scenePixels.length;
+  assert.ok(meanDifference<35,id+' result obscures its painting: '+meanDifference.toFixed(1));
   assert.deepEqual(errors,[]);await ctx.close();done('ending '+id);
  }
  // Guarding the last gust without opening the hands must not award the homecoming,
