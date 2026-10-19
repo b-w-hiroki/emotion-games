@@ -53,8 +53,9 @@ try{
    await page.evaluate(()=>{const AC=window.AudioContext||window.webkitAudioContext;if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.menuAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}});
    await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
    const menuButton=page.locator('#journey-menu-open'),menu=page.locator('#journey-menu');
-   const box=await menuButton.boundingBox(),soundBox=await page.locator('#sound-toggle').boundingBox();
-   assert.ok(box.width>=44&&box.height>=44&&box.x>=0&&box.y>=0&&box.x+box.width+8<=soundBox.x,'pause target is large and separate from sound: '+JSON.stringify({box,soundBox}));
+   const box=await menuButton.boundingBox();
+   assert.ok(box.width>=44&&box.height>=44&&box.x>=0&&box.y>=0&&box.x+box.width<=size.width,'pause target stays large and inside the viewport: '+JSON.stringify(box));
+   assert.equal(await page.locator('#sound-toggle').isVisible(),false,'audio belongs in the pause menu, not on the painting');
    await page.locator('#action').focus();await page.keyboard.down('Space');await menuButton.click();await page.keyboard.up('Space');
    await page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
    assert.ok(await menu.isVisible());assert.equal(await menu.getAttribute('aria-modal'),'true');
@@ -94,8 +95,8 @@ try{
    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide'))),['dawn','wish']);
    await page.waitForFunction(()=>!document.querySelector('#play').disabled&&!document.querySelector('#play').dataset.loadFailed);
    await noShortTail(page,'#curtain-description');
-   const titleSpace=await page.evaluate(()=>({button:document.querySelector('#open-collection').getBoundingClientRect().bottom,kicker:document.querySelector('#curtain-kicker').getBoundingClientRect().top}));
-   assert.ok(titleSpace.button+4<=titleSpace.kicker,'title menu must not overlap the title caption');
+   const titleSpace=await page.evaluate(()=>({button:document.querySelector('#open-collection').getBoundingClientRect().bottom,title:document.querySelector('#curtain-title').getBoundingClientRect().top}));
+   assert.ok(titleSpace.button+4<=titleSpace.title,'title menu must not overlap the title');
    await page.screenshot({path:path.join(out,`${engine}-${tag}-title-collection.png`)});
    await page.locator('#open-collection').click();
    for(let i=0;i<5;i++){await page.keyboard.press('Tab');assert.ok(await page.locator('#collection-panel').evaluate(el=>el.contains(document.activeElement)),'Tab stays in the collection')}
@@ -152,6 +153,11 @@ try{
   assert.equal(await page.locator('#distance-panel').isVisible(),false,'the journey sign must not cover ending actions');
   await noShortTail(page,'#curtain-description');
   await page.screenshot({path:path.join(out,`${engine}-ending-share-uncovered.png`)});
+  assert.equal(await page.locator('#share').isVisible(),false,'secondary actions start collapsed');
+  assert.ok(await page.locator('#moment-save').isVisible(),'card save stays directly available');
+  assert.ok((await page.locator('#result-more summary').boundingBox()).height>=44,'more actions have a full touch target');
+  await page.locator('#result-more summary').click();
+  assert.ok(await page.locator('#related').isVisible());assert.ok(await page.locator('#volume').isVisible());
   await page.locator('#share').click();const shared=await page.evaluate(()=>window.sharedResult);
   assert.equal(new URL(shared.url).search,'','real result share strips all simulation presets');
   assert.match(shared.text,/きえないで。/);assert.deepEqual(errors,[]);await ctx.close();console.log('PASS clean public result URL');

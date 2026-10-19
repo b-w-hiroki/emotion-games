@@ -19,7 +19,7 @@ const EVENT_KINDS={
  gust:{label:'突風',tip:'風が来る — 長押しでかばって',warn:1.2,length:1.8},
  eddy:{label:'渦風',tip:'渦巻く風 — 短くかばって、息苦しくなる前に離す',warn:.8,length:3},
  lull:{label:'凪',tip:'凪いだ — いま手を離して息を',warn:0,length:3.2},
- lantern:{label:'誰かの灯り',tip:'窓の灯りが分けてくれる — 手を離して',warn:0,length:3.4}
+ lantern:{label:'誰かの灯り',tip:'窓が風をさえぎる。今は息を戻そう。',warn:0,length:3.4}
 };
 const EVENT_SLOTS=[7,27,51,66];
 function rng(seed){let a=seed>>>0||1;return()=>{a=a+0x6d2b79f5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}

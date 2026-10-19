@@ -24,7 +24,8 @@ async function open(size,query,{intro=false,reduced=false,audioProbe=false}={}){
  if(!intro)await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
  if(audioProbe)await ctx.addInitScript(()=>{
   window.audioStarts={steps:0,melody:0};
-  const proto=(window.AudioContext||window.webkitAudioContext).prototype;
+  const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+  const proto=Audio.prototype;
   for(const method of ['createBufferSource','createOscillator']){
    const create=proto[method];proto[method]=function(...args){const source=create.apply(this,args),start=source.start;source.start=function(...args){if(method==='createBufferSource'&&!this.loop)window.audioStarts.steps++;if(method==='createOscillator'&&this.type==='sine')window.audioStarts.melody++;return start.apply(this,args)};return source};
   }
@@ -55,7 +56,7 @@ try{
       if(el.textContent!==text)failures.push({selector,text,reason:'copy changed'});
       for(let node=walker.nextNode();node;node=walker.nextNode())for(let i=0;i<node.length;i++){
        const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);
-       const rect=range.getBoundingClientRect();let line=lines.find(l=>Math.abs(l.top-rect.top)<1);
+       const rect=range.getBoundingClientRect();if(rect.left<0||rect.right>innerWidth)failures.push({selector,text,reason:'glyph clipped'});let line=lines.find(l=>Math.abs(l.top-rect.top)<1);
        if(!line){line={top:rect.top,text:''};lines.push(line)}line.text+=node.textContent[i];
       }
       const box=el.getBoundingClientRect();
@@ -282,13 +283,14 @@ try{
  // Sound: OFF and volume persist across reloads; play still works with sound off.
  {
   const {ctx,page,errors}=await open(size,'?qa=1&seed=2');
-  await page.locator('#play').click();await page.locator('#sound-toggle').click();
-  assert.equal(await page.locator('#sound-toggle').getAttribute('aria-pressed'),'false');
-  await page.reload();
-  assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF','mute survives reload');
-  await page.locator('#volume').fill('40');
-  assert.equal(await page.locator('#sound-toggle').innerText(),'音 ON','raising the volume unmutes');
-  await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','volume survives reload');
+  await page.locator('#play').click();await page.locator('#journey-menu-open').click();
+  if(await page.locator('#pause-sound').isEnabled()){
+   await page.locator('#pause-sound').click();assert.equal(await page.locator('#sound-toggle').getAttribute('aria-pressed'),'false');
+   await page.reload();assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF','mute survives reload');
+   await page.locator('#play').click();await page.locator('#journey-menu-open').click();await page.locator('#pause-volume').fill('40');
+   assert.equal(await page.locator('#sound-toggle').innerText(),'音 ON','raising the volume unmutes');
+   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','volume survives reload');
+  }else{assert.equal(await page.locator('#pause-sound').innerText(),'音 非対応');assert.ok(await page.locator('#pause-volume').isDisabled());await page.reload()}
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('sound settings');
  }
@@ -302,7 +304,8 @@ try{
   await page.mouse.up();
   const before=await page.evaluate(()=>({...window.audioStarts}));
   await page.locator('#play').click();
-  await page.waitForFunction(previous=>window.audioStarts.steps>previous.steps&&window.audioStarts.melody>previous.melody,before,{timeout:2500});
+  assert.ok(await page.locator('#action').isEnabled(),'retry restores the playable scene');
+  if(await page.locator('#pause-sound').isEnabled())await page.waitForFunction(previous=>window.audioStarts.steps>previous.steps&&window.audioStarts.melody>previous.melody,before,{timeout:2500});
   assert.deepEqual(errors,[]);await ctx.close();done('retry restores footsteps and melody');
  }
  // Keyboard: Space holds the shield, M touches a visible memory.
