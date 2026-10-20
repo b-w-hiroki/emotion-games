@@ -328,6 +328,17 @@ try{
    assert.deepEqual(window.errors,[]);await window.ctx.close();done('critical flame rescue cue and actual release');
   }
  }
+  const calm=await open(size,'?qa=1&seed=3&speed=.0001&vital=flame');await calm.page.locator('#play').click();
+  await calm.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('息を戻して'),null,{timeout:3000});
+  assert.equal(await calm.page.locator('#stage').getAttribute('data-danger'),'flame-critical','safe guidance must not hide the life warning '+tag);
+  await calm.page.locator('#action').focus();await calm.page.keyboard.down('Space');
+  await calm.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま離して'),null,{timeout:3000});
+  await calm.page.screenshot({path:path.join(out,`${engine}-${tag}-critical-calm-recovery.png`)});
+  await calm.page.keyboard.up('Space');assert.deepEqual(calm.errors,[]);await calm.ctx.close();done('critical flame calm recovery cue '+tag);
+  const warned=await open(size,'?qa=1&seed=1&speed=.0001&t=27.85&vital=flame');await warned.page.locator('#play').click();
+  await warned.page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='gust',null,{timeout:3000});
+  assert.match(await warned.page.locator('.action-cue').innerText(),/かばって/,'an incoming gust outranks calm recovery '+tag);
+  assert.deepEqual(warned.errors,[]);await warned.ctx.close();done('critical flame keeps gust warning '+tag);
   // Shielding pose and flame light under a held button.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=30');
@@ -367,7 +378,7 @@ try{
   const {ctx,page,errors}=await open(size,r.query);
   await page.locator('#play').click();
   const box=await page.locator('#action').boundingBox();let holding=false;const phases=new Set(),trace=[];
-  const press=async on=>{if(on===holding)return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
+  const press=async on=>{if(on===holding||(on&&await page.locator('#action').isDisabled()))return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
    if(await page.locator('#route-choice').isVisible()){
