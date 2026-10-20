@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import * as pw from 'playwright';
+
+const engine=process.argv[2]||'chromium';
 
 const root=path.resolve('dist');
 const types={'.js':'text/javascript','.css':'text/css','.html':'text/html','.png':'image/png','.svg':'image/svg+xml','.json':'application/json'};
@@ -17,7 +19,7 @@ const srv=http.createServer((req,res)=>{
 });
 await new Promise(r=>srv.listen(0,'127.0.0.1',r));
 const origin='http://127.0.0.1:'+srv.address().port+'/emotion-games/';
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{args:['--no-sandbox']}:{})});
 const errors=[];
 try{
  const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
@@ -75,10 +77,18 @@ try{
  await page.waitForFunction(()=>!document.querySelector('#study-feedback').hidden,null,{timeout:15000});
  await page.locator('#study-feedback summary').click();
  assert.equal(await page.locator('.study-questions fieldset').count(),4);
+ assert.match(await page.locator('[data-question="intensity"] legend').innerText(),/1:弱い／5:強い/);
+ fs.mkdirSync('artifacts/screenshots',{recursive:true});
+ for(const width of [390,360]){
+  await page.setViewportSize({width,height:width===390?844:640});
+  const targets=await page.locator('#study-feedback summary,.study-options button').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right}}));
+  for(const target of targets)assert.ok(target.width>=44&&target.height>=44&&target.left>=0&&target.right<=width,'survey control must fit a thumb and the screen: '+width+' '+JSON.stringify(target));
+  const last=page.locator('[data-question="replay_reason"] button').last();await last.scrollIntoViewIfNeeded();await last.tap();
+  assert.equal(await last.getAttribute('aria-pressed'),'true');
+  await page.screenshot({path:'artifacts/screenshots/kienaide-study-survey-'+engine+'-'+width+'.png'});
+ }
  await page.locator('[data-question="replay_reason"]').scrollIntoViewIfNeeded();
  assert.ok(await page.locator('[data-question="replay_reason"] button').last().isVisible());
- fs.mkdirSync('artifacts/screenshots',{recursive:true});
- await page.screenshot({path:'artifacts/screenshots/kienaide-study-survey-390.png'});
  const flagship=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
  assert.equal(flagship.game_id,'kienaide');
  assert.equal(flagship.memories,0);

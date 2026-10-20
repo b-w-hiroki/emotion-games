@@ -48,6 +48,7 @@ jobs:
       - run: npm run build
       - run: node scripts/qa-kienaide-release.mjs webkit
       - run: node scripts/qa-kienaide-card.mjs webkit
+      - run: node scripts/qa-research.mjs webkit
       - run: node scripts/qa-kienaide-visual.mjs webkit
       - if: always()
         uses: actions/upload-artifact@v4
