@@ -393,13 +393,15 @@ function candleEvents(list){
 }
 function candleCaption(s){
  const ev=s.event?.kind==='lantern'&&s.routeChoice==='shortcut'?null:s.event;
+ const incomingGust=ev&&elapsed<ev.at&&(ev.kind==='gust'||ev.kind==='eddy');
  if(s.finalePhase==='silence')return [s.shield?'静かになった — いま離して':'手をひらいて、窓に灯りを見せて',false];
  if(s.finalePhase==='window-reply')return [s.oxygen<=22?'窓の返事 — 手を離して息を':s.reply>0?'窓が答えている':'あと少し',s.oxygen<=22];
  if(s.oxygen<=22)return ['息が危ない — 手をはなして',true];
  if(s.chapter===3&&!s.rescue&&s.memories>=2&&s.flame>0&&s.flame<=29&&s.oxygen>=30&&s.wind<.46&&s.shield&&s.finalePhase==='approach')return ['窓が見ている — いま手を離して',false];
- if(s.flame<=20)return ['灯りが消えそう — 風からかばって',true];
- if(s.finalePhase==='gust-warning')return ['最後の風が来る — 長押しの準備',true];
+ if(s.finalePhase==='gust-warning')return [s.flame<=20?'最後の風が来る — 長押しでかばって':'最後の風が来る — 長押しの準備',true];
  if(s.finalePhase==='gust-active')return [s.shield?'かばっている — 耐えて':'大突風 — 長押しでかばって',true];
+ if(s.flame<=20&&s.wind<.44&&!incomingGust&&(s.chapter!==2||s.bridgeFrost<.5))return [s.shield?'風が弱い — いま離して':'風が弱い — 息を戻して',false];
+ if(s.flame<=20)return ['灯りが消えそう — 風からかばって',true];
  if(ev&&elapsed<ev.at)return [ev.tip,true];
  if(s.chapter===2&&s.bridgeFrost>.3&&s.wind>.5)return [s.shield?'橋の霜をしのいでいる':'橋の霜が迫る — 長押しでかばって',!s.shield];
  if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['渦がほどけた — いま離して',false];
