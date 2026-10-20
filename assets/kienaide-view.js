@@ -302,21 +302,22 @@ function create(base){
  // ---------- one gameplay frame ----------
  function frame(ctx,s,t,o){
   begin(ctx);
-  const W=view.W,ci=s.chapter,since=t-(s.sceneChangedAt??-999);
-  const chapterStart=[0,20,45,70][ci],chapterEnd=[20,45,70,s.journey||90][ci],p=Math.max(0,Math.min(1,(t-chapterStart)/(chapterEnd-chapterStart)));
+  const W=view.W,ci=s.chapter,since=t-(s.sceneChangedAt??-999),finalStart=(s.journey||90)-20;
+  const chapterStart=[0,20,45,finalStart][ci],chapterEnd=[20,45,finalStart,s.journey||90][ci],p=Math.max(0,Math.min(1,(t-chapterStart)/(chapterEnd-chapterStart)));
   const reduced=o.reduced,wind=s.wind??.2;
   const cam={p,sway:reduced?0:Math.sin(t*.35)*.6+Math.min(1,wind)*.5};
   const light=Math.max(0,Math.min(1,s.flame/100))*(s.rescue||s.reply>0?1.15:1);
   // Chapter 4's window is dim through the night and answers in the finale; other lamps stay lit.
   const reply=s.reply>0?s.reply*(s.replyLevel==='bright'?1:.6):s.rescue?.6:0;
   const lightAlpha=ci===3?.25+.75*reply:1;
-  const changing=since>=0&&since<2.1&&s.previousChapter!==ci,q=changing?since/2.1:1,m0=Math.max(0,Math.min(1,(q-.44)/.12)),mix=m0*m0*(3-2*m0);
+  const changing=since>=0&&since<2.1&&s.previousChapter!==ci,q=changing?since/2.1:1,m0=Math.max(0,Math.min(1,(q-.28)/.44)),mix=m0*m0*(3-2*m0);
   ctx.canvas.dataset.transition=changing?'blizzard':'';
   if(changing){if(!drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,1,['sky','far','mid']))fallbackSky(ctx,s.previousChapter);drawPlate(ctx,ci,{...cam,p:0},mix,lightAlpha,['sky','far','mid'])}
   else if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
+  if(changing)chapterVeil(ctx,q,reduced);
   if(ci===1&&s.routeChoice==='rest'&&t<s.restUntil){const warmth=Math.min(1,(s.restUntil-t)/1.5),g=ctx.createRadialGradient(W*.8,220,8,W*.8,220,190);g.addColorStop(0,'rgba(255,187,105,'+(.2*warmth)+')');g.addColorStop(1,'rgba(255,187,105,0)');ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.fillRect(0,20,W,400);ctx.restore()}
   snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
-  if(ci===3)dawnGrade(ctx,Math.max(0,(t-70)/20)*.6);
+  if(ci===3)dawnGrade(ctx,Math.max(0,(t-finalStart)/20)*.6);
   const a=flameAnchor();
   const bob=drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing});
   vignette(ctx,light,{x:a.x,y:a.y});
@@ -332,7 +333,7 @@ function create(base){
   drawFlame(ctx,{t,flame:s.flame,wind,shield:s.shield,reduced,expression:o.expression,hope:o.expression==='hope',bob,smoke:1,lookAt:ci===3&&quiet?1:0});
   // Hands over the flame while shielding, so the gesture visibly closes around it.
   if(s.shield&&!ready('hero-shield'))drawHands(ctx,{shield:true,light,bob});
-  if(changing){drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,0,['fore']);drawPlate(ctx,ci,{...cam,p:0},mix,0,['fore']);chapterVeil(ctx,q,reduced)}
+  if(changing){drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,0,['fore']);drawPlate(ctx,ci,{...cam,p:0},mix,0,['fore'])}
   else drawPlate(ctx,ci,cam,1,0,['fore']);
   cinematicGrade(ctx,ci,light,t,reduced);
   const hasBreath=breath(ctx,{...s,t,ci,reduced,bob,wind});
