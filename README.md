@@ -2,12 +2,9 @@
 
 birdman studioのショート・ワンアイデア・ブラウザゲーム。SNSの投稿から **個別ゲームへ直接アクセス** できる設計です。
 
-## Preview (Pages有効化後)
-- https://b-w-hiroki.github.io/emotion-games/
-- https://b-w-hiroki.github.io/emotion-games/girigiri/
-- https://b-w-hiroki.github.io/emotion-games/ato-hitotsu/
-- https://b-w-hiroki.github.io/emotion-games/micha-dame/
-- https://b-w-hiroki.github.io/emotion-games/kienaide/
+## 公開版
+- https://play.birdman-studio.com/
+- https://play.birdman-studio.com/kienaide/
 
 ## ローカル開発
 
@@ -18,10 +15,10 @@ npx serve dist
 ```
 
 ## 作品追加
-`catalog.json` に作品を追加し、`assets/app.js` に体験を実装する。`npm run verify` → PR → CI → マージ → Pages公開。実機確認後にX投稿。
+追加量産は停止中。次の縦切り対象は [制作プレイブック](studio-playbook/README.md) と [依頼書テンプレート](studio-playbook/SLICE-BRIEF-TEMPLATE.md) で固有の体験と品質ゲートを定めてから着手する。技術QA、実機、初見の感情評価を混同しない。
 
 ## 独自ドメイン
-最終URLは `https://play.birdman-studio.com/` を予定。DNS設定が済む前の `PUBLIC_ORIGIN` の既定値は `https://b-w-hiroki.github.io/emotion-games`。変更方法は `docs/DEPLOYMENT.md` を参照。
+公開URLは `https://play.birdman-studio.com/`。ビルド時の `PUBLIC_ORIGIN` と公開・共有URLの扱いは [デプロイ手順](docs/DEPLOYMENT.md) を参照。
 
 ## マルチエンドと結末図鑑
 20作品にそれぞれ5つの結末（計100個）。通常のプレイ以外に、待機・連打・画面タップなどの特殊操作で隠し結末を発見できます。回収状態は端末内に保存し、トップと各ゲームで進捗表示します。詳細は [結末設計](docs/ENDINGS.md) を参照。
