@@ -120,17 +120,19 @@ test('pausing mutes the scene and schedules no footsteps, breath or melody until
  assert.equal(stats.bufferStarts,before.buffers+1);assert.equal(stats.melodyStarts,before.melody+2);
 });
 
-test('audio suspends in the background and resumes for both the intro and active play',async()=>{
+test('audio follows the active journey, modal dialogs and background state',async()=>{
  const {audio}=audioRig();
  audio.suspend();assert.equal(audio.state,'suspended');
  audio.resume();await Promise.resolve();assert.equal(audio.state,'running');
  const app=fs.readFileSync('assets/app.js','utf8');
- const lifecycle=app.match(/document\.addEventListener\('visibilitychange',(\(\)=>\{last=0;[^\n]+\})\);/)[1];
- for(const [mode,candleDialog,resumes,collectionFromMenu=false] of [['intro',null,true],['intro',{id:'kienaide-intro'},true],['play',null,true],['play',{id:'journey-menu'},false],['play',{id:'collection-panel'},false,true],['play',{id:'collection-panel'},true],['play',{id:'route-choice'},true],['end',null,false]]){
-  const calls=[],context={mode,candleDialog,collectionFromMenu,last:2,document:{hidden:false},KA:{resume:()=>calls.push('resume'),suspend:()=>calls.push('suspend')}};
-  vm.runInNewContext('('+lifecycle+')()',context);assert.equal(context.last,0);assert.deepEqual(calls,resumes?['resume']:[],mode+' '+candleDialog?.id);
-  context.document.hidden=true;calls.length=0;vm.runInNewContext('('+lifecycle+')()',context);assert.deepEqual(calls,['suspend']);
+ const lifecycle=app.match(/function syncCandleAudio\(\)\{([^\n]+)\}/)[1];
+ for(const [mode,candleDialog,expected] of [['intro',null,'resume'],['intro',{id:'kienaide-intro'},'resume'],['play',null,'resume'],['play',{id:'journey-menu'},'suspend'],['play',{id:'collection-panel'},'suspend'],['play',{id:'route-choice'},'suspend'],['end',null,null]]){
+  const calls=[],context={candle:true,mode,candleDialog,document:{hidden:false},landscapeMode:{matches:false},KA:{ready:true,resume:()=>calls.push('resume'),suspend:()=>calls.push('suspend')}};
+  vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,expected?[expected]:[],mode+' '+candleDialog?.id);
+  context.document.hidden=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);
+  context.document.hidden=false;context.landscapeMode.matches=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);
  }
+ assert.ok(app.includes("document.addEventListener('visibilitychange',()=>{last=0;syncCandleAudio()})"),'visibility changes must apply the shared audio policy');
  assert.ok(app.includes('((wasHidden?hiddenAt:now)-t0)/1000*speed'),'time spent in a background tab must not skip the intro');
  assert.ok(app.includes('skipped:introTime<iv.INTRO_LENGTH'),'background time must not distort the intro skip metric');
 });

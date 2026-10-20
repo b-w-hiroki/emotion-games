@@ -122,12 +122,14 @@ let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
 let pendingActionFocus=false;
 function focusCandleAction(){const fallback=action.disabled;(fallback?$('journey-menu-open'):action).focus();pendingActionFocus=fallback}
+function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||landscapeMode.matches||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()}
 if(candle)document.addEventListener('focusin',e=>{if(pendingActionFocus&&e.target!==action&&e.target!==document.body)pendingActionFocus=false});
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
  if(open){holdRelease();memoryTouch.hidden=true;candleDialog=panel;const isolate=parent=>{for(const el of parent.children){if(el===panel)continue;if(el.contains(panel))isolate(el);else{candleInert.push([el,el.inert]);el.inert=true}}};isolate(document.querySelector('.game-shell'))}
  else{if(candleDialog!==panel)return;for(const [el,inert] of candleInert)el.inert=inert;candleInert=[];candleDialog=null}
  panel.hidden=!open;
+ queueMicrotask(syncCandleAudio);
 }
 document.addEventListener('keydown',e=>{
  if(!candleDialog)return;
@@ -148,14 +150,14 @@ if(candle){
  menu.innerHTML='<div class="journey-menu-card"><small>PAUSE / 旅は止まっています</small><h2 id="journey-menu-title">ひと息つこう。</h2><div id="pause-normal"><p class="pause-guide">'+guidanceMarkup('強い風は長押しでかばう。凪いだら手を離して息を戻す。光る記憶はタップで拾う。')+'</p><button type="button" id="pause-resume" class="pause-primary">旅を続ける</button><div class="pause-audio"><button type="button" id="pause-sound">音 ON</button><label>音量<input id="pause-volume" type="range" min="0" max="100" step="5" aria-label="休止中の音量"></label></div><button type="button" id="pause-collection">結末図鑑を見る</button><button type="button" data-pause-action="restart">この旅をやり直す</button><button type="button" data-pause-action="title">タイトルへ戻る</button></div><div id="pause-confirm" hidden><p id="pause-confirm-text"></p><button type="button" id="pause-cancel" class="pause-primary">今の旅を残す</button><button type="button" id="pause-confirm-action"></button></div></div>';
  document.querySelector('.game-shell').append(menu);
  menuButton.addEventListener('click',openJourneyMenu);
- $('pause-resume').addEventListener('click',()=>{setCandleDialog(menu,false);last=0;if(!document.hidden&&!landscapeMode.matches)KA.resume();focusCandleAction()});
+ $('pause-resume').addEventListener('click',()=>{setCandleDialog(menu,false);last=0;focusCandleAction()});
  menu.querySelectorAll('[data-pause-action]').forEach(button=>button.addEventListener('click',()=>showJourneyMenuConfirm(button.dataset.pauseAction)));
  $('pause-cancel').addEventListener('click',()=>showJourneyMenuConfirm(''));
  $('pause-confirm-action').addEventListener('click',()=>{const next=journeyMenuAction;if(!next)return;if(next==='title'){mark('journey_exit',{elapsed:Math.round(elapsed)});location.assign('./');return}setCandleDialog(menu,false);last=0;mark('game_retry',{source:'pause-menu'});run();action.focus()});
  $('pause-collection').addEventListener('click',()=>{setCandleDialog(menu,false);collectionFromMenu=true;renderCollection();setCandleDialog($('collection-panel'),true);$('close-collection').focus()});
 }
 function showJourneyMenuConfirm(next){journeyMenuAction=next;$('pause-normal').hidden=!!next;$('pause-confirm').hidden=!next;$('journey-menu-title').textContent=next?'今の旅を終えますか？':'ひと息つこう。';if(next){$('pause-confirm-text').innerHTML=guidanceMarkup('途中の記憶と進行は引き継ぎません。発見済みの結末は残ります。');$('pause-confirm-action').textContent=next==='restart'?'新しい旅をはじめる':'タイトルへ戻る';$('pause-cancel').focus()}else $('pause-resume').focus()}
-function openJourneyMenu(){if(mode!=='play'||candleDialog)return;setCandleDialog($('journey-menu'),true);showJourneyMenuConfirm('');last=0;KA.suspend()}
+function openJourneyMenu(){if(mode!=='play'||candleDialog)return;setCandleDialog($('journey-menu'),true);showJourneyMenuConfirm('');last=0}
 try{high=Number(localStorage.getItem('emotion-v1-'+slug))||0}catch(_){}if(!candle)best.textContent=high?String(high):'—';
 const state={};
 // 004 uses dedicated modules: rules (kienaide-core.js), layered art (kienaide-view.js), sound (kienaide-audio.js).
@@ -175,12 +177,12 @@ function setStory(chapter,text){
 if(candle){
  const sounds=[$('sound-toggle'),$('pause-sound')],volumes=[$('volume'),$('pause-volume')];
  const paint=()=>{const supported=!!(window.AudioContext||window.webkitAudioContext);for(const sound of sounds){sound.disabled=!supported;sound.setAttribute('aria-pressed',String(supported&&!KA.muted));sound.textContent=!supported?'音 非対応':KA.muted?'音 OFF':'音 ON'}for(const vol of volumes){vol.disabled=!supported;vol.value=String(Math.round((KA.muted?0:KA.volume)*100))}};
- const prepare=()=>{KA.init();if(candleDialog)KA.suspend();else KA.resume()};
+ const prepare=()=>{KA.init();syncCandleAudio()};
  for(const sound of sounds)sound.addEventListener('click',()=>{prepare();KA.setMuted(!KA.muted);paint();mark('sound_toggle',{muted:KA.muted})});
  for(const vol of volumes)vol.addEventListener('input',()=>{prepare();KA.setVolume(Number(vol.value)/100);if(Number(vol.value)===0)KA.setMuted(true);paint()});
  paint();
  // Background tabs must not keep playing or double the timers when they come back.
- document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden)KA.suspend();else if((mode==='play'||mode==='intro')&&candleDialog?.id!=='journey-menu'&&!collectionFromMenu)KA.resume()});
+ document.addEventListener('visibilitychange',()=>{last=0;syncCandleAudio()});
 }
 let momentCard=null;
 if(candle){
@@ -313,7 +315,7 @@ $('share').addEventListener('click',()=>share(points?points+'点':''));
 let candlePointer=null,candleKey=null,shelterRelease=false;
 function releaseCandleInput(){const pointer=candlePointer;candlePointer=null;candleKey=null;if(pointer!==null&&action.hasPointerCapture?.(pointer))action.releasePointerCapture(pointer)}
 function holdRelease(intent=false){if(!down)return;down=false;if(candle)releaseCandleInput();if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;shelterRelease=!!intent;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
-landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease()});
+landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease();syncCandleAudio()});
 action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(landscapeMode.matches||candleDialog||document.hidden)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 const pointerRelease=(e,intent=false)=>{if(!candle||e.pointerId===candlePointer)holdRelease(intent)};
 action.addEventListener('pointerup',e=>pointerRelease(e,true));action.addEventListener('pointercancel',pointerRelease);
