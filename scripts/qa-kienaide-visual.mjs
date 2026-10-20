@@ -230,7 +230,7 @@ try{
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
   assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/8秒早く・強風8秒/,'shortcut must explain its time and wind tradeoff');
   const restEffect=await fork.page.locator('#route-choice [data-route="rest"] small').innerText();
-  assert.match(restEffect,/8秒遅く・息\+\d+%・風よけ4秒/,'rest must show its capped breath recovery and wind shelter');
+  assert.match(restEffect,/8秒遅く・風よけ4秒・息\+\d+%/,'rest must lead with its shelter and show capped breath recovery');
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
   assert.equal(await fork.page.locator('#story-beat small').innerText(),'分かれ道','the fork instructions must remain while the player decides');
   await fork.page.screenshot({path:path.join(out,`${engine}-route-choice${suffix}.png`)});
@@ -249,11 +249,20 @@ try{
   }
   const full=await open(sizes[1],'?qa=1&seed=3&speed=1&t=27');await full.page.locator('#play').click();
   await full.page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible',timeout:10000});
-  assert.equal(await full.page.locator('#route-rest-effect').innerText(),'8秒遅く・息+0%・風よけ4秒','rest still offers shelter at full breath');
+  assert.equal(await full.page.locator('#route-rest-effect').innerText(),'8秒遅く・風よけ4秒・息は満タン','rest must not present full breath as an empty reward');
   await full.page.locator('#route-choice [data-route="rest"]').tap();
   await full.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)<=.23,null,{timeout:2000});
   await full.page.screenshot({path:path.join(out,`${engine}-rest-full-breath.png`)});
   assert.deepEqual(full.errors,[]);await full.ctx.close();done('rest shelters at full breath');
+  if(size.width===390)for(const choice of ['shortcut','rest']){
+   const chosen=await open(sizes[0],'?qa=1&seed=19&speed=0.0001&t=28.9&vital=flame-full');await chosen.page.locator('#play').click();await chosen.page.locator('#route-choice [data-route="'+choice+'"]').click();
+   await chosen.page.waitForFunction(()=>document.querySelector('#stage').dataset.event!=='',null,{timeout:3000});
+   assert.match(await chosen.page.locator('#story-beat strong').innerText(),choice==='shortcut'?/近道へ踏み出した/:/戸口が開いた/,'a simultaneous wind event must not erase the chosen route');
+   assert.match(await chosen.page.locator('.action-cue').innerText(),/風|息/,'wind instructions remain available in the control deck');
+   await chosen.page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#story-beat')).opacity)>.7,null,{timeout:1500});
+   await chosen.page.screenshot({path:path.join(out,`${engine}-route-feedback-${choice}.png`)});
+   assert.deepEqual(chosen.errors,[]);await chosen.ctx.close();done('route feedback '+choice);
+  }
   for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
    const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
    await warning.page.waitForFunction(d=>document.querySelector('#stage').dataset.danger===d,danger,{timeout:3000});

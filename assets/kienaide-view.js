@@ -314,6 +314,7 @@ function create(base){
   ctx.canvas.dataset.transition=changing?'blizzard':'';
   if(changing){if(!drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,1,['sky','far','mid']))fallbackSky(ctx,s.previousChapter);drawPlate(ctx,ci,{...cam,p:0},mix,lightAlpha,['sky','far','mid'])}
   else if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
+  if(ci===1&&s.routeChoice==='rest'&&t<s.restUntil){const warmth=Math.min(1,(s.restUntil-t)/1.5),g=ctx.createRadialGradient(W*.8,220,8,W*.8,220,190);g.addColorStop(0,'rgba(255,187,105,'+(.2*warmth)+')');g.addColorStop(1,'rgba(255,187,105,0)');ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.fillRect(0,20,W,400);ctx.restore()}
   snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
   if(ci===3)dawnGrade(ctx,Math.max(0,(t-70)/20)*.6);
   const a=flameAnchor();
