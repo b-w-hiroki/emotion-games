@@ -239,7 +239,8 @@ try{
   for(const target of targets){assert.ok(target.width>=280&&target.height>=80,'choices need large thumb targets: '+JSON.stringify(target));assert.ok(target.y>=routeSize.height*.5&&target.bottom<=routeSize.height-24,'choices must sit in the lower half, clear of the bottom edge');assert.ok(target.x>=16&&target.right<=routeSize.width-16,'choices must stay inside the screen');assert.ok(target.title>=16&&target.detail>=12,'choice text must remain legible');assert.ok(target.reachable,'choice centre must receive the tap')}
   assert.ok(targets[1].y-targets[0].bottom>=10,'stacked choices need a gap against accidental taps');
   await fork.page.locator('#route-choice [data-route="'+choice+'"]').tap();
-  await fork.page.waitForFunction(({before,choice})=>{const n=Number(document.querySelector('#distance-value').textContent);return choice==='shortcut'?n<before:n>before},{before,choice},{timeout:2000});
+  await fork.page.locator('#route-choice').waitFor({state:'hidden'});await fork.page.waitForTimeout(100);
+  const after=Number(await fork.page.locator('#distance-value').textContent());assert.ok(after<=before&&after>=before-1,'route choice must not teleport the distance: '+before+' → '+after);
   const seconds=text=>{const [m,s]=text.split(':').map(Number);return m*60+s};
   const arrival=seconds(await fork.page.locator('#timer').innerText());assert.ok(choice==='shortcut'?arrival<=seconds(remaining)-8:arrival>=seconds(remaining)+7,'the tapped choice must change actual arrival time');
   assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
