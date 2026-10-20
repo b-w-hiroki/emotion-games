@@ -23,6 +23,8 @@
 
 分岐時の `routeStartMeters` は選択直前の連続値を保存する。近道・休息で16mの加減算はせず、`journey` の82秒／98秒への変更によって以降の距離減少速度だけを変える。距離表示は選択直前・直後で同値となり、両ルートとも到着時に0mとなる。
 
+最終章の開始境界は固定70秒ではなく `chapterAt(time, journey)` の `journey - 20` とする。第二章は20秒、橋は45秒に始まるため、近道は橋を17秒、休息路は33秒渡る。分岐の時間差が単に最後の絵の表示時間を削ったり延ばしたりせず、橋の危険時間という操作上の代償になる。`step` の章判定・章切替イベント・橋の霜リセットを同じ境界に結びつけ、終盤10秒の `finalePhaseAt` と窓の返事は変更しない。未分岐の90秒ルートとQAの時刻指定は従来どおり70秒で最終章へ入る。
+
 coreの `create({seed})` が周回状態を作り、`step(state, elapsed, dt, {shield, wasShield})` が更新とイベント列を返す。主な状態は `flame`、`oxygen`、`wind`、`memories`、`memoryGot`、`mote`、`chapter`、`routeChoice`、`journey`、`finalePhase`、`gustShield`、`silenceRelease`、`replyLevel`、`ended`。初期値は灯り72、息100、距離100m、到着90秒。同じseedと入力列から同じ進行・結末を得る。小風イベントは各種類を一周に一度ずつseedで並べ替える。
 
 `requestAnimationFrame` の経過は1フレーム最大0.035秒に制限する。休止ダイアログ、選択待ち、画面非表示、短い横向きでは `elapsed` とcore更新を止める。再開時には前フレーム時刻をリセットし、裏で経過した時間を加算しない。導入と結果演出はゲーム本編と別の時間管理を持つ。

@@ -80,7 +80,7 @@ test("near-extinction recovery comes from the player's timely release, not RNG",
  assert.equal(s.releaseAt,75.1,'releasing the button records the moment');
 });
 test('chapters change play conditions: tunnel shelter, bridge exposure, foreshadowed rescue',()=>{
- assert.deepEqual([0,19.9,20,44.9,45,70].map(K.chapterAt),[0,0,1,1,2,3]);
+ assert.deepEqual([0,19.9,20,44.9,45,70].map(t=>K.chapterAt(t)),[0,0,1,1,2,3]);
  const shield=(ch,t)=>{const s=K.create({seed:9});s.events=[];s.chapter=ch;K.step(s,t,1,{shield:true});return 100-s.oxygen};
  assert.ok(shield(2,50)>shield(0,10)-0.5,'the bridge costs extra breath when protecting');
  const tunnel=play(9,tele,{until:46});assert.ok(tunnel.log.some(e=>e.type==='shelter'),'the tunnel offers a shelter');
@@ -196,6 +196,19 @@ test('rest shields from wind for four seconds even at full breath, without consu
  K.step(s,31.9,DT,{});assert.ok(s.wind<K.baseWind(31.9,1)*.21,'rest lasts through the fourth second');
  s.shelterReady=false;s.shelterUntil=-1;K.step(s,32.1,DT,{});assert.equal(s.wind,K.baseWind(32.1,1),'rest shelter expires');
 });
+test('both routes give the final chapter twenty seconds before arrival',()=>{
+ assert.equal(K.chapterAt(69.9),2);assert.equal(K.chapterAt(70),3,'the unbranched night keeps its chapter boundary');
+ for(const [route,arrival] of [['shortcut',82],['rest',98]]){
+  const s=K.create({seed:4});s.events=[];K.step(s,28,DT,{});K.chooseRoute(s,route,28);
+  const boundary=arrival-20;
+  assert.equal(K.chapterAt(boundary-.1,s.journey),2);assert.equal(K.chapterAt(boundary,s.journey),3);
+  s.chapter=2;s.bridgeFrost=.8;
+  assert.equal(K.step(s,boundary-.1,DT,{}).some(e=>e.type==='chapter'&&e.chapter===3),false);
+  assert.equal(K.step(s,boundary,DT,{}).some(e=>e.type==='chapter'&&e.chapter===3),true,route+' enters the finale chapter at '+boundary);
+  assert.equal(s.bridgeFrost,0,'bridge frost clears when the painted bridge is behind the player');
+  assert.equal(K.finalePhaseAt(boundary,s.journey),'approach','the final chapter has ten seconds before the gust warning');
+ }
+});
 test('both routes change actual arrival time and preserve all memories and the complete finale',()=>{
  const policy=(s,t,h)=>{const phase=K.finalePhaseAt(t,s.journey);return phase==='gust-active'?true:phase==='gust-warning'||phase==='silence'||phase==='window-reply'?false:tele(s,t,h)};
  for(const route of ['shortcut','rest']){
@@ -204,6 +217,7 @@ test('both routes change actual arrival time and preserve all memories and the c
   assert.ok(['dawn','wish'].includes(s.ended),route+' must arrive alive with memories: '+s.ended);
   assert.equal(s.journey,expected);assert.equal(s.memories,3);assert.equal(s.replyLevel,'bright');
   assert.deepEqual(log.filter(e=>e.type==='finale').map(e=>e.phase),['gust-warning','gust-active','silence','window-reply']);
+  assert.ok(Math.abs(log.find(e=>e.type==='chapter'&&e.chapter===3).t-(expected-20))<DT*2,route+' must show the final painting for twenty seconds');
   const arrival=log.find(e=>e.type==='end').t;assert.ok(arrival>=expected&&arrival<expected+DT*2,route+' arrival at '+arrival);
   assert.equal(K.routeDistance(s,arrival),0);
   assert.equal(log.find(e=>e.type==='finale').t>=70,true,'finale starts after the final chapter');

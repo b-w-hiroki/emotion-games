@@ -64,7 +64,7 @@ function canTriggerMiracle(s,time){
    !s.shield && time-s.releaseAt>=0 && time-s.releaseAt<=1.3 &&
    s.wind<.46;
 }
-function chapterAt(time){let c=0;for(let i=1;i<CHAPTERS.length;i++)if(time>=CHAPTERS[i].at)c=i;return c}
+function chapterAt(time,journey=JOURNEY){let c=0;for(let i=1;i<CHAPTERS.length;i++)if(time>=(i===3?journey-20:CHAPTERS[i].at))c=i;return c}
 function finalePhaseAt(time,journey=JOURNEY){const f=time-(journey-10);return f<0?'approach':f<2?'gust-warning':f<7?'gust-active':f<8.5?'silence':'window-reply'}
 // The ending is resolved by one function so new presentation can never drift from the gallery IDs.
 function arrivalEnding(s){return s.memories===3?(s.flame>=68&&s.replyLevel==='bright'?'dawn':'wish'):'survive'}
@@ -83,7 +83,7 @@ function step(s,time,dt,input){
  if(s.routeChoice==='none'&&time>=28&&time<30){s.routeChoice='pending';s.shield=false;emit('route-choice');return out}
  s.shield=!!input.shield;
  if(s.shield)s.shieldTime+=dt;
- const chapter=chapterAt(time);
+ const chapter=chapterAt(time,s.journey);
  if(chapter!==s.chapter){s.previousChapter=s.chapter;s.chapter=chapter;s.sceneChangedAt=time;emit('chapter',{chapter});}
  let wind=baseWind(time,chapter);
  // Seeded small events.
