@@ -241,6 +241,8 @@ body.kienaide-playing[data-game=kienaide] .play-controls .route-choice{position:
 body.kienaide-playing[data-game=kienaide] .route-choice>p{margin:0 0 12px;text-align:center;color:#fff0d2;font-size:15px;font-weight:750;letter-spacing:.04em}
 body.kienaide-playing[data-game=kienaide] .route-choice>div{display:grid;grid-template-columns:1fr;gap:12px}
 body.kienaide-playing[data-game=kienaide] .route-choice button{position:relative;min-height:84px;padding:16px 44px 16px 20px;border:1px solid #e5c58aaa;border-radius:16px;background:#17283c;color:#fff0d2;text-align:left;touch-action:manipulation}
+body.kienaide-playing[data-game=kienaide] .route-choice button[data-route=shortcut]{border-color:#a9c9d8;background:linear-gradient(120deg,#14273d,#203650);color:#e8f4ff}
+body.kienaide-playing[data-game=kienaide] .route-choice button[data-route=rest]{border-color:#e8bf82;background:linear-gradient(120deg,#2b2830,#3b3029);color:#fff1d7}
 body.kienaide-playing[data-game=kienaide] .route-choice button::after{content:"";position:absolute;right:22px;top:calc(50% - 4px);width:8px;height:8px;border-top:2px solid #f1d39e;border-right:2px solid #f1d39e;transform:rotate(45deg)}
 body.kienaide-playing[data-game=kienaide] .route-choice button:active{background:#3c3026}
 body.kienaide-playing[data-game=kienaide] .route-choice button strong,body.kienaide-playing[data-game=kienaide] .route-choice button small{display:block}
