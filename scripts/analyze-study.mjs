@@ -34,5 +34,10 @@ for(const [game,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){
   const mechanic=done.filter(x=>Number.isFinite(Number(x.memories)));
   const flames=done.map(x=>Number(x.lowest_flame)).filter(Number.isFinite);
   console.log('  flagship loop: mean memories='+fmt(mechanic.length?mechanic.reduce((a,x)=>a+Number(x.memories),0)/mechanic.length:NaN)+'/3 / miracle='+ratio(mechanic.filter(x=>x.miracle===true).length,mechanic.length)+' / mean lowest flame='+fmt(flames.length?flames.reduce((a,n)=>a+n,0)/flames.length:NaN));
+  for(const route of ['shortcut','rest']){
+   const chosen=items.filter(x=>x.route===route),finished=chosen.filter(x=>x.completed===true);
+   console.log('  '+route+': choices='+chosen.length+' completed='+finished.length+' ('+ratio(finished.length,chosen.length)+') / endings: '+listCounts(counts(finished,'ending_id'))+' / miracle='+ratio(finished.filter(x=>x.miracle===true).length,finished.length));
+  }
+  console.log('  route unrecorded='+items.filter(x=>x.route!=='shortcut'&&x.route!=='rest').length+' (includes pre-choice exits and older exports)');
  }
 }
