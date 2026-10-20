@@ -139,16 +139,22 @@ try{
    assert.deepEqual(errors,[]);await ctx.close();console.log('PASS memory countdown, pause and missed feedback',tag);
   }
   {
-   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=12.8');await page.locator('#play').click();
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=12.8');
+   await page.evaluate(()=>{const AC=window.AudioContext||window.webkitAudioContext;if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.menuAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}});
+   await page.locator('#play').click();
    await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
    await page.locator('#action').focus();await page.keyboard.down('Space');
    await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
    // The collection opener is hidden during immersive play; exercise its real handler directly.
    await page.locator('#open-collection').evaluate(el=>el.click());await page.keyboard.up('Space');
    await page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
+   await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='suspended');
+   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))});
+   assert.equal(await page.evaluate(()=>window.menuAudio?.state||'suspended'),'suspended','foregrounding a collection must keep audio paused');
    const before=await facts(page);await page.keyboard.press('m');await page.waitForTimeout(1200);
    assert.deepEqual(await facts(page),before,'collection freezes the journey and blocks memory hotkeys');
    await page.keyboard.press('Escape');assert.ok(await page.locator('#action').evaluate(el=>el===document.activeElement));
+   await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='running');
    await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'))});
    const hidden=await facts(page);await page.keyboard.press('m');await page.waitForTimeout(1200);
    assert.deepEqual(await facts(page),hidden,'hidden document stays frozen even when requestAnimationFrame keeps running');
@@ -159,14 +165,20 @@ try{
    assert.deepEqual(errors,[]);await ctx.close();console.log('PASS modal/background pause and recovery',tag);
   }
   {
-   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=1&t=27.9');await page.locator('#play').click();
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=1&t=27.9');
+   await page.evaluate(()=>{const AC=window.AudioContext||window.webkitAudioContext;if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.menuAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}});
+   await page.locator('#play').click();
    await page.locator('#route-choice').waitFor({state:'visible'});
+   await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='suspended');
+   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'))});
+   assert.equal(await page.evaluate(()=>window.menuAudio?.state||'suspended'),'suspended','foregrounding a route choice must keep audio paused');
    assert.equal(await page.locator('#route-choice').getAttribute('role'),'dialog');
    assert.ok(await page.locator('#stage').evaluate(el=>!!el.closest('[inert]')));
    for(let i=0;i<5;i++){await page.keyboard.press('Tab');assert.ok(await page.locator('#route-choice').evaluate(el=>el.contains(document.activeElement)))}
    await page.keyboard.press('Escape');assert.ok(await page.locator('#route-choice').isVisible(),'mandatory route remains open');
    const before=await facts(page);await page.waitForTimeout(1100);assert.deepEqual(await facts(page),before);
    await page.locator('[data-route="rest"]').click();assert.ok(await page.locator('#action').evaluate(el=>!el.closest('[inert]')&&el===document.activeElement));
+   await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='running');
    assert.deepEqual(errors,[]);await ctx.close();console.log('PASS route dialog isolation and resume',tag);
   }
  }
