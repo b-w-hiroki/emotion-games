@@ -206,6 +206,29 @@ try{
   await page.locator('#open-collection').evaluate(el=>el.click());await page.keyboard.press('Escape');assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'collection uses the same safe fallback');
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS playable without Web Audio and critical-breath focus recovery');
  }
+ for(const size of [{width:390,height:844},{width:360,height:640}]){
+  const {ctx,page,errors}=await open(size,'?qa=1&speed=.2&t=12&vital=breath');await page.locator('#play').click();
+  await page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'action','keyboard focus returns after breathing '+size.width);
+  await page.keyboard.down('Space');await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+  await page.keyboard.up('Space');assert.deepEqual(errors,[]);await ctx.close();console.log('PASS breath recovery restores keyboard play '+size.width);
+ }
+ {
+  const moved=await open({width:360,height:640},'?qa=1&speed=.2&t=12&vital=breath');await moved.page.locator('#play').click();
+  await moved.page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await moved.page.locator('#journey-menu-open').focus();
+  await moved.page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+  assert.equal(await moved.page.evaluate(()=>document.activeElement?.id),'journey-menu-open','recovery must not steal intentionally moved focus');
+  assert.deepEqual(moved.errors,[]);await moved.ctx.close();console.log('PASS breath recovery respects moved focus');
+  const resumed=await open({width:360,height:640},'?qa=1&speed=.2&t=12&vital=breath');await resumed.page.locator('#play').click();
+  await resumed.page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await resumed.page.locator('#journey-menu-open').click();await resumed.page.locator('#pause-resume').click();
+  assert.equal(await resumed.page.evaluate(()=>document.activeElement?.id),'journey-menu-open');
+  await resumed.page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+  assert.equal(await resumed.page.evaluate(()=>document.activeElement?.id),'action','menu fallback returns to gameplay after breathing');
+  assert.deepEqual(resumed.errors,[]);await resumed.ctx.close();console.log('PASS breath recovery after pause');
+ }
  {
   const {ctx,page}=await open({width:390,height:844});
   const view=remote?await (await fetch(new URL('../assets/kienaide-view.js',base))).text():fs.readFileSync('assets/kienaide-view.js','utf8');

@@ -120,7 +120,9 @@ let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
 let distancePanel=null,distanceValue=null,distanceFill=null,routePanel=null;
 let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
-function focusCandleAction(){(action.disabled?$('journey-menu-open'):action).focus()}
+let pendingActionFocus=false;
+function focusCandleAction(){const fallback=action.disabled;(fallback?$('journey-menu-open'):action).focus();pendingActionFocus=fallback}
+if(candle)document.addEventListener('focusin',e=>{if(pendingActionFocus&&e.target!==action&&e.target!==document.body)pendingActionFocus=false});
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
  if(open){holdRelease();memoryTouch.hidden=true;candleDialog=panel;const isolate=parent=>{for(const el of parent.children){if(el===panel)continue;if(el.contains(panel))isolate(el);else{candleInert.push([el,el.inert]);el.inert=true}}};isolate(document.querySelector('.game-shell'))}
@@ -363,6 +365,7 @@ let lastShield=false;
 function startCandle(){
  momentCard.reset();
  memoryTouch.hidden=true;
+ pendingActionFocus=false;
  releaseCandleInput();shelterRelease=false;KA.init();KA.resume();KA.startJourney();runCount++;
  const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
  Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='flame-full')state.flame=100;if(qa&&params.get('vital')==='breath')state.oxygen=16;lastShield=false;endingAt=0;
@@ -424,7 +427,8 @@ function drawCandle(dt){
  const [text,warn]=candleCaption(s);
  $('hint').textContent=text;
   const mainText=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる',subText=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る',disableHold=s.oxygen<=22&&!s.shield;
-  if(actionCue.textContent!==text)actionCue.innerHTML=guidanceMarkup(text);if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;if(action.disabled!==disableHold)action.disabled=disableHold;
+  if(actionCue.textContent!==text)actionCue.innerHTML=guidanceMarkup(text);if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;
+  if(action.disabled!==disableHold){const focused=document.activeElement===action;action.disabled=disableHold;if(disableHold&&focused)pendingActionFocus=true;else if(!disableHold){if(pendingActionFocus&&!candleDialog&&(document.activeElement===document.body||document.activeElement===$('journey-menu-open')))action.focus({preventScroll:true});pendingActionFocus=false}}
   action.classList.toggle('is-held',!!s.shield);action.classList.toggle('is-warning',!!warn);
  const recordText=Math.max(0,Math.round(s.flame))+'%',remaining=Math.max(0,Math.ceil(s.journey-elapsed)),timerText=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');if(record.textContent!==recordText)record.textContent=recordText;if(timer.textContent!==timerText)timer.textContent=timerText;
  for(const [id,value] of [['light-meter',s.flame],['breath-meter',s.oxygen]]){const meter=$(id),n=String(Math.max(0,Math.round(value)));if(meter.getAttribute('aria-valuenow')!==n){meter.setAttribute('aria-valuenow',n);meter.setAttribute('aria-valuetext',n+'パーセント')}}
