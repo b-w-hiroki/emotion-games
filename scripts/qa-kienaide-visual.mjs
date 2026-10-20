@@ -293,6 +293,27 @@ try{
    if(vital==='breath'){assert.equal(await warning.page.locator('#action').isDisabled(),true);assert.match(await warning.page.locator('.action-main').innerText(),/ひと休み|はなす/)}
    assert.deepEqual(warning.errors,[]);await warning.ctx.close();
   }
+  for(const finalSize of sizes){
+   const finalTag=finalSize.width+'x'+finalSize.height;
+   const quiet=await open(finalSize,'?qa=1&seed=3&speed=.2&t=87&mem=3&vital=flame');await quiet.page.locator('#play').click();
+   await quiet.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence',null,{timeout:3000});
+   await quiet.page.locator('#action').focus();await quiet.page.keyboard.down('Space');
+   await quiet.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま離して'),null,{timeout:3000});
+   assert.equal(await quiet.page.locator('#stage').getAttribute('data-danger'),'flame-critical','the flame warning remains visible during the final release '+finalTag);
+   await quiet.page.screenshot({path:path.join(out,`${engine}-${finalTag}-critical-final-silence.png`)});
+   await quiet.page.keyboard.up('Space');
+   await quiet.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
+   assert.deepEqual(quiet.errors,[]);await quiet.ctx.close();done('critical flame does not hide final release '+finalTag);
+   const breath=await open(finalSize,'?qa=1&seed=3&speed=.2&t=87&vital=breath');await breath.page.locator('#play').click();
+   await breath.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence',null,{timeout:3000});
+   assert.match(await breath.page.locator('.action-cue').innerText(),/手をひらいて/,'low breath and final reply need the same release '+finalTag);
+   assert.equal(await breath.page.locator('#stage').getAttribute('data-danger'),'breath-critical');
+   assert.deepEqual(breath.errors,[]);await breath.ctx.close();done('critical breath keeps final release cue '+finalTag);
+   const reply=await open(finalSize,'?qa=1&seed=3&speed=.2&t=88.5&vital=breath');await reply.page.locator('#play').click();
+   await reply.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply',null,{timeout:3000});
+   assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*手を離して息を/,'the reply keeps urgent breathing advice without hiding the scene '+finalTag);
+   assert.deepEqual(reply.errors,[]);await reply.ctx.close();done('critical breath during window reply '+finalTag);
+  }
   if(size.width===390){
    const reduced=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital=flame',{reduced:true});await reduced.page.locator('#play').click();
    await reduced.page.waitForFunction(()=>document.querySelector('#stage').dataset.danger==='flame-critical',{timeout:3000});

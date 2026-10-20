@@ -101,6 +101,7 @@ try{
  await page.reload();
  const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'));
  assert.equal(persisted.length,2);
+ await page.goto(origin+'kienaide/?study=1&qa=1&seed=2&speed=1&t=27');
  await page.locator('#play').click();
  const retried=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
  assert.equal(retried.attempt_index,2,'a reload must not silently reset the device-local attempt order');
