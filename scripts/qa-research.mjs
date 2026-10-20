@@ -74,6 +74,9 @@ try{
  await page.locator('#play').click();
  await page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible',timeout:10000});
  await page.locator('#route-choice [data-route="rest"]').click();
+ const selected=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
+ assert.equal(selected.route,'rest','the choice is saved before an ending, including if the player exits early');
+ assert.equal(selected.completed,false);
  await page.waitForFunction(()=>!document.querySelector('#study-feedback').hidden,null,{timeout:15000});
  await page.locator('#study-feedback summary').click();
  assert.equal(await page.locator('.study-questions fieldset').count(),4);
@@ -91,16 +94,26 @@ try{
  assert.ok(await page.locator('[data-question="replay_reason"] button').last().isVisible());
  const flagship=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
  assert.equal(flagship.game_id,'kienaide');
+ assert.equal(flagship.route,'rest');
  assert.equal(flagship.memories,0);
  assert.equal(flagship.miracle,false);
  assert.ok(Number.isFinite(flagship.lowest_flame));
  await page.reload();
  const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'));
  assert.equal(persisted.length,2);
+ await page.locator('#play').click();
+ const retried=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
+ assert.equal(retried.attempt_index,2,'a reload must not silently reset the device-local attempt order');
+ assert.equal(retried.route,null);
+ await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:10000});
+ await page.locator('#route-choice [data-route="shortcut"]').click();
+ const abandoned=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
+ assert.equal(abandoned.route,'shortcut');
+ assert.equal(abandoned.completed,false,'leaving after the choice must not be counted as a completed shortcut');
  await page.goto(origin+'?study=1');
  assert.ok(await page.locator('#study-export').isVisible());
  assert.ok(await page.locator('#study-clear').isVisible());
- assert.ok((await page.locator('.study-dashboard').innerText()).includes('2 回のプレイ'));
+ assert.ok((await page.locator('.study-dashboard').innerText()).includes('3 回のプレイ'));
  const first=await page.locator('.card').first().getAttribute('href');assert.ok(first.includes('study=1'));
  console.log('PASS blind research mode / four-question survey / local persistence / export UI');
  // No experimental data is added for a regular visitor.
