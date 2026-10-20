@@ -102,19 +102,21 @@ test('bridge frost makes prolonged exposure costly and shielding clears it at a 
  assert.ok(protectedRun.oxygen<breathBefore,'the safer choice spends breath');
  K.step(protectedRun,70,DT,{shield:false});assert.equal(protectedRun.bridgeFrost,0,'bridge frost cannot follow the player into the finale');
 });
-test('small events: every kind once per run, seeded order, no kind dominating the opening',()=>{
+test('small events: every kind once, the neighbour window after the fork, no kind dominating the opening',()=>{
  const firsts={};
  for(let seed=1;seed<=400;seed++){
   const list=K.eventSchedule(seed);
   assert.deepEqual(list.map(e=>e.kind).sort(),Object.keys(K.EVENT_KINDS).sort());
+  const window=list.find(e=>e.kind==='lantern');assert.ok(window.warnAt>=38&&window.end<45,'the window stays beyond the fork but inside the inhabited tunnel');
   for(let i=1;i<list.length;i++)assert.ok(list[i].warnAt>list[i-1].end,'events never overlap');
   assert.ok(list.every(e=>e.end<80),'events stay clear of the finale');
   firsts[list[0].kind]=(firsts[list[0].kind]||0)+1;
  }
- for(const n of Object.values(firsts))assert.ok(n>60&&n<140,'opening event is balanced: '+JSON.stringify(firsts));
+ assert.equal(firsts.lantern,undefined,'the neighbour window cannot shelter both routes before they split');
+ for(const n of Object.values(firsts))assert.ok(n>100&&n<165,'opening event is balanced: '+JSON.stringify(firsts));
 });
 test('events have real effects on the rules',()=>{
- const at=kind=>{const s=K.create({seed:3});const e=s.events.find(x=>x.kind===kind);s.chapter=K.chapterAt(e.at+.5);return {s,t:e.at+.5}};
+ const at=kind=>{const s=K.create({seed:3});const e=s.events.find(x=>x.kind===kind);s.chapter=K.chapterAt(e.at+.5);s.routeChoice='legacy-test';return {s,t:e.at+.5}};
  {const {s,t}=at('gust');K.step(s,t,DT,{shield:false});assert.ok(s.wind>=.6,'gusts raise the wind')}
  {const {s,t}=at('lull');const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;K.step(s,t,DT,{});K.step(b,t,DT,{});assert.ok(s.wind<b.wind,'lulls calm the wind')}
  {const {s,t}=at('eddy');s.oxygen=80;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.oxygen=80;K.step(s,t,1,{shield:true});K.step(b,t,1,{shield:true});assert.ok(s.oxygen<b.oxygen,'eddies make holding cost more breath')}
@@ -178,9 +180,10 @@ test('the route fork preserves visible distance; shortcut speeds progress, rest 
  const a=K.create({seed:11}),b=K.create({seed:11});
  assert.equal(K.step(a,27.9,DT,{}).some(e=>e.type==='route-choice'),false);
  assert.equal(K.step(a,28,DT,{}).some(e=>e.type==='route-choice'),true);
+ const skipped=K.create({seed:11});assert.equal(K.step(skipped,29.2,DT,{}).some(e=>e.type==='route-choice'),true,'a delayed frame cannot skip the fork');
  assert.equal(a.routeChoice,'pending');assert.equal(K.step(a,28,DT,{}).length,0);
  const before=K.routeDistance(a,28);assert.equal(K.chooseRoute(a,'shortcut',28),true);assert.equal(K.routeDistance(a,28),before);
- a.shelterReady=false;a.shelterUntil=-1;const beforeWind=K.baseWind(29,1);K.step(a,29,DT,{});assert.ok(a.wind>beforeWind,'the shortcut exposes the flame to harsher wind');
+ a.events=[];a.shelterReady=false;a.shelterUntil=-1;const beforeWind=K.baseWind(29,1);K.step(a,29,DT,{});assert.ok(a.wind>beforeWind,'the shortcut exposes the flame to harsher wind');
  b.flame=60;b.oxygen=60;K.step(b,28,DT,{});const oldFlame=b.flame,oldOxygen=b.oxygen;
  assert.equal(K.chooseRoute(b,'rest',28),true);assert.equal(b.flame,oldFlame);assert.ok(b.oxygen>oldOxygen);assert.equal(K.routeDistance(b,28),before);
  for(const time of [29,36,50,70]){const near=K.routeDistance(a,time),far=K.routeDistance(b,time);assert.ok(near<=far,'shortcut must not lag behind at '+time);if(time>29)assert.ok(near<far,'shortcut must make faster progress at '+time);assert.ok(near<=before&&far<=before,'distance must never jump backward')}
