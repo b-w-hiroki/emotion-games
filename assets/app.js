@@ -416,7 +416,7 @@ function drawCandle(dt){
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
  const paused=!!(document.hidden||landscapeMode.matches||candleDialog||s.routeChoice==='pending'),step=paused?0:dt*(s.qaSpeed||1);
  const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
- if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
+ if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);
  $('hint').textContent=text;

@@ -221,6 +221,27 @@ try{
   assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
+  if(size.width===390)for(const [route,boundary] of [['shortcut',62],['rest',78]]){
+   const fork=await open(size,'?qa=1&seed=4&speed=3&t=27&vital=flame-full');await fork.page.locator('#play').click();
+   await fork.page.locator('#route-choice [data-route="'+route+'"]').waitFor({state:'visible',timeout:10000});await fork.page.locator('#route-choice [data-route="'+route+'"]').click();
+   let held=false,scene=null;
+   for(let i=0;i<700;i++){
+    scene=await fork.page.locator('#stage').evaluate(el=>({chapter:el.dataset.chapter,elapsed:Number(el.dataset.elapsed),wind:Number(el.dataset.wind),ending:el.dataset.ending}));
+    if(scene.chapter==='4'||scene.ending)break;
+    const oxygen=Number(await fork.page.locator('#breath-meter').getAttribute('aria-valuenow'));
+    const next=held?!(scene.wind<.42||oxygen<30):scene.wind>.54;
+    if(next!==held){held=next;if(held)await fork.page.keyboard.down('Space');else await fork.page.keyboard.up('Space')}
+    await fork.page.waitForTimeout(40);
+   }
+   assert.equal(scene.chapter,'4',route+' must reach the last painting before the flame goes out');
+   assert.ok(scene.elapsed>=boundary&&scene.elapsed<boundary+.7,route+' chapter begins at '+scene.elapsed);
+   assert.doesNotMatch(await fork.page.locator('#story-beat small').innerText(),/最終章/,'the next chapter text waits until its painting appears');
+   await fork.page.screenshot({path:path.join(out,`${engine}-route-final-entry-${route}.png`)});
+   await fork.page.waitForFunction(target=>Number(document.querySelector('#stage').dataset.elapsed)>=target,boundary+1.4,{timeout:3000});
+   assert.match(await fork.page.locator('#story-beat small').innerText(),/最終章/);
+   await fork.page.screenshot({path:path.join(out,`${engine}-route-final-visible-${route}.png`)});
+   assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route-specific final chapter '+route);
+  }
   for(const routeSize of sizes){
   const suffix=routeSize.width===390?'':'-360',choice=routeSize.width===390?'shortcut':'rest';
   const fork=await open(routeSize,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
