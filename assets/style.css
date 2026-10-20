@@ -105,6 +105,10 @@ html[data-study="1"] .card-info .emotion{visibility:hidden}
 .study-options{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:5px}
 .study-options button{padding:6px 9px;min-height:29px;border:1px solid #5a7b96;border-radius:99px;background:#32465e;color:#f9f5f0;font-size:11px;white-space:nowrap}
 .study-options button.selected{background:#f0c68e;border-color:#ffe2b8;color:#17202d;box-shadow:0 0 0 1px #f0c68e}
+body[data-game=kienaide] .study-feedback{width:min(330px,100%)}
+body[data-game=kienaide] .study-feedback summary{min-height:44px;display:grid;place-items:center;font-size:12px}
+body[data-game=kienaide] .study-feedback legend{font-size:12px;line-height:1.5}
+body[data-game=kienaide] .study-options button{min-width:44px;min-height:44px;padding:9px 12px;font-size:12px}
 #study-saved{display:block;text-align:center;color:#f6cf9e;font-size:10px;margin-top:4px}
 .study-dashboard{background:#141f2d;border:1px solid #657d92;padding:13px 16px;border-radius:12px;margin-top:20px;width:min(530px,100%)}
 .study-dashboard strong{font-size:12px;letter-spacing:.08em;color:#e2bb8a}

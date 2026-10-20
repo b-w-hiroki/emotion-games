@@ -10,7 +10,7 @@ const allowed=['緊張','驚き','達成感','安心','切なさ','楽しさ','�
 const questions=[
  {key:'felt',label:'いま、一番近い気持ちは？',options:allowed},
  {key:'understood',label:'遊び方は、いつ分かった？',options:[['immediate','すぐ分かった'],['during','途中で分かった'],['unclear','最後まで迷った']]},
- {key:'intensity',label:'気持ちは、どのくらい動いた？',options:[[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]},
+ {key:'intensity',label:'気持ちは、どのくらい動いた？（1:弱い／5:強い）',options:[[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]},
  {key:'replay_reason',label:'もう一度遊ぶなら、いちばん近い理由は？',options:[['other-ending','別の結末'],['improve','うまくなりたい'],['collection','集めたい'],['experience-again','もう一度感じたい'],['no-retry','今は遊ばない']]}
 ];
 let records=[];
