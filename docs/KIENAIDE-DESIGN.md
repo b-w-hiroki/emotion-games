@@ -50,7 +50,7 @@ coreのendイベント ──> app.js finish() ──> 図鑑保存・理由表�
 
 記憶ボタンはmoteが現れた時だけCanvas上にDOMとして表示し、coreの記憶座標をviewの `toCss` で変換して画面内に収める。moteの `expiresAt` を基準にviewが8秒の残りを光の輪で示す。coreは表示中のmoteが未収集で消えた場合だけ `memory-lost` を一度発火し、appが短い物語文と音へ接続する。休止・分岐・結果時はボタンを隠す。Canvasの近接タップとMキーは同じ収集関数に流し、重複取得を防ぐ。背面操作はモーダル時の `inert` と入力ガードで遮断する。
 
-終盤の順序は `approach → gust-warning → gust-active → silence → window-reply`。最後の突風は固定の強風、静寂以降は弱風。窓の応答は突風中のかばい時間と静寂中の手放し時間から一度決定する。炎／息の0判定が到着判定より先。到着時の `arrivalEnding` だけが生存3結末を選ぶ。
+終盤の順序は `approach → gust-warning → gust-active → silence → window-reply`。最後の突風は固定の強風、静寂以降は弱風。窓の応答は突風中のかばい時間と静寂中の手放し時間から一度決定する。弱い炎の奇跡は `canTriggerMiracle` で各ルートの `journey - 20` 以降に限定し、休息路の橋上で最終章の窓が先に応答しないようにする。十分な記憶・息・弱風があり、炎29%以下でかばっている時は主ボタンの操作案内を手放しへ切り替える。ただし息22%以下の緊急案内を優先する。炎／息の0判定が到着判定より先。到着時の `arrivalEnding` だけが生存3結末を選ぶ。
 
 ## 描画・素材・音
 

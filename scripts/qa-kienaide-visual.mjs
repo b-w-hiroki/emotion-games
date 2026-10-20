@@ -298,6 +298,13 @@ try{
    await reduced.page.waitForFunction(()=>document.querySelector('#stage').dataset.danger==='flame-critical',{timeout:3000});
    assert.equal(await reduced.page.locator('#distance-panel').evaluate(el=>getComputedStyle(el).animationName),'none','reduced-motion must disable the distance pulse');
    assert.deepEqual(reduced.errors,[]);await reduced.ctx.close();
+   const window=await open(size,'?qa=1&seed=3&speed=0.0001&t=72&mem=2&vital=flame');await window.page.locator('#play').click();
+   await window.page.locator('#action').focus();await window.page.keyboard.down('Space');
+   await window.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま手を離して'),null,{timeout:3000});
+   assert.equal(await window.page.locator('#stage').getAttribute('data-danger'),'flame-critical','the visible danger state stays honest while the action cue changes');
+   await window.page.screenshot({path:path.join(out,`${engine}-rescue-release-cue.png`)});
+   await window.page.keyboard.up('Space');await window.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
+   assert.deepEqual(window.errors,[]);await window.ctx.close();done('critical flame rescue cue and actual release');
   }
  }
   // Shielding pose and flame light under a held button.
