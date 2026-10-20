@@ -73,6 +73,9 @@ test("near-extinction recovery comes from the player's timely release, not RNG",
  assert.equal(eligible({...base,flame:60},79),false,'needs a real near miss');
  assert.equal(eligible({...base,rescue:true},79),false,'once per play');
  assert.equal(eligible(base,40),false,'no arbitrary early shortcut');
+ assert.equal(eligible({...base,journey:98,releaseAt:77},77.5),false,'rest cannot receive the final-window rescue while still on the bridge');
+ assert.equal(eligible({...base,journey:98,releaseAt:78},78),true,'rest may receive the rescue after entering the final chapter');
+ assert.equal(eligible({...base,journey:82,releaseAt:62},62),true,'shortcut opens the rescue at its own final-chapter boundary');
  assert.equal(eligible({...base,journey:98,releaseAt:93},93.5),true,'the rest route keeps its late rescue opportunity');
  assert.equal(eligible({...base,journey:82,releaseAt:83},83.5),false,'the shortcut cannot trigger a rescue after arrival');
  const s=K.create({seed:2});Object.assign(s,{flame:20,oxygen:60,memories:2});

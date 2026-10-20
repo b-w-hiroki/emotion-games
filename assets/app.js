@@ -394,6 +394,7 @@ function candleEvents(list){
 function candleCaption(s){
  const ev=s.event?.kind==='lantern'&&s.routeChoice==='shortcut'?null:s.event;
  if(s.oxygen<=22)return ['息が危ない — 手をはなして',true];
+ if(s.chapter===3&&!s.rescue&&s.memories>=2&&s.flame>0&&s.flame<=29&&s.oxygen>=30&&s.wind<.46&&s.shield&&s.finalePhase==='approach')return ['窓が見ている — いま手を離して',false];
  if(s.flame<=20)return ['灯りが消えそう — 風からかばって',true];
  if(s.finalePhase==='gust-warning')return ['最後の風が来る — 長押しの準備',true];
  if(s.finalePhase==='gust-active')return [s.shield?'かばっている — 耐えて':'大突風 — 長押しでかばって',true];

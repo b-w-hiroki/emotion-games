@@ -59,7 +59,7 @@ function vitalState(s){
  return '';
 }
 function canTriggerMiracle(s,time){
- return !s.rescue && time>=70 && time<=(s.journey||JOURNEY)-1 &&
+ return !s.rescue && time>=(s.journey||JOURNEY)-20 && time<=(s.journey||JOURNEY)-1 &&
    (s.memories||0)>=2 && s.flame>0 && s.flame<=29 && s.oxygen>=30 &&
    !s.shield && time-s.releaseAt>=0 && time-s.releaseAt<=1.3 &&
    s.wind<.46;
