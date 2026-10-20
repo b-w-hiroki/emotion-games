@@ -21,11 +21,12 @@ const EVENT_KINDS={
  lull:{label:'凪',tip:'凪いだ — いま手を離して息を',warn:0,length:3.2},
  lantern:{label:'誰かの灯り',tip:'窓が風をさえぎる。今は息を戻そう。',warn:0,length:3.4}
 };
-const EVENT_SLOTS=[7,27,51,66];
+const EVENT_SLOTS=[7,27,38,66];
 function rng(seed){let a=seed>>>0||1;return()=>{a=a+0x6d2b79f5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function eventSchedule(seed){
- const r=rng(seed),bag=Object.keys(EVENT_KINDS);
+ const r=rng(seed),bag=Object.keys(EVENT_KINDS).filter(kind=>kind!=='lantern');
  for(let i=bag.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]]}
+ bag.splice(2,0,'lantern');
  return EVENT_SLOTS.map((at,i)=>{const kind=bag[i],k=EVENT_KINDS[kind],start=at+Math.round(r()*20)/10;return {id:kind+'-'+i,kind,label:k.label,tip:k.tip,warnAt:start-k.warn,at:start,end:start+k.length}});
 }
 function memorySlots(seed){
@@ -35,8 +36,8 @@ function memorySlots(seed){
 function create(opts={}){
  const seed=(opts.seed>>>0)||1;
  return {seed,shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:JOURNEY,
-  story:'',storyPause:0,shelterReady:true,shelterUntil:-1,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
-  routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,
+  story:'',storyPause:0,shelterReady:true,shelterUntil:-1,bridgeFrost:0,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
+  routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,restUntil:-1,
   lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),eddyReleasedEvent:'',
   finalePhase:'approach',previousFinalePhase:'approach',gustShield:0,gustExposed:0,silenceRelease:0,reply:0,replyLevel:'',
   previousChapter:0,sceneChangedAt:-999,shieldTime:0,ended:''};
@@ -58,12 +59,12 @@ function vitalState(s){
  return '';
 }
 function canTriggerMiracle(s,time){
- return !s.rescue && time>=70 && time<=(s.journey||JOURNEY)-1 &&
+ return !s.rescue && time>=(s.journey||JOURNEY)-20 && time<=(s.journey||JOURNEY)-1 &&
    (s.memories||0)>=2 && s.flame>0 && s.flame<=29 && s.oxygen>=30 &&
    !s.shield && time-s.releaseAt>=0 && time-s.releaseAt<=1.3 &&
    s.wind<.46;
 }
-function chapterAt(time){let c=0;for(let i=1;i<CHAPTERS.length;i++)if(time>=CHAPTERS[i].at)c=i;return c}
+function chapterAt(time,journey=JOURNEY){let c=0;for(let i=1;i<CHAPTERS.length;i++)if(time>=(i===3?journey-20:CHAPTERS[i].at))c=i;return c}
 function finalePhaseAt(time,journey=JOURNEY){const f=time-(journey-10);return f<0?'approach':f<2?'gust-warning':f<7?'gust-active':f<8.5?'silence':'window-reply'}
 // The ending is resolved by one function so new presentation can never drift from the gallery IDs.
 function arrivalEnding(s){return s.memories===3?(s.flame>=68&&s.replyLevel==='bright'?'dawn':'wish'):'survive'}
@@ -79,10 +80,10 @@ function step(s,time,dt,input){
  const out=[];const emit=(type,data={})=>out.push({type,...data});
  if(s.ended)return out;
  if(s.routeChoice==='pending')return out;
- if(s.routeChoice==='none'&&time>=28&&time<29){s.routeChoice='pending';s.shield=false;emit('route-choice');return out}
+ if(s.routeChoice==='none'&&time>=28&&time<30){s.routeChoice='pending';s.shield=false;emit('route-choice');return out}
  s.shield=!!input.shield;
  if(s.shield)s.shieldTime+=dt;
- const chapter=chapterAt(time);
+ const chapter=chapterAt(time,s.journey);
  if(chapter!==s.chapter){s.previousChapter=s.chapter;s.chapter=chapter;s.sceneChangedAt=time;emit('chapter',{chapter});}
  let wind=baseWind(time,chapter);
  // Seeded small events.
@@ -93,6 +94,7 @@ function step(s,time,dt,input){
  if(live&&ev.kind==='gust')wind+=.55;
  if(live&&ev.kind==='eddy')wind=s.eddyReleasedEvent===ev.id?Math.min(wind,.38):Math.max(wind,.5+Math.abs(Math.sin(time*7))*.35);
  if(live&&ev.kind==='lull')wind*=.3;
+ if(live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut')wind*=.2;
  if(s.routeChoice==='shortcut'&&time<s.shortcutUntil)wind=Math.min(1.15,wind+.2);
  // Finale: deterministic storm tied to the player's shielding decision.
  const phase=finalePhaseAt(time,s.journey);s.finalePhase=phase;
@@ -110,25 +112,29 @@ function step(s,time,dt,input){
  if(phase==='gust-active'){if(s.shield)s.gustShield+=dt;else s.gustExposed+=dt}
  if(phase==='silence'&&!s.shield)s.silenceRelease+=dt;
  s.wind=Math.min(1.15,wind);
- if(chapter===1&&s.shelterReady&&s.wind<.29&&!s.shield){s.shelterReady=false;s.shelterUntil=time+3.5;emit('shelter');}
- const sheltered=time<s.shelterUntil;if(sheltered)s.wind*=.2;
- const bridgeCold=chapter===2?.62:1;
+ const resting=time<s.restUntil;
+ if(chapter===1&&!resting&&s.shelterReady&&s.wind<.44&&!s.shield&&input.wasShield&&input.releaseIntent&&!(live&&ev.kind==='lantern')){s.shelterReady=false;s.shelterUntil=Math.min(time+3.5,CHAPTERS[2].at);emit('shelter');}
+ const sheltered=resting||time<s.shelterUntil;if(sheltered)s.wind*=.2;
+ // Exposed hands let bridge frost creep inward; protecting the flame clears it but costs breath.
+ s.bridgeFrost=chapter===2?Math.max(0,Math.min(1,s.bridgeFrost+(s.shield?-.3:s.wind>.42?(s.wind-.42)*.35:-.06)*dt)):0;
+ const bridgeCold=chapter===2?.85+s.bridgeFrost*.55:1;
  if(s.shield){
   const eddyCost=live&&ev.kind==='eddy'?1.6:1;
   s.oxygen=Math.max(0,s.oxygen-(4.5+s.wind*3.8+(chapter===2?1.2:0))*eddyCost*dt);
   s.flame=Math.min(100,s.flame+(.7-s.wind*.25)*dt);
  }else{
   s.oxygen=Math.min(100,s.oxygen+(sheltered||(live&&ev.kind==='lull')?23:15)*dt);
-  const warm=live&&ev.kind==='lantern'?2.6:0;
-  s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45:0)+warm)*dt));
+  const warm=live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut'?2.6:0;
+  s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45+s.bridgeFrost*1.4:0)+warm)*dt));
  }
  if(!s.shield&&input.wasShield)s.releaseAt=time;
  if(!s.shield&&input.wasShield&&live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;
  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){s.miracleHint=true;emit('foreshadow');}
  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,s.wind);
  if(canTriggerMiracle(s,time)){s.rescue=true;s.rescueAt=time;s.flame=Math.min(100,s.flame+24);emit('miracle');}
- const slot=s.slots.find(m=>time>=m.at&&time<m.at+8&&!s.memoryGot.has(m.id));
- s.mote=slot?{id:slot.id,u:slot.u,y:slot.y,title:slot.title,line:slot.line}:null;
+ const previousMote=s.mote,slot=s.slots.find(m=>time>=m.at&&time<m.at+8&&!s.memoryGot.has(m.id));
+ s.mote=slot?{id:slot.id,u:slot.u,y:slot.y,title:slot.title,line:slot.line,expiresAt:slot.at+8}:null;
+ if(previousMote&&previousMote.id!==s.mote?.id&&!s.memoryGot.has(previousMote.id))emit('memory-lost',{id:previousMote.id});
  if(s.oxygen<=0){s.ended='smother';emit('end',{ending:'smother'});return out}
  if(s.flame<=0){s.ended='blown';emit('end',{ending:'blown'});return out}
  if(time>=s.journey){s.ended=arrivalEnding(s);emit('end',{ending:s.ended});}
@@ -143,9 +149,9 @@ function chooseRoute(s,choice,time){
  const remaining=Math.max(0,100*(s.journey-time)/s.journey);
  s.routeChoice=choice;s.routeChoiceAt=time;
  if(choice==='shortcut'){
-  s.routeStartMeters=Math.max(0,remaining-16);s.shortcutUntil=time+8;s.journey=JOURNEY-8;
+  s.routeStartMeters=remaining;s.shortcutUntil=time+8;s.journey=JOURNEY-8;
  }else{
-  s.routeStartMeters=remaining+16;s.oxygen=Math.min(100,s.oxygen+28);s.journey=JOURNEY+8;
+  s.routeStartMeters=remaining;s.oxygen=Math.min(100,s.oxygen+28);s.restUntil=time+4;s.journey=JOURNEY+8;
  }
  return true;
 }

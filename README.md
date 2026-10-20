@@ -2,12 +2,9 @@
 
 birdman studioのショート・ワンアイデア・ブラウザゲーム。SNSの投稿から **個別ゲームへ直接アクセス** できる設計です。
 
-## Preview (Pages有効化後)
-- https://b-w-hiroki.github.io/emotion-games/
-- https://b-w-hiroki.github.io/emotion-games/girigiri/
-- https://b-w-hiroki.github.io/emotion-games/ato-hitotsu/
-- https://b-w-hiroki.github.io/emotion-games/micha-dame/
-- https://b-w-hiroki.github.io/emotion-games/kienaide/
+## 公開版
+- https://play.birdman-studio.com/
+- https://play.birdman-studio.com/kienaide/
 
 ## ローカル開発
 
@@ -18,16 +15,18 @@ npx serve dist
 ```
 
 ## 作品追加
-`catalog.json` に作品を追加し、`assets/app.js` に体験を実装する。`npm run verify` → PR → CI → マージ → Pages公開。実機確認後にX投稿。
+追加量産は停止中。次の縦切り対象は [制作プレイブック](studio-playbook/README.md) と [依頼書テンプレート](studio-playbook/SLICE-BRIEF-TEMPLATE.md) で固有の体験と品質ゲートを定めてから着手する。技術QA、実機、初見の感情評価を混同しない。
 
 ## 独自ドメイン
-最終URLは `https://play.birdman-studio.com/` を予定。DNS設定が済む前の `PUBLIC_ORIGIN` の既定値は `https://b-w-hiroki.github.io/emotion-games`。変更方法は `docs/DEPLOYMENT.md` を参照。
+公開URLは `https://play.birdman-studio.com/`。ビルド時の `PUBLIC_ORIGIN` と公開・共有URLの扱いは [デプロイ手順](docs/DEPLOYMENT.md) を参照。
 
 ## マルチエンドと結末図鑑
 20作品にそれぞれ5つの結末（計100個）。通常のプレイ以外に、待機・連打・画面タップなどの特殊操作で隠し結末を発見できます。回収状態は端末内に保存し、トップと各ゲームで進捗表示します。詳細は [結末設計](docs/ENDINGS.md) を参照。
 
 ## 004｜きえないで。
 「消えてほしくない」という感情を、約90秒の夜の旅にした縦持ち短編。風の予兆を読み、長押しで炎をかばい、凪いだら手を離して呼吸を戻す。道中の三つの記憶、四章の物語変化、環境音と反応音、5種類の結末を収録。初回は導入「最後の灯り」（約19秒・いつでもスキップ可）。終盤は「大突風を長押しで耐え、静寂で手をひらく」と窓が光で答える。結末ごとに専用の場面と音がある。
+
+現行の振る舞いは [仕様書](docs/KIENAIDE-SPEC.md)、実装の責務と互換性は [設計書](docs/KIENAIDE-DESIGN.md) を正本とする。今後の変更では [文書更新ワークフロー](docs/DOCUMENTATION-WORKFLOW.md) に従い、影響する文書を同じPRで更新する。
 
 - 構成: `assets/kienaide-core.js`（ルール・決定論的）／`kienaide-view.js`（描画）／`kienaide-audio.js`（音）／`assets/kienaide/paint/`（途中版の画風に統一した絵画レイヤー、`scripts/art/kienaide-paint.mjs` で原本から再生成。アート基準は `assets/kienaide-v3/`）
 - QA: `?qa=1` は12倍速。`&seed=` `&speed=` `&t=`（開始秒）`&mem=`（記憶数）はQA・動画収録専用

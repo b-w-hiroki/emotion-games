@@ -40,6 +40,61 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A tunnel lull becomes a safe place only after a deliberate release.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');
+   await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.wind);
+   const idle=Number(await page.locator('#stage').getAttribute('data-wind'));
+   assert.ok(idle>.1,'idling alone must not grant tunnel shelter '+tag);
+   await page.locator('#action').focus();await page.keyboard.down('Space');
+   await page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('軒先の陰'));
+   await page.waitForTimeout(500);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-shelter-release-hint.png`)});
+   await page.keyboard.up('Space');
+   await page.waitForFunction(()=>document.querySelector('#story-beat').textContent.includes('建物の陰'));
+   assert.ok(Number(await page.locator('#stage').getAttribute('data-wind'))<idle*.25,'the deliberate release must reach actual shelter '+tag);
+   const distance=await page.locator('#distance-panel').evaluate(el=>({visible:getComputedStyle(el).visibility,text:el.textContent,box:el.getBoundingClientRect().toJSON()}));
+   assert.equal(distance.visible,'visible','distance stays visible during shelter '+tag);
+   assert.match(distance.text,/\d+m/,'distance remains readable during shelter '+tag);
+   assert.ok(distance.box.width>=170,'the shelter must not shrink the journey marker '+tag);
+   await page.waitForFunction(()=>getComputedStyle(document.querySelector('#story-beat')).opacity>.8);
+   await page.waitForTimeout(500);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-shelter-earned.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('earned tunnel shelter '+tag);
+   const canceled=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');
+   await canceled.page.locator('#play').click();await canceled.page.locator('#action').focus();await canceled.page.keyboard.down('Space');
+   await canceled.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('軒先の陰'));
+   await canceled.page.locator('#stage').focus();await canceled.page.keyboard.up('Space');await canceled.page.waitForTimeout(150);
+   assert.ok(Number(await canceled.page.locator('#stage').getAttribute('data-wind'))>.1,'losing focus must not claim the shelter '+tag);
+   assert.doesNotMatch(await canceled.page.locator('#story-beat').innerText(),/建物の陰/);
+   await canceled.page.locator('#action').focus();await canceled.page.keyboard.down('Space');
+   await canceled.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('軒先の陰'));
+   await canceled.page.evaluate(()=>window.dispatchEvent(new Event('blur')));await canceled.page.keyboard.up('Space');await canceled.page.waitForTimeout(150);
+   assert.ok(Number(await canceled.page.locator('#stage').getAttribute('data-wind'))>.1,'window blur must not claim the shelter '+tag);
+   assert.doesNotMatch(await canceled.page.locator('#story-beat').innerText(),/建物の陰/);
+   assert.deepEqual(canceled.errors,[]);await canceled.ctx.close();done('cancelled hold keeps shelter available '+tag);
+  }
+  // The neighbour's window is a real place to release, but the shortcut passes it by.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=19&speed=12&t=27&vital=flame-full');
+   await page.locator('#play').click();await page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible'});await page.locator('#route-choice [data-route="rest"]').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='lantern',null,{timeout:8000});
+   const reading=await page.evaluate(()=>{const stage=document.querySelector('#stage');return {wind:Number(stage.dataset.wind),base:window.KienaideCore.baseWind(Number(stage.dataset.elapsed),1),caption:document.querySelector('.action-cue').textContent}});
+   assert.ok(reading.wind<reading.base*.25,'the lantern must visibly shelter the player '+tag);
+   assert.match(reading.caption,/息を戻そう/,'the prompt should explain the safe release '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-lantern-shelter.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('lantern shelter '+tag);
+  }
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=19&speed=12&t=27&vital=flame-full');
+   await page.locator('#play').click();await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible'});await page.locator('#route-choice [data-route="shortcut"]').click();
+   await page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='lantern',null,{timeout:8000});
+   const reading=await page.evaluate(()=>{const stage=document.querySelector('#stage');return {wind:Number(stage.dataset.wind),base:window.KienaideCore.baseWind(Number(stage.dataset.elapsed),1),caption:document.querySelector('.action-cue').textContent,story:document.querySelector('#story-beat').textContent}});
+   assert.ok(reading.wind>reading.base*.9,'the shortcut must pass the post-fork window without shelter '+tag);
+   assert.doesNotMatch(reading.caption,/窓が風をさえぎる/,'the shortcut cannot offer the skipped shelter '+tag);
+   assert.match(reading.story,/近道からは、あの窓に寄れない/,'story should explain the missed shelter '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-lantern-shortcut.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('lantern shortcut tradeoff '+tag);
+  }
   // Measure rendered character lines, not just CSS properties: no <=5-character orphan.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=8');
@@ -134,6 +189,21 @@ try{
    await page.screenshot({path:path.join(out,`${engine}-${tag}-chapter${i}.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('chapter '+i+' '+tag);
   }
+  // Bridge frost is earned by exposed play and recedes when the player spends breath to shield.
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=9&speed=3&t=62');
+   await page.locator('#play').click();
+   await page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.bridgeFrost)>.32,null,{timeout:6000});
+   const frosted=Number(await page.locator('#stage').getAttribute('data-bridge-frost'));
+   assert.match(await page.locator('.action-cue').innerText(),/橋の霜/,'the bridge explains the accumulating danger '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-bridge-frost-exposed.png`)});
+   const breath=Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'));
+   await page.locator('#action').focus();await page.keyboard.down('Space');
+   await page.waitForFunction(before=>Number(document.querySelector('#stage').dataset.bridgeFrost)<before-.15,frosted,{timeout:4000});
+   assert.ok(Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'))<breath,'clearing frost must consume breath '+tag);
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-bridge-frost-shielded.png`)});
+   await page.keyboard.up('Space');assert.deepEqual(errors,[]);await ctx.close();done('bridge frost responds to play '+tag);
+  }
  // Chapter changes are masked by a short blizzard passage rather than a naked image swap.
  if(size.width===390){
   const finale=await open(size,'?qa=1&seed=3&speed=3&t=79&mem=3&vital=flame-full');await finale.page.locator('#play').click();
@@ -151,6 +221,27 @@ try{
   assert.equal(await page.locator('#stage').getAttribute('data-transition'),'blizzard');
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
+  if(size.width===390)for(const [route,boundary] of [['shortcut',62],['rest',78]]){
+   const fork=await open(size,'?qa=1&seed=4&speed=3&t=27&vital=flame-full');await fork.page.locator('#play').click();
+   await fork.page.locator('#route-choice [data-route="'+route+'"]').waitFor({state:'visible',timeout:10000});await fork.page.locator('#route-choice [data-route="'+route+'"]').click();
+   let held=false,scene=null;
+   for(let i=0;i<700;i++){
+    scene=await fork.page.locator('#stage').evaluate(el=>({chapter:el.dataset.chapter,elapsed:Number(el.dataset.elapsed),wind:Number(el.dataset.wind),ending:el.dataset.ending}));
+    if(scene.chapter==='4'||scene.ending)break;
+    const oxygen=Number(await fork.page.locator('#breath-meter').getAttribute('aria-valuenow'));
+    const next=held?!(scene.wind<.42||oxygen<30):scene.wind>.54;
+    if(next!==held){held=next;if(held)await fork.page.keyboard.down('Space');else await fork.page.keyboard.up('Space')}
+    await fork.page.waitForTimeout(40);
+   }
+   assert.equal(scene.chapter,'4',route+' must reach the last painting before the flame goes out');
+   assert.ok(scene.elapsed>=boundary&&scene.elapsed<boundary+.7,route+' chapter begins at '+scene.elapsed);
+   assert.doesNotMatch(await fork.page.locator('#story-beat small').innerText(),/最終章/,'the next chapter text waits until its painting appears');
+   await fork.page.screenshot({path:path.join(out,`${engine}-route-final-entry-${route}.png`)});
+   await fork.page.waitForFunction(target=>Number(document.querySelector('#stage').dataset.elapsed)>=target,boundary+1.4,{timeout:3000});
+   assert.match(await fork.page.locator('#story-beat small').innerText(),/最終章/);
+   await fork.page.screenshot({path:path.join(out,`${engine}-route-final-visible-${route}.png`)});
+   assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route-specific final chapter '+route);
+  }
   for(const routeSize of sizes){
   const suffix=routeSize.width===390?'':'-360',choice=routeSize.width===390?'shortcut':'rest';
   const fork=await open(routeSize,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
@@ -160,8 +251,7 @@ try{
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
   assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/8秒早く・強風8秒/,'shortcut must explain its time and wind tradeoff');
   const restEffect=await fork.page.locator('#route-choice [data-route="rest"] small').innerText();
-  assert.match(restEffect,/8秒遅く・息\+\d+%/,'rest must show the actual capped breath recovery');
-  assert.notEqual(restEffect,'8秒遅く・息+0%','holding to protect the flame should make the rest option meaningful');
+  assert.match(restEffect,/8秒遅く・風よけ4秒・息\+\d+%/,'rest must lead with its shelter and show capped breath recovery');
   await fork.page.waitForTimeout(350);assert.equal(await fork.page.locator('#timer').innerText(),remaining,'route decision pauses the countdown');
   assert.equal(await fork.page.locator('#story-beat small').innerText(),'分かれ道','the fork instructions must remain while the player decides');
   await fork.page.screenshot({path:path.join(out,`${engine}-route-choice${suffix}.png`)});
@@ -169,12 +259,30 @@ try{
   for(const target of targets){assert.ok(target.width>=280&&target.height>=80,'choices need large thumb targets: '+JSON.stringify(target));assert.ok(target.y>=routeSize.height*.5&&target.bottom<=routeSize.height-24,'choices must sit in the lower half, clear of the bottom edge');assert.ok(target.x>=16&&target.right<=routeSize.width-16,'choices must stay inside the screen');assert.ok(target.title>=16&&target.detail>=12,'choice text must remain legible');assert.ok(target.reachable,'choice centre must receive the tap')}
   assert.ok(targets[1].y-targets[0].bottom>=10,'stacked choices need a gap against accidental taps');
   await fork.page.locator('#route-choice [data-route="'+choice+'"]').tap();
-  await fork.page.waitForFunction(({before,choice})=>{const n=Number(document.querySelector('#distance-value').textContent);return choice==='shortcut'?n<before:n>before},{before,choice},{timeout:2000});
+  await fork.page.locator('#route-choice').waitFor({state:'hidden'});await fork.page.waitForTimeout(100);
+  const after=Number(await fork.page.locator('#distance-value').textContent());assert.ok(after<=before&&after>=before-1,'route choice must not teleport the distance: '+before+' → '+after);
   const seconds=text=>{const [m,s]=text.split(':').map(Number);return m*60+s};
   const arrival=seconds(await fork.page.locator('#timer').innerText());assert.ok(choice==='shortcut'?arrival<=seconds(remaining)-8:arrival>=seconds(remaining)+7,'the tapped choice must change actual arrival time');
   assert.equal(await fork.page.locator('#route-choice').isVisible(),false);
   await fork.page.screenshot({path:path.join(out,`${engine}-${choice}-after-choice${suffix}.png`)});
+  if(choice==='rest')assert.ok(Number(await fork.page.locator('#stage').getAttribute('data-wind'))<=.23,'rest must shelter from actual wind after choosing');
   assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice touch targets '+routeSize.width);
+  }
+  const full=await open(sizes[1],'?qa=1&seed=3&speed=1&t=27');await full.page.locator('#play').click();
+  await full.page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible',timeout:10000});
+  assert.equal(await full.page.locator('#route-rest-effect').innerText(),'8秒遅く・風よけ4秒・息は満タン','rest must not present full breath as an empty reward');
+  await full.page.locator('#route-choice [data-route="rest"]').tap();
+  await full.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)<=.23,null,{timeout:2000});
+  await full.page.screenshot({path:path.join(out,`${engine}-rest-full-breath.png`)});
+  assert.deepEqual(full.errors,[]);await full.ctx.close();done('rest shelters at full breath');
+  if(size.width===390)for(const choice of ['shortcut','rest']){
+   const chosen=await open(sizes[0],'?qa=1&seed=19&speed=0.0001&t=28.9&vital=flame-full');await chosen.page.locator('#play').click();await chosen.page.locator('#route-choice [data-route="'+choice+'"]').click();
+   await chosen.page.waitForFunction(()=>document.querySelector('#stage').dataset.event!=='',null,{timeout:3000});
+   assert.match(await chosen.page.locator('#story-beat strong').innerText(),choice==='shortcut'?/近道へ踏み出した/:/戸口が開いた/,'a simultaneous wind event must not erase the chosen route');
+   assert.match(await chosen.page.locator('.action-cue').innerText(),/風|息/,'wind instructions remain available in the control deck');
+   await chosen.page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#story-beat')).opacity)>.7,null,{timeout:1500});
+   await chosen.page.screenshot({path:path.join(out,`${engine}-route-feedback-${choice}.png`)});
+   assert.deepEqual(chosen.errors,[]);await chosen.ctx.close();done('route feedback '+choice);
   }
   for(const [vital,danger] of [['flame','flame-critical'],['breath','breath-critical']]){
    const warning=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital='+vital);await warning.page.locator('#play').click();
@@ -185,13 +293,52 @@ try{
    if(vital==='breath'){assert.equal(await warning.page.locator('#action').isDisabled(),true);assert.match(await warning.page.locator('.action-main').innerText(),/ひと休み|はなす/)}
    assert.deepEqual(warning.errors,[]);await warning.ctx.close();
   }
+  for(const finalSize of sizes){
+   const finalTag=finalSize.width+'x'+finalSize.height;
+   const quiet=await open(finalSize,'?qa=1&seed=3&speed=.2&t=87&mem=3&vital=flame');await quiet.page.locator('#play').click();
+   await quiet.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence',null,{timeout:3000});
+   await quiet.page.locator('#action').focus();await quiet.page.keyboard.down('Space');
+   await quiet.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま離して'),null,{timeout:3000});
+   assert.equal(await quiet.page.locator('#stage').getAttribute('data-danger'),'flame-critical','the flame warning remains visible during the final release '+finalTag);
+   await quiet.page.screenshot({path:path.join(out,`${engine}-${finalTag}-critical-final-silence.png`)});
+   await quiet.page.keyboard.up('Space');
+   await quiet.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
+   assert.deepEqual(quiet.errors,[]);await quiet.ctx.close();done('critical flame does not hide final release '+finalTag);
+   const breath=await open(finalSize,'?qa=1&seed=3&speed=.2&t=87&vital=breath');await breath.page.locator('#play').click();
+   await breath.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence',null,{timeout:3000});
+   assert.match(await breath.page.locator('.action-cue').innerText(),/手をひらいて/,'low breath and final reply need the same release '+finalTag);
+   assert.equal(await breath.page.locator('#stage').getAttribute('data-danger'),'breath-critical');
+   assert.deepEqual(breath.errors,[]);await breath.ctx.close();done('critical breath keeps final release cue '+finalTag);
+   const reply=await open(finalSize,'?qa=1&seed=3&speed=.2&t=88.5&vital=breath');await reply.page.locator('#play').click();
+   await reply.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply',null,{timeout:3000});
+   assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*手を離して息を/,'the reply keeps urgent breathing advice without hiding the scene '+finalTag);
+   assert.deepEqual(reply.errors,[]);await reply.ctx.close();done('critical breath during window reply '+finalTag);
+  }
   if(size.width===390){
    const reduced=await open(size,'?qa=1&seed=3&speed=0.0001&t=12&vital=flame',{reduced:true});await reduced.page.locator('#play').click();
    await reduced.page.waitForFunction(()=>document.querySelector('#stage').dataset.danger==='flame-critical',{timeout:3000});
    assert.equal(await reduced.page.locator('#distance-panel').evaluate(el=>getComputedStyle(el).animationName),'none','reduced-motion must disable the distance pulse');
    assert.deepEqual(reduced.errors,[]);await reduced.ctx.close();
+   const window=await open(size,'?qa=1&seed=3&speed=0.0001&t=72&mem=2&vital=flame');await window.page.locator('#play').click();
+   await window.page.locator('#action').focus();await window.page.keyboard.down('Space');
+   await window.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま手を離して'),null,{timeout:3000});
+   assert.equal(await window.page.locator('#stage').getAttribute('data-danger'),'flame-critical','the visible danger state stays honest while the action cue changes');
+   await window.page.screenshot({path:path.join(out,`${engine}-rescue-release-cue.png`)});
+   await window.page.keyboard.up('Space');await window.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
+   assert.deepEqual(window.errors,[]);await window.ctx.close();done('critical flame rescue cue and actual release');
   }
  }
+  const calm=await open(size,'?qa=1&seed=3&speed=.0001&vital=flame');await calm.page.locator('#play').click();
+  await calm.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('息を戻して'),null,{timeout:3000});
+  assert.equal(await calm.page.locator('#stage').getAttribute('data-danger'),'flame-critical','safe guidance must not hide the life warning '+tag);
+  await calm.page.locator('#action').focus();await calm.page.keyboard.down('Space');
+  await calm.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま離して'),null,{timeout:3000});
+  await calm.page.screenshot({path:path.join(out,`${engine}-${tag}-critical-calm-recovery.png`)});
+  await calm.page.keyboard.up('Space');assert.deepEqual(calm.errors,[]);await calm.ctx.close();done('critical flame calm recovery cue '+tag);
+  const warned=await open(size,'?qa=1&seed=1&speed=.0001&t=27.85&vital=flame');await warned.page.locator('#play').click();
+  await warned.page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='gust',null,{timeout:3000});
+  assert.match(await warned.page.locator('.action-cue').innerText(),/かばって/,'an incoming gust outranks calm recovery '+tag);
+  assert.deepEqual(warned.errors,[]);await warned.ctx.close();done('critical flame keeps gust warning '+tag);
   // Shielding pose and flame light under a held button.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=30');
@@ -231,7 +378,7 @@ try{
   const {ctx,page,errors}=await open(size,r.query);
   await page.locator('#play').click();
   const box=await page.locator('#action').boundingBox();let holding=false;const phases=new Set(),trace=[];
-  const press=async on=>{if(on===holding)return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
+  const press=async on=>{if(on===holding||(on&&await page.locator('#action').isDisabled()))return;holding=on;if(on){await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down()}else await page.mouse.up()};
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
    if(await page.locator('#route-choice').isVisible()){
@@ -352,6 +499,8 @@ try{
   const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001',{intro:true,reduced});
   await page.locator('#play').click();
   await page.waitForSelector('#kienaide-intro canvas');
+  const introRows=await page.evaluate(()=>{const ctx=document.createElement('canvas').getContext('2d');return window.KienaideView.INTRO.map(cue=>{ctx.font=cue.at===16.5?'bold 38px system-ui,sans-serif':'600 15px system-ui,sans-serif';return {at:cue.at,text:cue.text,rows:cue.rows,widths:cue.rows.map(row=>ctx.measureText(row).width)}})});
+  for(const cue of introRows){assert.equal(cue.rows.join(''),cue.text,'prologue screen-reader and painted copy must match');for(let i=0;i<cue.rows.length;i++){assert.ok([...cue.rows[i]].length>5,'prologue leaves a short line at '+cue.at+': '+JSON.stringify(cue.rows));assert.ok(cue.widths[i]<=324,'prologue line overflows 360px canvas at '+cue.at+': '+JSON.stringify(cue))}}
   let waited=0;for(const at of [2.4,6,9,12.5,15.5]){const ms=at/6*1000-waited;waited+=ms;await page.waitForTimeout(ms);await page.screenshot({path:path.join(out,`${engine}-intro-${reduced?'reduced-':''}${at}.png`)})}
   await page.locator('#kienaide-intro button').click({timeout:3000}).catch(()=>{});
   assert.equal(await page.locator('#kienaide-intro').count(),0,'prologue must end (skip or completion)');

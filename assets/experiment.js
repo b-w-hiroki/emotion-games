@@ -10,7 +10,7 @@ const allowed=['緊張','驚き','達成感','安心','切なさ','楽しさ','�
 const questions=[
  {key:'felt',label:'いま、一番近い気持ちは？',options:allowed},
  {key:'understood',label:'遊び方は、いつ分かった？',options:[['immediate','すぐ分かった'],['during','途中で分かった'],['unclear','最後まで迷った']]},
- {key:'intensity',label:'気持ちは、どのくらい動いた？',options:[[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]},
+ {key:'intensity',label:'気持ちは、どのくらい動いた？（1:弱い／5:強い）',options:[[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]},
  {key:'replay_reason',label:'もう一度遊ぶなら、いちばん近い理由は？',options:[['other-ending','別の結末'],['improve','うまくなりたい'],['collection','集めたい'],['experience-again','もう一度感じたい'],['no-retry','今は遊ばない']]}
 ];
 let records=[];
@@ -55,6 +55,7 @@ function survey(){
 }
 if(!document.body.dataset.game){menu();return}
 const game=document.body.dataset.game;const panel=survey();
+attempt=Math.max(0,...records.filter(r=>r.game_id===game).map(r=>Number(r.attempt_index)||0));
 const links=document.querySelectorAll('.related,.logo,.controls-bottom a');
 links.forEach(a=>{if(!a.href||!new URL(a.href).host.endsWith(location.host))return;const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()});
 document.querySelector('#stage')?.addEventListener('pointerdown',()=>{if(current)current.inputs++});
@@ -66,9 +67,12 @@ window.emotionTrack=(name,payload)=>{
  if(name==='game_start'){
   attempt++;
   current={id:Date.now()+'-'+Math.round(Math.random()*1e7),slug:game,target:document.querySelector('.game-heading .label span')?.textContent?.replace('/','').trim()||null,start:performance.now(),inputs:0,completed:false,answers:{}};
-  records.push({id:current.id,schema_version:2,game_id:game,target:current.target,mode:'blind',attempt_index:attempt,duration_ms:null,inputs:0,ending_id:null,score:null,completed:false,answered:false,felt:null,understood:null,intensity:null,replay_reason:null});
+  records.push({id:current.id,schema_version:2,game_id:game,target:current.target,mode:'blind',attempt_index:attempt,duration_ms:null,inputs:0,ending_id:null,score:null,completed:false,answered:false,felt:null,understood:null,intensity:null,replay_reason:null,...(game==='kienaide'?{route:null}:{})});
   records=records.slice(-300);save();
   panel.hidden=true;panel.querySelector('summary').textContent='今回の体験を記録（任意・4問）';panel.querySelector('details').open=false;panel.querySelector('#study-saved').textContent='';panel.querySelectorAll('button').forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});
+ }
+ if(name==='route_selected'&&game==='kienaide'&&current&&!current.completed&&['shortcut','rest'].includes(payload?.route)){
+  const entry=records.find(e=>e.id===current.id);if(entry){entry.route=payload.route;save()}
  }
  if(name==='game_complete'&&current&&!current.completed){
   current.completed=true;
@@ -76,6 +80,7 @@ window.emotionTrack=(name,payload)=>{
   if(entry){
    entry.duration_ms=Math.round(performance.now()-current.start);entry.inputs=current.inputs;entry.ending_id=payload?.ending_id||null;entry.score=payload?.score??null;entry.completed=true;
    for(const key of ['outcome','memories','chapter','miracle','lowest_flame'])if(payload?.[key]!==undefined)entry[key]=payload[key];
+   if(game==='kienaide'&&['shortcut','rest'].includes(payload?.route))entry.route=payload.route;
    save();
   }
   panel.hidden=false;

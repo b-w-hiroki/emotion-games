@@ -16,6 +16,14 @@ const DEPTH={sky:0,far:.012,mid:.03,fore:.06};
 const FOCUS=[{x:540,y:640},{x:672,y:650},{x:452,y:430},{x:486,y:592}];
 const WINDOW={x:486,y:592};
 const LAMP={x:810,y:534};
+const INTRO=[
+ {at:0,text:'雪の夜。小さな家の暖炉が、消えかけていた。',rows:['雪の夜。小さな家の暖炉が、','消えかけていた。']},
+ {at:4,text:'灰の中で、最後の灯りだけが震えていた。',rows:['灰の中で、最後の灯りだけが','震えていた。']},
+ {at:8,text:'灯りは、少女の手に飛び込んだ。',rows:['灯りは、少女の手に','飛び込んだ。']},
+ {at:11.5,text:'遠い窓を、じっと見つめている。',rows:['遠い窓を、じっと','見つめている。']},
+ {at:14,text:'「……あそこに、帰りたいの？」',rows:['「……あそこに、帰りたいの？」']},
+ {at:16.5,text:'きえないで。',rows:['きえないで。']}
+];
 function create(base){
  const imgs={},cache=new Map();let manifest=null,failed=0;
  const dir=base+'assets/kienaide/paint/';
@@ -128,7 +136,7 @@ function create(base){
   ctx.restore();return true;
  }
  function frost(ctx,st){
-  const oxygen=Math.max(0,(42-(st.oxygen??100))/42),flame=Math.max(0,(32-(st.flame??100))/32),chapter=st.ci===2?.2:0,amount=Math.min(.78,chapter+oxygen*.46+flame*.34);
+  const oxygen=Math.max(0,(42-(st.oxygen??100))/42),flame=Math.max(0,(32-(st.flame??100))/32),chapter=st.ci===2?.14+(st.bridgeFrost??0)*.48:0,amount=Math.min(.78,chapter+oxygen*.46+flame*.34);
   if(amount<.08)return false;const W=view.W;ctx.save();
   const edge=ctx.createRadialGradient(W/2,H*.52,Math.min(W,H)*.3,W/2,H*.52,Math.max(W,H)*.72);edge.addColorStop(.48,'rgba(215,231,248,0)');edge.addColorStop(1,'rgba(205,225,245,'+(amount*.22)+')');ctx.fillStyle=edge;ctx.fillRect(0,0,W,H);
   if(ready('frost-edge')){ctx.globalCompositeOperation='screen';ctx.globalAlpha=amount*.5;ctx.drawImage(imgs['frost-edge'],0,0,W,H)}
@@ -260,8 +268,9 @@ function create(base){
   const x=m.u*view.W,y=m.y,p=reduced?1:1+Math.sin(t*5)*.16;
   ctx.save();ctx.translate(x,y);ctx.scale(p,p);ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(0,0,1,0,0,30);g.addColorStop(0,'rgba(255,236,186,.95)');g.addColorStop(1,'rgba(255,190,110,0)');ctx.fillStyle=g;ctx.fillRect(-32,-32,64,64);ctx.restore();
+  const remaining=Math.max(0,Math.min(1,(m.expiresAt-t)/8));
+  ctx.save();ctx.strokeStyle='rgba(255,221,159,.9)';ctx.lineWidth=2.5;ctx.shadowColor='rgba(255,185,96,.75)';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(x,y,22,-Math.PI/2,-Math.PI/2+Math.PI*2*remaining);ctx.stroke();ctx.restore();
   if(ready('flame')){ctx.save();ctx.globalAlpha=.85;ctx.drawImage(imgs.flame,x-11,y-14,22,24);ctx.restore()}
-  ctx.save();ctx.font='bold 11px system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff1cf';ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillText('記憶にふれる',x,y+38);ctx.restore();
  }
  // A collected memory flies into the flame as a small spark.
  const fx={mem:-1,from:null,t0:0};
@@ -293,20 +302,22 @@ function create(base){
  // ---------- one gameplay frame ----------
  function frame(ctx,s,t,o){
   begin(ctx);
-  const W=view.W,ci=s.chapter,since=t-(s.sceneChangedAt??-999);
-  const chapterStart=[0,20,45,70][ci],chapterEnd=[20,45,70,s.journey||90][ci],p=Math.max(0,Math.min(1,(t-chapterStart)/(chapterEnd-chapterStart)));
+  const W=view.W,ci=s.chapter,since=t-(s.sceneChangedAt??-999),finalStart=(s.journey||90)-20;
+  const chapterStart=[0,20,45,finalStart][ci],chapterEnd=[20,45,finalStart,s.journey||90][ci],p=Math.max(0,Math.min(1,(t-chapterStart)/(chapterEnd-chapterStart)));
   const reduced=o.reduced,wind=s.wind??.2;
   const cam={p,sway:reduced?0:Math.sin(t*.35)*.6+Math.min(1,wind)*.5};
   const light=Math.max(0,Math.min(1,s.flame/100))*(s.rescue||s.reply>0?1.15:1);
   // Chapter 4's window is dim through the night and answers in the finale; other lamps stay lit.
   const reply=s.reply>0?s.reply*(s.replyLevel==='bright'?1:.6):s.rescue?.6:0;
   const lightAlpha=ci===3?.25+.75*reply:1;
-  const changing=since>=0&&since<2.1&&s.previousChapter!==ci,q=changing?since/2.1:1,m0=Math.max(0,Math.min(1,(q-.44)/.12)),mix=m0*m0*(3-2*m0);
+  const changing=since>=0&&since<2.1&&s.previousChapter!==ci,q=changing?since/2.1:1,m0=Math.max(0,Math.min(1,(q-.28)/.44)),mix=m0*m0*(3-2*m0);
   ctx.canvas.dataset.transition=changing?'blizzard':'';
   if(changing){if(!drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,1,['sky','far','mid']))fallbackSky(ctx,s.previousChapter);drawPlate(ctx,ci,{...cam,p:0},mix,lightAlpha,['sky','far','mid'])}
   else if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
+  if(changing)chapterVeil(ctx,q,reduced);
+  if(ci===1&&s.routeChoice==='rest'&&t<s.restUntil){const warmth=Math.min(1,(s.restUntil-t)/1.5),g=ctx.createRadialGradient(W*.8,220,8,W*.8,220,190);g.addColorStop(0,'rgba(255,187,105,'+(.2*warmth)+')');g.addColorStop(1,'rgba(255,187,105,0)');ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.fillRect(0,20,W,400);ctx.restore()}
   snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
-  if(ci===3)dawnGrade(ctx,Math.max(0,(t-70)/20)*.6);
+  if(ci===3)dawnGrade(ctx,Math.max(0,(t-finalStart)/20)*.6);
   const a=flameAnchor();
   const bob=drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing});
   vignette(ctx,light,{x:a.x,y:a.y});
@@ -316,13 +327,13 @@ function create(base){
    if(s.rescue&&t-s.rescueAt<6)beam(ctx,w,a,Math.max(0,1-(t-s.rescueAt)/6));
    if(s.replyLevel==='bright')beam(ctx,w,a,.8);
   }
-  if(s.event&&t>=s.event.at&&s.event.kind==='lantern'){const g=ctx.createRadialGradient(W*.15,250,4,W*.15,250,120);g.addColorStop(0,'rgba(255,214,150,.45)');g.addColorStop(1,'rgba(255,190,110,0)');ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(0,120,W,260);ctx.restore()}
+  if(s.event&&t>=s.event.at&&s.event.kind==='lantern'&&s.routeChoice!=='shortcut'){const g=ctx.createRadialGradient(W*.15,250,4,W*.15,250,120);g.addColorStop(0,'rgba(255,214,150,.45)');g.addColorStop(1,'rgba(255,190,110,0)');ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(0,120,W,260);ctx.restore()}
   const quiet=s.finalePhase==='silence'||s.finalePhase==='window-reply';
   const warn=(s.event&&t<s.event.at&&(s.event.kind==='gust'||s.event.kind==='eddy'))||s.finalePhase==='gust-warning'?1:0;
   drawFlame(ctx,{t,flame:s.flame,wind,shield:s.shield,reduced,expression:o.expression,hope:o.expression==='hope',bob,smoke:1,lookAt:ci===3&&quiet?1:0});
   // Hands over the flame while shielding, so the gesture visibly closes around it.
   if(s.shield&&!ready('hero-shield'))drawHands(ctx,{shield:true,light,bob});
-  if(changing){drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,0,['fore']);drawPlate(ctx,ci,{...cam,p:0},mix,0,['fore']);chapterVeil(ctx,q,reduced)}
+  if(changing){drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,0,['fore']);drawPlate(ctx,ci,{...cam,p:0},mix,0,['fore'])}
   else drawPlate(ctx,ci,cam,1,0,['fore']);
   cinematicGrade(ctx,ci,light,t,reduced);
   const hasBreath=breath(ctx,{...s,t,ci,reduced,bob,wind});
@@ -333,8 +344,7 @@ function create(base){
   ctx.canvas.dataset.vfx=['grade','grain','snow-depth',hasBreath&&'breath',hasEmbers&&'embers',hasFrost&&'frost'].filter(Boolean).join(' ');
   if(s.mote)memoryMote(ctx,s.mote,t,reduced);
   memoryFlight(ctx,s,t);
-  if(ci===1&&t<s.shelterUntil){ctx.fillStyle='rgba(255,222,165,.07)';ctx.fillRect(0,90,W,300);caption(ctx,'風をよけられる — 今のうちに息を戻す','',false)}
-  else caption(ctx,o.caption,s.routeChoice==='pending'?'':'家まで '+root.KienaideCore.routeDistance(s,t)+'m',o.warn);
+  caption(ctx,o.caption,s.routeChoice==='pending'?'':'家まで '+root.KienaideCore.routeDistance(s,t)+'m',o.warn);
   hud(ctx,s);
   end(ctx);
  }
@@ -379,14 +389,6 @@ function create(base){
   end(ctx);
  }
  // ---------- prologue「最後の灯り」 ----------
- const INTRO=[
-  {at:0,text:'雪の夜。小さな家の暖炉が、消えかけていた。'},
-  {at:4,text:'灰の中で、最後の灯りだけが震えていた。'},
-  {at:8,text:'灯りは、少女の手に飛び込んだ。'},
-  {at:11.5,text:'遠い窓を、じっと見つめている。'},
-  {at:14,text:'「……あそこに、帰りたいの？」'},
-  {at:16.5,text:'きえないで。'}
- ];
  const INTRO_LENGTH=19;
  function introFrame(ctx,t,o){
   begin(ctx);
@@ -420,17 +422,10 @@ function create(base){
   const line=[...INTRO].reverse().find(l=>t>=l.at);
   if(line){const age=t-line.at,alpha=Math.min(1,age/.6);ctx.save();ctx.globalAlpha=alpha;ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=10;
    if(line.at===16.5){ctx.font='bold 38px system-ui,sans-serif';ctx.fillStyle='#ffe3a8';ctx.fillText(line.text,W/2,130)}
-   else{ctx.font='600 15px system-ui,sans-serif';ctx.fillStyle='#fff2d8';wrap(ctx,line.text,W-36).forEach((row,i)=>ctx.fillText(row,W/2,64+i*24))}ctx.restore()}
+   else{ctx.font='600 15px system-ui,sans-serif';ctx.fillStyle='#fff2d8';line.rows.forEach((row,i)=>ctx.fillText(row,W/2,64+i*24))}ctx.restore()}
   end(ctx);
- }
- // Break Japanese text after punctuation first, then by width.
- function wrap(ctx,text,max){
-  if(ctx.measureText(text).width<=max)return [text];
-  const rows=[];let row='';
-  for(const ch of text){if(ctx.measureText(row+ch).width>max&&row){rows.push(row);row=''}row+=ch;if((ch==='、'||ch==='。')&&ctx.measureText(row).width>max*.45&&rows.length<2){rows.push(row);row=''}}
-  if(row)rows.push(row);return rows;
  }
  return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,loaded,imgs,failed:()=>failed,names,manifest:()=>manifest};
 }
-root.KienaideView={create};
+root.KienaideView={create,INTRO};
 })(typeof window!=='undefined'?window:globalThis);

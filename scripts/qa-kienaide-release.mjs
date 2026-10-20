@@ -111,6 +111,34 @@ try{
    assert.deepEqual(errors,[]);await ctx.close();console.log('PASS unique save and collection focus',tag);
   }
   {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=0.0001&t=12.8');await page.locator('#play').click();
+   await page.locator('#memory-touch').waitFor({state:'visible'});
+   const target=await page.locator('#memory-touch').boundingBox(),distance=await page.locator('#distance-panel').boundingBox();
+   assert.ok(target.width>=44&&target.height>=44&&target.x>=8&&target.x+target.width<=size.width-8,'memory touch target must fit the phone: '+JSON.stringify(target));
+   assert.ok(target.y>=110&&target.y+target.height<distance.y-8,'memory prompt must clear the story and distance signpost');
+   await noShortTail(page,'#memory-touch');await page.screenshot({path:path.join(out,`${engine}-${tag}-memory-touch.png`)});
+   assert.match(await page.locator('#memory-touch').getAttribute('aria-label'),/記憶/);
+   await page.locator('#journey-menu-open').click();assert.equal(await page.locator('#memory-touch').isVisible(),false,'pause must hide the memory action');
+   await page.locator('#pause-resume').click();await page.locator('#memory-touch').waitFor({state:'visible'});
+   await page.locator('#memory-touch').click();assert.equal(await page.locator('#best').innerText(),'1 / 3');assert.equal(await page.locator('#memory-touch').isVisible(),false);assert.ok(await page.locator('#action').isEnabled());
+   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS contextual memory touch target',tag);
+  }
+  {
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=2&t=12.8');await page.locator('#play').click();
+   await page.locator('#memory-touch').waitFor({state:'visible'});
+   assert.ok(Number(await page.locator('#stage').getAttribute('data-memory-remaining'))>0,'a visible memory has time left');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-memory-countdown.png`)});
+   await page.locator('#journey-menu-open').click();const remaining=await page.locator('#stage').getAttribute('data-memory-remaining');await page.waitForTimeout(3500);
+   assert.equal(await page.locator('#stage').getAttribute('data-memory-remaining'),remaining,'the memory countdown freezes while paused');
+   await page.locator('#pause-resume').click();
+   await page.waitForFunction(()=>document.querySelector('#story-beat strong')?.textContent==='記憶の灯りが、雪の中に消えた。',null,{timeout:6000});
+   await page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#story-beat')).opacity)>=.8,null,{timeout:2000});
+   await noShortTail(page,'#story-beat strong');
+   assert.equal(await page.locator('#memory-touch').isVisible(),false);assert.equal(await page.locator('#best').innerText(),'0 / 3');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-memory-missed.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS memory countdown, pause and missed feedback',tag);
+  }
+  {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=4&speed=1&t=12.8');await page.locator('#play').click();
    await page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
    await page.locator('#action').focus();await page.keyboard.down('Space');
@@ -177,6 +205,29 @@ try{
   await page.locator('#journey-menu-open').click();await page.locator('#pause-resume').click();assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'critical breath restores focus to an enabled control, not inside a hidden menu');
   await page.locator('#open-collection').evaluate(el=>el.click());await page.keyboard.press('Escape');assert.ok(await page.locator('#journey-menu-open').evaluate(el=>el===document.activeElement),'collection uses the same safe fallback');
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS playable without Web Audio and critical-breath focus recovery');
+ }
+ for(const size of [{width:390,height:844},{width:360,height:640}]){
+  const {ctx,page,errors}=await open(size,'?qa=1&speed=.2&t=12&vital=breath');await page.locator('#play').click();
+  await page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'action','keyboard focus returns after breathing '+size.width);
+  await page.keyboard.down('Space');await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+  await page.keyboard.up('Space');assert.deepEqual(errors,[]);await ctx.close();console.log('PASS breath recovery restores keyboard play '+size.width);
+ }
+ {
+  const moved=await open({width:360,height:640},'?qa=1&speed=.2&t=12&vital=breath');await moved.page.locator('#play').click();
+  await moved.page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await moved.page.locator('#journey-menu-open').focus();
+  await moved.page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+  assert.equal(await moved.page.evaluate(()=>document.activeElement?.id),'journey-menu-open','recovery must not steal intentionally moved focus');
+  assert.deepEqual(moved.errors,[]);await moved.ctx.close();console.log('PASS breath recovery respects moved focus');
+  const resumed=await open({width:360,height:640},'?qa=1&speed=.2&t=12&vital=breath');await resumed.page.locator('#play').click();
+  await resumed.page.waitForFunction(()=>document.querySelector('#action').disabled);
+  await resumed.page.locator('#journey-menu-open').click();await resumed.page.locator('#pause-resume').click();
+  assert.equal(await resumed.page.evaluate(()=>document.activeElement?.id),'journey-menu-open');
+  await resumed.page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+  assert.equal(await resumed.page.evaluate(()=>document.activeElement?.id),'action','menu fallback returns to gameplay after breathing');
+  assert.deepEqual(resumed.errors,[]);await resumed.ctx.close();console.log('PASS breath recovery after pause');
  }
  {
   const {ctx,page}=await open({width:390,height:844});
