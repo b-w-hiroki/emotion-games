@@ -298,7 +298,7 @@ function showKienaideIntro(){
  const line=document.createElement('p');line.className='intro-line';line.setAttribute('aria-live','polite');
  const skip=document.createElement('button');skip.type='button';skip.textContent='スキップして遊ぶ';
  overlay.append(stage,line,skip);document.body.append(overlay);setCandleDialog(overlay,true);
- const iv=window.KienaideView.create(base),g=stage.getContext('2d'),reduced=reducedMotion(),speed=qa?6:1;
+ const iv=KV,g=stage.getContext('2d'),reduced=reducedMotion(),speed=qa?6:1;
  let t0=0,hiddenAt=0,introTime=0,wasHidden=false,finished=false,shown='';const voiced=[0,0];
  const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);setCandleDialog(overlay,false);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:introTime<iv.INTRO_LENGTH});run()};
  skip.addEventListener('click',done,{once:true});
@@ -419,6 +419,7 @@ function candleCaption(s){
  return s.wind>.5&&s.flame<60&&s.memories===2?['風が来る — 長押し',true]:s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
 }
 function drawCandle(dt){
+ if(candleDialog?.id==='kienaide-intro')return;
  const s=state;KV.resize(canvas);
  if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}

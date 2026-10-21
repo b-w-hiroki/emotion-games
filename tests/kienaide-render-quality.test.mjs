@@ -8,10 +8,14 @@ test('adaptive resolution preserves Retina CSS density and bounds 1x display fal
  for(const devicePixelRatio of [1,2,3])for(const quality of [.5,.8,1]){
   const view={},ctx={};
   const canvas={getBoundingClientRect:()=>({width:390,height:844}),getContext:()=>ctx};
-  const context={root:{devicePixelRatio},perf:{quality},view,H:480,Math,canvas};
+  const context={root:{devicePixelRatio},perf:{quality},view,H:480,Math,canvas,resizeTarget:null};
   vm.runInNewContext(resize+';resize(canvas)',context);
   const floor=devicePixelRatio>1?1:.8;assert.ok(canvas.width>=390*floor&&canvas.height>=Math.round(844*floor));assert.ok(view.dpr<=2);
   assert.equal(ctx.imageSmoothingEnabled,true);assert.equal(ctx.imageSmoothingQuality,'low');
+  const next={getBoundingClientRect:canvas.getBoundingClientRect,getContext:()=>ctx};
+  context.next=next;vm.runInNewContext('resize(next)',context);
+  assert.equal(next.width,canvas.width,'a second canvas gets its own backing resolution at the same CSS size');
+  assert.equal(next.height,canvas.height);
  }
 });
 test('high quality character resampling happens once per target size, not every frame',()=>{
