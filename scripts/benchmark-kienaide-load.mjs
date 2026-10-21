@@ -19,8 +19,9 @@ const server=http.createServer((req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
- for(const [label,view] of [['all-at-once',allAtOnce],['opening-first',openingFirst],['prioritized',null]]){
+ for(const [label,view] of [['all-at-once',allAtOnce],['opening-first',openingFirst],['prioritized-first-play',null],['prioritized-repeat-play',null]]){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  if(label==='prioritized-repeat-play')await context.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   if(view)await context.route('**/assets/kienaide-view.js',route=>route.fulfill({status:200,contentType:'text/javascript',body:view}));
   const page=await context.newPage(),session=await context.newCDPSession(page);
   await session.send('Network.enable');

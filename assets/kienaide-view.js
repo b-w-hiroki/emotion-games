@@ -27,7 +27,7 @@ const INTRO=[
  {at:14,text:'「……あそこに、帰りたいの？」',rows:['「……あそこに、帰りたいの？」']},
  {at:16.5,text:'きえないで。',rows:['きえないで。']}
 ];
-function create(base){
+function create(base,{introSeen=false}={}){
  const imgs={},cache=new Map();let manifest=null,failed=0,format='webp';
  const dir=base+'assets/kienaide/paint/';
  const chapterNames=c=>[...BANDS,'lights'].map(l=>c+'-'+l);
@@ -35,7 +35,7 @@ function create(base){
  const requiredForChapter=c=>[...chapterNames(c),...(chapterExtras[c]||[])];
  const deferredNames=[...['ch2','ch3'].flatMap(chapterNames),...chapterExtras.ch3,...chapterExtras.ch4];
  const startNames=['ch1','ch4'].flatMap(chapterNames);
- startNames.push('intro-room','frost-edge','hero-body',...OPENING_HERO_POSES,...LOSS_END_POSES,...FLAME_POSES);
+ startNames.push(...(introSeen?[]:['intro-room']),'frost-edge','hero-body',...OPENING_HERO_POSES,...LOSS_END_POSES,...FLAME_POSES);
  const names=[...startNames,...deferredNames],failures=new Set();
  const metadata=fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false});
  function load(n){return new Promise(resolve=>{
