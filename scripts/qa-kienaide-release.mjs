@@ -66,6 +66,19 @@ try{
   assert.ok(await page.locator('#chapter-wait').isHidden());await ctx.close();console.log('PASS deferred chapter freezes without a blank scene and resumes after loading');
  }
  {
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/ch2-mid.*',async route=>{await gate;await route.continue()});
+  const page=await ctx.newPage();await page.goto(base+'?qa=1&seed=7&t=19.8&speed=1',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
+  await page.locator('#chapter-wait').waitFor({state:'visible',timeout:12000});
+  assert.ok(await page.locator('#stage').getAttribute('data-mote'),'the first memory is still available at this chapter boundary');
+  const count=await page.locator('#best').innerText();await page.keyboard.press('m');
+  assert.equal(await page.locator('#best').innerText(),count,'memory cannot be collected while chapter art holds the journey');
+  release();await page.locator('#chapter-wait').waitFor({state:'hidden'});await page.keyboard.press('m');
+  assert.equal(await page.locator('#best').innerText(),'1 / 3','the paused memory remains collectable after the chapter resumes');
+  await ctx.close();console.log('PASS deferred chapter also freezes keyboard memory collection');
+ }
+ {
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
   await ctx.route('**/paint/ch2-mid.*',route=>route.abort());const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=12',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
