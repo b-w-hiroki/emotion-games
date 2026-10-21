@@ -371,7 +371,8 @@ try{
   smother:{query:'?qa=1&seed=2',policy:'hold'},
   survive:{query:'?qa=1&seed=2&speed=3',policy:'tele',route:'shortcut'},
   wish:{query:'?qa=1&seed=2&speed=6',policy:'tele',collect:true,skipReply:true},
-  dawn:{query:'?qa=1&seed=1&speed=3',policy:'tele',collect:true}
+  // Keep the brief silence long enough for real input to register under a loaded CI runner.
+  dawn:{query:'?qa=1&seed=1&speed=1',policy:'tele',collect:true}
  };
  const endingFacts={blown:['届けられなかった','灯り 0%'],smother:['息が尽き','息 0%'],wish:['記憶は戻った','記憶 3 / 3'],survive:['記憶が欠けていた','道の記憶を取りこぼした'],dawn:['待つ人のもとへ届いた','ふたりで夜を越えた']};
  for(const [id,r] of Object.entries(routes)){
@@ -386,7 +387,7 @@ try{
     if(r.policy==='hold')await press(true);
    }
    if(r.policy==='tele'){
-   const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {at:performance.now(),hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase,timer:document.querySelector('#timer').textContent,light:document.querySelector('#record').textContent,breath:document.querySelector('#breath-meter').getAttribute('aria-valuenow'),held:document.querySelector('#action').classList.contains('is-held')}});
+   const st=await page.evaluate(()=>{const c=document.querySelector('#stage');return {at:performance.now(),hint:document.querySelector('#hint').textContent,mote:c.dataset.mote,phase:c.dataset.phase,reply:c.dataset.reply,timer:document.querySelector('#timer').textContent,light:document.querySelector('#record').textContent,breath:document.querySelector('#breath-meter').getAttribute('aria-valuenow'),held:document.querySelector('#action').classList.contains('is-held')}});
     trace.push({...st,driverHeld:holding});if(trace.length>200)trace.shift();
     phases.add(st.phase);
     if(r.collect&&st.mote){const [x,y]=st.mote.split(',').map(Number);await press(false);await page.locator('#stage').click({position:{x,y},timeout:3000})}
