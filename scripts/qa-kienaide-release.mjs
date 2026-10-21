@@ -2,7 +2,7 @@
 // Optional third argument is the production origin; otherwise serve the current dist build.
 import fs from 'node:fs';import path from 'node:path';import http from 'node:http';import assert from 'node:assert/strict';import * as pw from 'playwright';
 const engine=process.argv[2]||'chromium',remote=process.argv[3],root=path.resolve('dist'),out=path.resolve('artifacts/kienaide');fs.mkdirSync(out,{recursive:true});
-const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.png':'image/png'};
+const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.avif':'image/avif','.png':'image/png'};
 const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost'),rel=url.pathname.replace(/^\/emotion-games\//,''),file=path.resolve(root,rel.endsWith('/')?rel+'index.html':rel);if(!file.startsWith(root+path.sep)){res.writeHead(404);return res.end()}fs.readFile(file,(e,data)=>{res.writeHead(e?404:200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});res.end(e?'':data)})});
 if(!remote)await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const base=remote?remote.replace(/\/$/,'')+'/kienaide/':'http://127.0.0.1:'+server.address().port+'/emotion-games/kienaide/';
@@ -26,7 +26,7 @@ async function noShortTail(page,selector){
 try{
  {
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
-  let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/hero-body.webp',async route=>{await gate;await route.continue()});
+  let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/hero-body.*',async route=>{await gate;await route.continue()});
   const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=1',{waitUntil:'domcontentloaded'});
   assert.ok(await page.locator('#play').isDisabled());assert.ok(await page.locator('#journey-loading').isVisible());
   await page.locator('#play').evaluate(el=>el.click());await page.waitForTimeout(250);
@@ -34,17 +34,28 @@ try{
   release();await page.waitForFunction(()=>!document.querySelector('#play').disabled);
   assert.equal(await page.locator('#journey-loading').count(),0);await page.locator('#play').click();
   assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-playing')));
-  await ctx.close();console.log('PASS delayed paintings gate the start without consuming play time');
+  const formats=await page.evaluate(()=>{const entries=performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/paint/'));return {avif:entries.filter(entry=>entry.name.endsWith('.avif')).length,webp:entries.filter(entry=>entry.name.endsWith('.webp')).length}});
+  assert.ok(formats.avif>=40||formats.webp>=40,'the playable scene must load a complete painting set');
+  if(engine==='chromium')assert.ok(formats.avif>=40,'Chromium should use the smaller AVIF painting set');
+  await ctx.close();console.log('PASS delayed paintings gate the start without consuming play time',formats);
  }
- for(const asset of ['hero-body.webp','manifest.json']){
+ for(const asset of ['hero-body','manifest.json']){
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
-  const pattern='**/paint/'+asset;await ctx.route(pattern,route=>route.abort());const page=await ctx.newPage();
+  const pattern='**/paint/'+asset+(asset==='hero-body'?'.*':'');await ctx.route(pattern,route=>route.abort());const page=await ctx.newPage();
   await page.goto(base,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('#play').dataset.loadFailed);
   assert.match(await page.locator('#journey-loading').innerText(),/読み込めません/);
   await page.screenshot({path:path.join(out,`${engine}-loading-error-${asset.replace('.','-')}.png`)});
   await ctx.unroute(pattern);await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#play').click()]);
   await page.waitForFunction(()=>!document.querySelector('#play').disabled&&!document.querySelector('#play').dataset.loadFailed);
   assert.equal(await page.locator('#collection-progress').innerText(),'結末 1 / 5');await ctx.close();console.log('PASS failed painting reload preserves discoveries',asset);
+ }
+ if(engine==='chromium'&&!remote){
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  await ctx.route('**/paint/hero-body.avif',route=>route.abort());const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base);await page.waitForFunction(()=>!document.querySelector('#play').disabled);
+  assert.ok(await page.evaluate(()=>performance.getEntriesByType('resource').some(entry=>entry.name.endsWith('/paint/hero-body.webp'))),'a failed AVIF painting falls back to WebP');
+  await page.locator('#play').click();assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-playing')));
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS failed AVIF painting uses the approved WebP');
  }
  for(const size of [{width:390,height:844},{width:360,height:640}]){
   const tag=size.width+'x'+size.height;

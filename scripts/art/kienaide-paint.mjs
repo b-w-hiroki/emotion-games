@@ -158,3 +158,4 @@ const manifest = { generator: 'scripts/art/kienaide-paint.mjs', artBible: ['asse
   plate: [PW, PH], chapters, traveller, generated, files: fs.readdirSync(out).filter(f => f.endsWith('.webp')).sort() };
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
 console.log('painted layers:', manifest.files.length, JSON.stringify(traveller));
+await import('./kienaide-avif.mjs');
