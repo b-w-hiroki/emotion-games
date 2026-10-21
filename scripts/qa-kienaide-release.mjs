@@ -183,8 +183,13 @@ try{
   }
  }
  {
-  const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});await page.locator('#play').click();
+  const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});
+  const manifestReads=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.endsWith('/paint/manifest.json')).length);
+  await page.locator('#play').click();
   await page.locator('#kienaide-intro').waitFor({state:'visible'});
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.endsWith('/paint/manifest.json')).length),manifestReads,'the prologue reuses the loaded paintings');
+  assert.ok(await page.locator('#kienaide-intro canvas').evaluate(el=>el.width>=el.getBoundingClientRect().width&&el.height>=el.getBoundingClientRect().height),'intro canvas is sized after switching from the play canvas');
   for(let i=0;i<3;i++){await page.keyboard.press('Tab');assert.ok(await page.locator('#kienaide-intro').evaluate(el=>el.contains(document.activeElement)))}
   assert.ok(await page.locator('#stage').evaluate(el=>!!el.closest('[inert]')));
   await page.keyboard.press('Escape');assert.equal(await page.locator('#kienaide-intro').count(),0);

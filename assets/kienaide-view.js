@@ -48,7 +48,7 @@ function create(base){
   if(!(ms>0&&ms<250))return;perf.ema=perf.ema*.92+ms*.08;perf.frames++;
   if(perf.frames>45&&perf.ema>26&&perf.quality>.5){perf.quality=Math.max(.5,perf.quality*.8);perf.frames=0;view.cssW=0}
  }
- const view={W:360,scale:1,ox:0,oy:0,dpr:1,cssW:0,cssH:0};
+ const view={W:360,scale:1,ox:0,oy:0,dpr:1,cssW:0,cssH:0};let resizeTarget=null;
  function resize(canvas){
   const box=canvas.getBoundingClientRect(),cssW=Math.max(1,box.width),cssH=Math.max(1,box.height);
   const dpr=Math.max(.8,Math.min(2,root.devicePixelRatio||1)*perf.quality);
@@ -56,7 +56,8 @@ function create(base){
   // leaving large black bands above and below the painting.
   const W=Math.max(220,Math.min(480,cssW/cssH*H));
   const scale=Math.min(cssW/W,cssH/H);
-  if(cssW===view.cssW&&cssH===view.cssH&&dpr===view.dpr)return view;
+  if(canvas===resizeTarget&&cssW===view.cssW&&cssH===view.cssH&&dpr===view.dpr)return view;
+  resizeTarget=canvas;
   Object.assign(view,{W,scale,dpr,cssW,cssH,ox:(cssW-W*scale)/2,oy:(cssH-H*scale)/2});
   canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';
