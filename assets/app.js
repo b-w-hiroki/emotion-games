@@ -244,7 +244,7 @@ $('open-collection').addEventListener('click',()=>{renderCollection();if(candle)
 $('close-collection').addEventListener('click',()=>{ if(candle)setCandleDialog($('collection-panel'),false);else $('collection-panel').hidden=true;if(collectionFromMenu){collectionFromMenu=false;openJourneyMenu();return}if(candle&&mode==='play')focusCandleAction();else $('open-collection').focus()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!candle)$('collection-panel').hidden=true});
 function collectCandleMemory(input){
- const s=state,m=s.mote;if(mode!=='play'||candleDialog||document.hidden||landscapeMode.matches||!m||!K.collect(s,m.id))return false;
+ const s=state,m=s.mote;if(mode!=='play'||candleDialog||document.hidden||landscapeMode.matches||chapterLoading||!m||!K.collect(s,m.id))return false;
  s.storyPause=elapsed+4;best.textContent=s.memories+' / 3';KA.cues.memory(s.memories);mark('memory_collected',{memory_id:m.id,count:s.memories,input});
  if(document.activeElement===memoryTouch)focusCandleAction();memoryTouch.hidden=true;setStory(m.title,m.line);return true;
 }
