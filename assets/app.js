@@ -162,7 +162,9 @@ function openJourneyMenu(){if(mode!=='play'||candleDialog)return;setCandleDialog
 try{high=Number(localStorage.getItem('emotion-v1-'+slug))||0}catch(_){}if(!candle)best.textContent=high?String(high):'—';
 const state={};
 // 004 uses dedicated modules: rules (kienaide-core.js), layered art (kienaide-view.js), sound (kienaide-audio.js).
-const K=candle?window.KienaideCore:null,KV=candle?window.KienaideView.create(base):null,KA=candle?window.KienaideAudio.create():null;
+const introKey='emotion-kienaide-intro-v1';let introSeen=false;
+if(candle)try{introSeen=localStorage.getItem(introKey)==='1'}catch(_){}
+const K=candle?window.KienaideCore:null,KV=candle?window.KienaideView.create(base,{introSeen}):null,KA=candle?window.KienaideAudio.create():null;
 const chapterWait=candle?document.createElement('div'):null;
 if(chapterWait){chapterWait.id='chapter-wait';chapterWait.className='chapter-wait';chapterWait.setAttribute('role','status');chapterWait.setAttribute('aria-live','polite');chapterWait.hidden=true;document.querySelector('.arena').append(chapterWait)}
 if(candle){
@@ -288,13 +290,11 @@ function finish(id,n,description){
 }
 // The first journey starts with the prologue「最後の灯り」(about 19 s). It can be skipped at any time and
 // is skipped automatically on later plays. Audio starts only because the player pressed Play.
-const introKey='emotion-kienaide-intro-v1';
 let introRaf=0;
 function showKienaideIntro(){
  if(!candle)return run();
  clearKienaideTitle();
- let seen=false;try{seen=localStorage.getItem(introKey)==='1'}catch(_){}
- if(seen)return run();
+ if(introSeen)return run();
  KA.init();KA.resume();
  const overlay=document.createElement('div');overlay.id='kienaide-intro';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','導入　最後の灯り');
  const stage=document.createElement('canvas');stage.setAttribute('aria-hidden','true');

@@ -34,10 +34,11 @@ try{
   release();await page.waitForFunction(()=>!document.querySelector('#play').disabled);
   assert.equal(await page.locator('#journey-loading').count(),0);await page.locator('#play').click();
   assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-playing')));
-  const formats=await page.evaluate(()=>{const entries=performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/paint/'));return {avif:entries.filter(entry=>entry.name.endsWith('.avif')).length,webp:entries.filter(entry=>entry.name.endsWith('.webp')).length,unused:entries.filter(entry=>/\/(?:hero-blink|hero-walk|hero-rim|hero-hands|flame)\.(?:avif|webp)$/.test(entry.name)).map(entry=>entry.name)}});
-  assert.ok(formats.avif>=24||formats.webp>=24,'the playable opening needs its complete painting set');
-  if(engine==='chromium')assert.ok(formats.avif>=24,'Chromium should use the smaller AVIF opening set');
+  const formats=await page.evaluate(()=>{const entries=performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/paint/'));return {avif:entries.filter(entry=>entry.name.endsWith('.avif')).length,webp:entries.filter(entry=>entry.name.endsWith('.webp')).length,unused:entries.filter(entry=>/\/(?:hero-blink|hero-walk|hero-rim|hero-hands|flame)\.(?:avif|webp)$/.test(entry.name)).map(entry=>entry.name),intro:entries.filter(entry=>/\/intro-room\.(?:avif|webp)$/.test(entry.name)).length}});
+  assert.ok(formats.avif>=23||formats.webp>=23,'the repeat-play opening needs its complete painting set');
+  if(engine==='chromium')assert.ok(formats.avif>=23,'Chromium should use the smaller AVIF opening set');
   assert.deepEqual(formats.unused,[],'unused legacy paintings should not consume network bandwidth');
+  assert.equal(formats.intro,0,'repeat play must not request the first-run-only room painting');
   await ctx.close();console.log('PASS delayed opening paintings gate the start without consuming play time',formats);
  }
  {
@@ -256,9 +257,11 @@ try{
  }
  {
   const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);
   const manifestReads=await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.endsWith('/paint/manifest.json')).length);
   await page.locator('#play').click();
   await page.locator('#kienaide-intro').waitFor({state:'visible'});
+  assert.ok(await page.evaluate(()=>performance.getEntriesByType('resource').some(entry=>/\/paint\/intro-room\.(?:avif|webp)$/.test(entry.name))),'first play still loads the room painting');
   await page.waitForTimeout(300);
   assert.equal(await page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.endsWith('/paint/manifest.json')).length),manifestReads,'the prologue reuses the loaded paintings');
   assert.ok(await page.locator('#kienaide-intro canvas').evaluate(el=>el.width>=el.getBoundingClientRect().width&&el.height>=el.getBoundingClientRect().height),'intro canvas is sized after switching from the play canvas');
