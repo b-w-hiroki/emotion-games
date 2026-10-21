@@ -363,6 +363,7 @@ body.kienaide-playing[data-game=kienaide] .game-shell.ember .action.art-hold{min
 body[data-game=kienaide] .game-shell.ember .story-beat.show{animation:kienaide-story-brief 4.2s ease both}
 @keyframes kienaide-story-brief{0%{opacity:0;transform:translateY(7px)}12%,72%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(0)}}
 body[data-game=kienaide] .curtain:not(.journey-title) #curtain-kicker{display:none}
+body[data-game=kienaide] .game-shell.ember .curtain.tableau #curtain-title{max-width:100%;font-size:clamp(25px,8vw,36px);white-space:nowrap}
 body[data-game=kienaide] .curtain:not(.journey-title) .ending-meaning small{display:none}
 body[data-game=kienaide] .curtain:not(.journey-title) .ending-meaning{border-left:0;border-top:1px solid #e7bd7b88;text-align:center;background:#172235a8;padding:9px 12px;margin:5px auto}
 body[data-game=kienaide] .curtain:not(.journey-title) .ending-meaning strong{font-size:13px}

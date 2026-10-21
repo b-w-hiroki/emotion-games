@@ -413,6 +413,8 @@ try{
   const scenePath=path.join(out,`${engine}-ending-${id}-scene.png`);
   await page.screenshot({path:scenePath});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
+  const heading=await page.locator('#curtain-title').evaluate(el=>({height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight),overflow:el.scrollWidth>el.clientWidth+1}));
+  assert.ok(heading.height<heading.lineHeight*1.5&&!heading.overflow,id+' ending headline must fit one line immediately: '+JSON.stringify(heading));
   await page.waitForTimeout(400);
   await page.waitForFunction(()=>document.querySelector('#moment-save').dataset.state==='ready');
   assert.ok(await page.locator('#moment-save').isEnabled(),id+' ending PNG must be prepared before sharing');
@@ -427,6 +429,10 @@ try{
   assert.ok(copy.lines.length<=1||copy.lines.at(-1).length>5,id+' ending must not strand a short tail: '+JSON.stringify(copy.lines));
   const cardPath=path.join(out,`${engine}-ending-${id}-card.png`);
   await page.screenshot({path:cardPath});
+  await page.setViewportSize({width:360,height:640});
+  const narrowHeading=await page.locator('#curtain-title').evaluate(el=>({height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight),overflow:el.scrollWidth>el.clientWidth+1}));
+  assert.ok(narrowHeading.height<narrowHeading.lineHeight*1.5&&!narrowHeading.overflow,id+' ending headline must fit at 360x640: '+JSON.stringify(narrowHeading));
+  if(id==='blown')await page.screenshot({path:path.join(out,`${engine}-360x640-ending-blown-card.png`)});
   // The result copy may frame the painting, but it must not veil its central character.
   const crop={left:105,top:350,width:180,height:200};
   const [scenePixels,cardPixels]=await Promise.all([scenePath,cardPath].map(file=>sharp(file).extract(crop).removeAlpha().raw().toBuffer()));
