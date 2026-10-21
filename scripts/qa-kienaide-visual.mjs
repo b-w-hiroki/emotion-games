@@ -406,6 +406,7 @@ try{
   const got=await page.locator('#stage').getAttribute('data-ending');
   if(got!==id){fs.writeFileSync(path.join(out,`${engine}-${id}-input-failure.json`),JSON.stringify({expected:id,actual:got,query:r.query,trace},null,2));await page.screenshot({path:path.join(out,`${engine}-${id}-input-failure.png`)})}
   assert.equal(got,id,'route for '+id+' reached '+got);
+   if(id==='dawn')assert.equal(trace.findLast(st=>st.phase==='window-reply')?.reply,'bright','dawn requires the bright window reply');
   if(r.policy==='tele'){for(const phase of ['gust-warning','gust-active','silence','window-reply'])assert.ok(phases.has(phase),'route '+(r.route||'rest')+' must keep '+phase);assert.equal(await page.locator('#timer').innerText(),'00:00','arrival resolves at the route-specific deadline')}
   await page.waitForTimeout(1500);
   assert.equal(await page.locator('#stage').getAttribute('data-pose'),'end-'+id,'ending must use its dedicated character painting');
