@@ -35,9 +35,40 @@ try{
   assert.equal(await page.locator('#journey-loading').count(),0);await page.locator('#play').click();
   assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-playing')));
   const formats=await page.evaluate(()=>{const entries=performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/paint/'));return {avif:entries.filter(entry=>entry.name.endsWith('.avif')).length,webp:entries.filter(entry=>entry.name.endsWith('.webp')).length}});
-  assert.ok(formats.avif>=40||formats.webp>=40,'the playable scene must load a complete painting set');
-  if(engine==='chromium')assert.ok(formats.avif>=40,'Chromium should use the smaller AVIF painting set');
-  await ctx.close();console.log('PASS delayed paintings gate the start without consuming play time',formats);
+  assert.ok(formats.avif>=34||formats.webp>=34,'the playable opening needs its complete painting set');
+  if(engine==='chromium')assert.ok(formats.avif>=34,'Chromium should use the smaller AVIF opening set');
+  await ctx.close();console.log('PASS delayed opening paintings gate the start without consuming play time',formats);
+ }
+ {
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{
+   localStorage.setItem('emotion-kienaide-intro-v1','1');const AC=window.AudioContext||window.webkitAudioContext;
+   if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.waitAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}
+  });
+  let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/ch2-mid.*',async route=>{await gate;await route.continue()});
+  const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=12',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
+  await page.locator('#chapter-wait').waitFor({state:'visible',timeout:12000});
+  const before=await page.locator('#stage').getAttribute('data-elapsed');
+  assert.equal(await page.locator('#stage').getAttribute('data-chapter'),'1','the first painting stays visible at the chapter boundary');
+  assert.ok(Number(before)<=20,'the journey clock must not enter the missing chapter');
+  assert.ok(await page.locator('#action').isDisabled(),'the hold control must pause with the journey');
+  await page.waitForFunction(()=>!window.waitAudio||window.waitAudio.state==='suspended');
+  await page.screenshot({path:path.join(out,`${engine}-deferred-chapter-wait.png`)});
+  await page.waitForTimeout(350);assert.equal(await page.locator('#stage').getAttribute('data-elapsed'),before,'the journey clock stays frozen while a chapter is missing');
+  release();await page.waitForFunction(()=>document.querySelector('#stage').dataset.chapter==='2');
+  await page.waitForFunction(()=>!window.waitAudio||window.waitAudio.state==='running');
+  assert.ok(await page.locator('#chapter-wait').isHidden());await ctx.close();console.log('PASS deferred chapter freezes without a blank scene and resumes after loading');
+ }
+ {
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
+  await ctx.route('**/paint/ch2-mid.*',route=>route.abort());const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=12',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
+  await page.locator('#chapter-wait button').waitFor({state:'visible',timeout:12000});
+  assert.equal(await page.locator('#stage').getAttribute('data-chapter'),'1');
+  assert.match(await page.locator('#chapter-wait').innerText(),/読み込めません/);
+  await ctx.unroute('**/paint/ch2-mid.*');await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#chapter-wait button').click()]);
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);assert.equal(await page.locator('#collection-progress').innerText(),'結末 1 / 5');
+  await ctx.close();console.log('PASS failed deferred chapter offers a visible recovery');
  }
  for(const asset of ['hero-body','manifest.json']){
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});

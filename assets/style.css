@@ -322,6 +322,9 @@ body.kienaide-title-screen .curtain .btn.art-start:active:not(:disabled){transfo
 body.kienaide-title-screen .curtain .btn.art-start:disabled{opacity:.78;cursor:progress}
 body.kienaide-title-screen .curtain .btn.art-start:focus-visible{outline:3px solid #ffe3a8;outline-offset:3px}
 body.kienaide-title-screen .journey-loading{position:absolute;z-index:4;bottom:max(108px,calc(env(safe-area-inset-bottom) + 88px));left:24px;right:24px;margin:0;padding:8px;border-radius:12px;background:#07101dee;color:#fff1d9;font-size:12px;text-wrap:balance;pointer-events:none}
+body[data-game=kienaide] .chapter-wait:not([hidden]){position:absolute;z-index:12;left:50%;top:32%;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:10px;width:min(80%,280px);padding:18px;border:1px solid #e8c58e88;border-radius:16px;background:#0b1729ed;box-shadow:0 12px 36px #020611a8;color:#fff0d2;text-align:center}
+body[data-game=kienaide] .chapter-wait p{margin:0;font-size:14px;line-height:1.5}
+body[data-game=kienaide] .chapter-wait button{min-width:140px;min-height:48px;border:1px solid #f0cc98;border-radius:10px;background:#172940;color:#fff0d2;font:inherit}
 body.kienaide-title-screen .curtain .btn.art-start[data-load-failed]{font-size:19px}
 @media(max-height:700px){body.kienaide-title-screen .curtain.journey-title{padding-top:max(64px,calc(env(safe-area-inset-top) + 52px))}body.kienaide-title-screen .journey-title-hero{height:53vh;bottom:75px}body.kienaide-title-screen #curtain-title{font-size:clamp(38px,11vw,52px)}body.kienaide-title-screen .journey-title-note{bottom:150px;font-size:9px}}
 @media(prefers-reduced-motion:reduce){body.kienaide-title-screen .curtain .btn.art-start{transition:none}}

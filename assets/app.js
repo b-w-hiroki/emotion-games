@@ -117,12 +117,13 @@ if(candle){
 }
 const actionCue=candle?action.querySelector('.action-cue'):null,actionMain=candle?action.querySelector('.action-main b'):null,actionSub=candle?action.querySelector('.action-main em'):null;
 let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
+let chapterLoading=false,chapterLoadingError=false;
 let distancePanel=null,distanceValue=null,distanceFill=null,routePanel=null;
 let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
 let pendingActionFocus=false;
 function focusCandleAction(){const fallback=action.disabled;(fallback?$('journey-menu-open'):action).focus();pendingActionFocus=fallback}
-function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||landscapeMode.matches||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()}
+function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||landscapeMode.matches||chapterLoading||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()}
 if(candle)document.addEventListener('focusin',e=>{if(pendingActionFocus&&e.target!==action&&e.target!==document.body)pendingActionFocus=false});
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
@@ -162,6 +163,8 @@ try{high=Number(localStorage.getItem('emotion-v1-'+slug))||0}catch(_){}if(!candl
 const state={};
 // 004 uses dedicated modules: rules (kienaide-core.js), layered art (kienaide-view.js), sound (kienaide-audio.js).
 const K=candle?window.KienaideCore:null,KV=candle?window.KienaideView.create(base):null,KA=candle?window.KienaideAudio.create():null;
+const chapterWait=candle?document.createElement('div'):null;
+if(chapterWait){chapterWait.id='chapter-wait';chapterWait.className='chapter-wait';chapterWait.setAttribute('role','status');chapterWait.setAttribute('aria-live','polite');chapterWait.hidden=true;document.querySelector('.arena').append(chapterWait)}
 if(candle){
  const titleImages=[...curtain.querySelectorAll('img')].map(img=>img.decode().then(()=>true,()=>false));
  Promise.all([KV.loaded,...titleImages]).then(results=>{const play=$('play');play.disabled=false;play.removeAttribute('aria-busy');if(results.every(Boolean))$('journey-loading').remove();else{$('journey-loading').textContent='絵を読み込めませんでした。通信を確認して読み直してください。';play.dataset.loadFailed='1';play.textContent='読み直す ↻'}});
@@ -316,7 +319,7 @@ let candlePointer=null,candleKey=null,shelterRelease=false;
 function releaseCandleInput(){const pointer=candlePointer;candlePointer=null;candleKey=null;if(pointer!==null&&action.hasPointerCapture?.(pointer))action.releasePointerCapture(pointer)}
 function holdRelease(intent=false){if(!down)return;down=false;if(candle)releaseCandleInput();if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;shelterRelease=!!intent;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
 landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease();syncCandleAudio()});
-action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(landscapeMode.matches||candleDialog||document.hidden)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
+action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(landscapeMode.matches||candleDialog||document.hidden||chapterLoading)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 const pointerRelease=(e,intent=false)=>{if(!candle||e.pointerId===candlePointer)holdRelease(intent)};
 action.addEventListener('pointerup',e=>pointerRelease(e,true));action.addEventListener('pointercancel',pointerRelease);
 if(candle){
@@ -366,6 +369,7 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
 let lastShield=false;
 function startCandle(){
  momentCard.reset();
+ chapterLoading=false;chapterLoadingError=false;chapterWait.hidden=true;
  memoryTouch.hidden=true;
  pendingActionFocus=false;
  releaseCandleInput();shelterRelease=false;KA.init();KA.resume();KA.startJourney();runCount++;
@@ -423,13 +427,13 @@ function drawCandle(dt){
  const s=state;KV.resize(canvas);
  if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
- const paused=!!(document.hidden||landscapeMode.matches||candleDialog||s.routeChoice==='pending'),step=paused?0:dt*(s.qaSpeed||1);
+ const paused=!!(document.hidden||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'),step=paused?0:dt*(s.qaSpeed||1);
  const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);
  $('hint').textContent=text;
-  const mainText=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる',subText=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る',disableHold=s.oxygen<=22&&!s.shield;
+  const mainText=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる',subText=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る',disableHold=chapterLoading||s.oxygen<=22&&!s.shield;
   if(actionCue.textContent!==text)actionCue.innerHTML=guidanceMarkup(text);if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;
   if(action.disabled!==disableHold){const focused=document.activeElement===action;action.disabled=disableHold;if(disableHold&&focused)pendingActionFocus=true;else if(!disableHold){if(pendingActionFocus&&!candleDialog&&(document.activeElement===document.body||document.activeElement===$('journey-menu-open')))action.focus({preventScroll:true});pendingActionFocus=false}}
   action.classList.toggle('is-held',!!s.shield);action.classList.toggle('is-warning',!!warn);
@@ -458,6 +462,33 @@ function candleEnding(){
  $('next-hint').hidden=!missing.length;if(missing.length){const next=missing[(runCount+missing.length)%missing.length];$('next-hint').textContent='まだ見ぬ結末のヒント：'+next.hint}
  const token=endingAt;momentCard.reset();setTimeout(()=>{if(mode==='end'&&endingAt===token){curtain.classList.remove('hidden');curtain.scrollTop=0;momentCard.prepare()}},reduced?500:2600);
 }
-function tick(now){let dt=last?Math.min((now-last)/1000,.035):0;last=now;const orientationPaused=!!(candle&&(landscapeMode.matches||document.hidden));if(orientationPaused)dt=0;if(mode==='play'&&$('collection-panel').hidden){if(!(candle&&(state.routeChoice==='pending'||orientationPaused||candleDialog)))elapsed+=dt*(candle?(state.qaSpeed||1):1);if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0')}else if(!$('collection-panel').hidden){dt=0}if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide'){drawCandle(dt);if(mode==='play')KV.sample(dt*1000)}else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);raf=requestAnimationFrame(tick)}
+function syncChapterWait(chapter){
+ const waiting=!KV.chapterReady(chapter);
+ if(waiting&&!chapterLoading)holdRelease();
+ if(waiting!==chapterLoading){chapterLoading=waiting;syncCandleAudio()}
+ chapterWait.hidden=!waiting;
+ if(waiting){
+  const error=KV.chapterFailed(chapter);
+  if(chapterWait.dataset.chapter!==String(chapter)||chapterLoadingError!==error){
+   chapterLoadingError=error;chapterWait.dataset.chapter=String(chapter);
+   chapterWait.innerHTML=error?'<p>絵を読み込めませんでした。</p><button type="button">読み直す ↻</button>':'<p>次の景色を準備しています…</p>';
+   if(error)chapterWait.querySelector('button').addEventListener('click',()=>location.reload());
+  }
+ }else{chapterLoadingError=false;chapterWait.dataset.chapter=''}
+ return !waiting;
+}
+function tick(now){
+ let dt=last?Math.min((now-last)/1000,.035):0;last=now;
+ const orientationPaused=!!(candle&&(landscapeMode.matches||document.hidden));if(orientationPaused)dt=0;
+ if(mode==='play'&&$('collection-panel').hidden){
+  if(!(candle&&(state.routeChoice==='pending'||orientationPaused||candleDialog))){
+   const advance=dt*(candle?(state.qaSpeed||1):1);
+   if(!candle||syncChapterWait(K.chapterAt(elapsed+advance,state.journey)))elapsed+=advance;
+  }
+  if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0');
+ }else if(!$('collection-panel').hidden)dt=0;
+ if(slug==='girigiri')drawG(dt);else if(slug==='ato-hitotsu')drawStack(dt);else if(slug==='kienaide'){drawCandle(dt);if(mode==='play')KV.sample(dt*1000)}else if(state.micro)window.EmotionMissions.frame(ctx,state.micro,elapsed,dt,finish);else drawDoor(dt);
+ raf=requestAnimationFrame(tick);
+}
 raf=requestAnimationFrame(tick);
 })();
