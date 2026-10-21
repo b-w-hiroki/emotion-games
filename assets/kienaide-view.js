@@ -29,15 +29,24 @@ const INTRO=[
 function create(base){
  const imgs={},cache=new Map();let manifest=null,failed=0,format='webp';
  const dir=base+'assets/kienaide/paint/';
- const names=[];for(const c of CH)for(const l of [...BANDS,'lights'])names.push(c+'-'+l);
- names.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
+ const chapterNames=c=>[...BANDS,'lights'].map(l=>c+'-'+l);
+ const deferredNames=['ch2','ch3'].flatMap(chapterNames);
+ const startNames=['ch1','ch4'].flatMap(chapterNames);
+ startNames.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
+ const names=[...startNames,...deferredNames],failures=new Set();
  const metadata=fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false});
- const loaded=supportsAvif().then(avif=>{format=avif?'avif':'webp';const pending=names.map(n=>new Promise(resolve=>{
+ function load(n){return new Promise(resolve=>{
   const img=new Image();img.decoding='async';imgs[n]=img;img.onload=()=>resolve(true);
-  img.onerror=()=>{if(img.src.endsWith('.avif'))img.src=dir+n+'.webp';else{failed++;resolve(false)}};
+  img.onerror=()=>{if(img.src.endsWith('.avif'))img.src=dir+n+'.webp';else{failed++;failures.add(n);resolve(false)}};
   img.src=dir+n+'.'+format;
- }));return Promise.all([...pending,metadata]).then(results=>results.every(Boolean))});
+ })}
+ const loaded=supportsAvif().then(avif=>{format=avif?'avif':'webp';return Promise.all([...startNames.map(load),metadata]).then(results=>results.every(Boolean))});
+ // Later chapters begin only after the playable opening is complete, so they cannot compete
+ // with the room, the first street and the finale for the first connection's bandwidth.
+ const allLoaded=loaded.then(ok=>ok?Promise.all(deferredNames.map(load)).then(results=>results.every(Boolean)):false);
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
+ const chapterReady=ci=>!!manifest&&chapterNames(CH[ci]).every(ready);
+ const chapterFailed=ci=>chapterNames(CH[ci]).some(n=>failures.has(n));
  // A fixed paper grain helps separately generated paintings sit inside the same film.
  // Keep it fixed: stepping the tile made fine painted edges appear to crawl.
  const grain=document.createElement('canvas');grain.width=grain.height=64;
@@ -430,7 +439,7 @@ function create(base){
    else{ctx.font='600 15px system-ui,sans-serif';ctx.fillStyle='#fff2d8';line.rows.forEach((row,i)=>ctx.fillText(row,W/2,64+i*24))}ctx.restore()}
   end(ctx);
  }
- return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,loaded,imgs,failed:()=>failed,names,manifest:()=>manifest};
+ return {view,sample,perf,resize,toWorld,toCss,frame,endingFrame,introFrame,INTRO,INTRO_LENGTH,flameAnchor,ready,loaded,allLoaded,chapterReady,chapterFailed,imgs,failed:()=>failed,names,manifest:()=>manifest};
 }
 root.KienaideView={create,INTRO};
 })(typeof window!=='undefined'?window:globalThis);

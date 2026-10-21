@@ -127,8 +127,9 @@ test('audio follows the active journey, modal dialogs and background state',asyn
  const app=fs.readFileSync('assets/app.js','utf8');
  const lifecycle=app.match(/function syncCandleAudio\(\)\{([^\n]+)\}/)[1];
  for(const [mode,candleDialog,expected] of [['intro',null,'resume'],['intro',{id:'kienaide-intro'},'resume'],['play',null,'resume'],['play',{id:'journey-menu'},'suspend'],['play',{id:'collection-panel'},'suspend'],['play',{id:'route-choice'},'suspend'],['end',null,null]]){
-  const calls=[],context={candle:true,mode,candleDialog,document:{hidden:false},landscapeMode:{matches:false},KA:{ready:true,resume:()=>calls.push('resume'),suspend:()=>calls.push('suspend')}};
+  const calls=[],context={candle:true,mode,candleDialog,chapterLoading:false,document:{hidden:false},landscapeMode:{matches:false},KA:{ready:true,resume:()=>calls.push('resume'),suspend:()=>calls.push('suspend')}};
   vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,expected?[expected]:[],mode+' '+candleDialog?.id);
+  context.chapterLoading=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);context.chapterLoading=false;
   context.document.hidden=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);
   context.document.hidden=false;context.landscapeMode.matches=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);
  }
