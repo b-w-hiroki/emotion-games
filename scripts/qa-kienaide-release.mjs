@@ -56,12 +56,15 @@ try{
   assert.ok(await page.locator('#action').isDisabled(),'the hold control must pause with the journey');
   await page.waitForFunction(()=>!window.waitAudio||window.waitAudio.state==='suspended');
   await page.screenshot({path:path.join(out,`${engine}-deferred-chapter-wait.png`)});
-  // The canvas data attribute can trail the wait notice by one rendered frame on WebKit.
-  await page.waitForTimeout(350);
+  // Short zero-delta frames must not briefly reopen the hold control while the
+  // next chapter image is still withheld.
+  for(let sample=0;sample<10;sample++){
+   await page.waitForTimeout(50);
+   assert.ok(await page.locator('#action').isDisabled(),'the hold control stays unavailable throughout the wait');
+  }
   const after=await page.locator('#stage').getAttribute('data-elapsed');
   assert.ok(Number(after)<=20,'the journey clock must not cross the missing chapter boundary');
   assert.equal(await page.locator('#stage').getAttribute('data-chapter'),'1','the previous chapter remains visible throughout the wait');
-  assert.ok(await page.locator('#action').isDisabled(),'the hold control stays unavailable throughout the wait');
   release();await page.waitForFunction(()=>document.querySelector('#stage').dataset.chapter==='2');
   await page.waitForFunction(()=>!window.waitAudio||window.waitAudio.state==='running');
   assert.ok(await page.locator('#chapter-wait').isHidden());await ctx.close();console.log('PASS deferred chapter freezes without a blank scene and resumes after loading');
