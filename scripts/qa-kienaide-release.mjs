@@ -72,6 +72,7 @@ try{
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
   await page.locator('#chapter-wait').waitFor({state:'visible',timeout:12000});
   assert.ok(await page.locator('#stage').getAttribute('data-mote'),'the first memory is still available at this chapter boundary');
+  await page.screenshot({path:path.join(out,`${engine}-deferred-memory-wait.png`)});
   const count=await page.locator('#best').innerText();await page.keyboard.press('m');
   assert.equal(await page.locator('#best').innerText(),count,'memory cannot be collected while chapter art holds the journey');
   release();await page.locator('#chapter-wait').waitFor({state:'hidden'});await page.keyboard.press('m');
