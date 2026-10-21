@@ -22,7 +22,8 @@ try{
  await page.waitForFunction(()=>document.querySelector('#stage').dataset.ending,null,{timeout:10000});
  const ending=await page.locator('#stage').getAttribute('data-ending'),reply=await page.locator('#stage').getAttribute('data-reply');
  await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:8000});
- await page.waitForTimeout(900);void phase;
+ await page.locator('#moment-save[data-state="ready"]').waitFor({timeout:10000});
+ await page.waitForTimeout(1200);void phase;
  const length=(Date.now()-t0)/1000;
  const video=await page.video().path();await ctx.close();
  const webm=path.join(out,'clip-finale.webm');fs.renameSync(video,webm);
@@ -31,7 +32,10 @@ try{
  const mp4=path.join(out,'clip-finale.mp4');
  // Keep the last 12 s: the warning, the gust, the silence, the reply and the ending scene.
  const probe=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',webm],{encoding:'utf8'}),total=Number(probe.stdout)||length,start=Math.max(0,total-12);
- const r=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(start),'-i',webm,'-t','12','-vf','scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2','-r','30','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',mp4],{encoding:'utf8'});
+ // Keep every pixel of the narrow game viewport; fill the wider 9:16 canvas with
+ // a dimmed, blurred copy of the same shot instead of black bars or a UI crop.
+ const fill='[0:v]split=2[back][front];[back]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:4,eq=brightness=-0.20:saturation=0.65[bg];[front]scale=1080:1920:force_original_aspect_ratio=decrease[game];[bg][game]overlay=(W-w)/2:(H-h)/2,format=yuv420p';
+ const r=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(start),'-i',webm,'-t','12','-filter_complex',fill,'-r','30','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',mp4],{encoding:'utf8'});
  fs.writeFileSync(path.join(out,'clip-finale.json'),JSON.stringify({ending,reply,recordedSeconds:Math.round(length*10)/10,mp4:r.status===0},null,1));
  if(r.status!==0&&process.env.CI)throw new Error('Release clip requires MP4: '+(r.stderr||r.error?.message||r.status));
  if(r.status===0){const probe=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',mp4],{encoding:'utf8'}),seconds=Number(probe.stdout);if(!(seconds>=6&&seconds<=12.1))throw new Error('Release MP4 must be 6–12 seconds: '+seconds)}
