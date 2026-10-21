@@ -117,7 +117,7 @@ if(candle){
 }
 const actionCue=candle?action.querySelector('.action-cue'):null,actionMain=candle?action.querySelector('.action-main b'):null,actionSub=candle?action.querySelector('.action-main em'):null;
 let mode='intro',last=0,elapsed=0,answer='',points=0,high=0,down=false,raf=0;
-let chapterLoading=false,chapterLoadingError=false;
+let chapterLoading=false,chapterLoadingError=false,chapterLoadingTarget=-1;
 let distancePanel=null,distanceValue=null,distanceFill=null,routePanel=null;
 let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
@@ -369,7 +369,7 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
 let lastShield=false;
 function startCandle(){
  momentCard.reset();
- chapterLoading=false;chapterLoadingError=false;chapterWait.hidden=true;
+ chapterLoading=false;chapterLoadingError=false;chapterLoadingTarget=-1;chapterWait.hidden=true;
  memoryTouch.hidden=true;
  pendingActionFocus=false;
  releaseCandleInput();shelterRelease=false;KA.init();KA.resume();KA.startJourney();runCount++;
@@ -466,6 +466,7 @@ function syncChapterWait(chapter){
  const waiting=!KV.chapterReady(chapter);
  if(waiting&&!chapterLoading)holdRelease();
  if(waiting!==chapterLoading){chapterLoading=waiting;syncCandleAudio()}
+ chapterLoadingTarget=waiting?chapter:-1;
  chapterWait.hidden=!waiting;
  if(waiting){
   const error=KV.chapterFailed(chapter);
@@ -483,7 +484,10 @@ function tick(now){
  if(mode==='play'&&$('collection-panel').hidden){
   if(!(candle&&(state.routeChoice==='pending'||orientationPaused||candleDialog))){
    const advance=dt*(candle?(state.qaSpeed||1):1);
-   if(!candle||syncChapterWait(K.chapterAt(elapsed+advance,state.journey)))elapsed+=advance;
+   // A zero-delta frame must not recheck the previous, already-ready chapter.
+   // Keep waiting for the chapter that first blocked the boundary.
+   const nextChapter=candle?K.chapterAt(elapsed+advance,state.journey):0;
+   if(!candle||syncChapterWait(Math.max(nextChapter,chapterLoadingTarget)))elapsed+=advance;
   }
   if(!candle)timer.textContent='00:'+String(Math.floor(elapsed)).padStart(2,'0');
  }else if(!$('collection-panel').hidden)dt=0;
