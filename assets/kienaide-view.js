@@ -10,6 +10,8 @@ function blendPose(g,previous,current,fade){g.clearRect(0,0,g.canvas.width,g.can
 const HERO_POSES=['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
 const END_POSES=['end-blown','end-smother','end-wish','end-survive','end-dawn'];
 const FLAME_POSES=['flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'];
+const AVIF_PROBE='data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAAImlsb2MAAAAAREAAAQABAAAAAAD6AAEAAAAAAAAAFwAAACNpaW5mAAAAAAABAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAAfbWRhdBIACgc4AAYQENBpMgoZgAAAQACwEqAg';
+function supportsAvif(){return new Promise(resolve=>{const probe=new Image();probe.onload=()=>resolve(probe.naturalWidth===1);probe.onerror=()=>resolve(false);probe.src=AVIF_PROBE})}
 // Extra zoom per band while walking through a chapter: the foreground leads, the sky barely moves.
 const DEPTH={sky:0,far:.012,mid:.03,fore:.06};
 // Focal point of each plate (vanishing point / destination) in plate pixels; the camera keeps it framed.
@@ -25,14 +27,16 @@ const INTRO=[
  {at:16.5,text:'きえないで。',rows:['きえないで。']}
 ];
 function create(base){
- const imgs={},cache=new Map();let manifest=null,failed=0;
+ const imgs={},cache=new Map();let manifest=null,failed=0,format='webp';
  const dir=base+'assets/kienaide/paint/';
  const names=[];for(const c of CH)for(const l of [...BANDS,'lights'])names.push(c+'-'+l);
  names.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
- const pending=[];
- for(const n of names){const img=new Image();img.decoding='async';pending.push(new Promise(resolve=>{img.onload=()=>resolve(true);img.onerror=()=>{failed++;resolve(false)}}));img.src=dir+n+'.webp';imgs[n]=img}
- pending.push(fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false}));
- const loaded=Promise.all(pending).then(results=>results.every(Boolean));
+ const metadata=fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false});
+ const loaded=supportsAvif().then(avif=>{format=avif?'avif':'webp';const pending=names.map(n=>new Promise(resolve=>{
+  const img=new Image();img.decoding='async';imgs[n]=img;img.onload=()=>resolve(true);
+  img.onerror=()=>{if(img.src.endsWith('.avif'))img.src=dir+n+'.webp';else{failed++;resolve(false)}};
+  img.src=dir+n+'.'+format;
+ }));return Promise.all([...pending,metadata]).then(results=>results.every(Boolean))});
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
  // A fixed paper grain helps separately generated paintings sit inside the same film.
  // Keep it fixed: stepping the tile made fine painted edges appear to crawl.

@@ -1,7 +1,7 @@
 // Real ending buttons + real PNG download; native share is stubbed, never posted externally.
 import fs from 'node:fs';import path from 'node:path';import http from 'node:http';import assert from 'node:assert/strict';import sharp from 'sharp';import * as pw from 'playwright';
 const engine=process.argv[2]||'chromium',remote=process.argv[3],root=path.resolve('dist'),out=path.resolve('artifacts/kienaide');fs.mkdirSync(out,{recursive:true});
-const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.png':'image/png'};
+const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json','.webp':'image/webp','.avif':'image/avif','.png':'image/png'};
 const server=http.createServer((req,res)=>{const rel=new URL(req.url,'http://localhost').pathname.replace(/^\/emotion-games\//,''),file=path.resolve(root,rel.endsWith('/')?rel+'index.html':rel);if(!file.startsWith(root+path.sep)){res.writeHead(404);return res.end()}fs.readFile(file,(e,data)=>{res.writeHead(e?404:200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});res.end(e?'':data)})});
 if(!remote)await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const base=remote?remote.replace(/\/$/,'')+'/kienaide/':'http://127.0.0.1:'+server.address().port+'/emotion-games/kienaide/';

@@ -8,7 +8,7 @@ const root=path.resolve('dist');
 const out=path.resolve('artifacts');
 fs.mkdirSync(path.join(out,'social'),{recursive:true});
 fs.mkdirSync(path.join(out,'screenshots'),{recursive:true});
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.svg':'image/svg+xml'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.webp':'image/webp','.avif':'image/avif'};
 const server=http.createServer((req,res)=>{
  try{
   const url=new URL(req.url,'http://127.0.0.1');

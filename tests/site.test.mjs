@@ -31,6 +31,14 @@ test('four separately painted Kienaide chapters ship in the build',async()=>{
  // Four different compositions, not one picture recoloured or cropped.
  for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){let d=0;for(let k=0;k<means[i].length;k++)d+=Math.abs(means[i][k]-means[j][k]);assert.ok(d/means[i].length>14,'chapters '+(i+1)+'/'+(j+1)+' differ ('+(d/means[i].length).toFixed(1)+')')}
 });
+test('every approved painting has a smaller AVIF alternative and keeps its WebP fallback',async()=>{
+ const {default:sharp}=await import('sharp');const files=JSON.parse(fs.readFileSync('assets/kienaide/paint/manifest.json','utf8')).files.filter(file=>!file.endsWith('-basefore.webp'));
+ let webpBytes=0,avifBytes=0;
+ for(const file of files){const webp='assets/kienaide/paint/'+file,avif=webp.replace(/\.webp$/,'.avif');webpBytes+=fs.statSync(webp).size;avifBytes+=fs.statSync(avif).size;
+  const original=await sharp(webp).metadata(),alternative=await sharp(avif).metadata();assert.equal(alternative.format,'heif');assert.equal(alternative.compression,'av1');assert.equal(alternative.width,original.width);assert.equal(alternative.height,original.height)}
+ assert.ok(avifBytes<webpBytes*.8,'AVIF transfer must save at least 20 percent without removing WebP');
+ assert.match(fs.readFileSync('scripts/build.mjs','utf8'),/endsWith\('\.avif'\)/,'the alternate paintings ship in dist');
+});
 test('the lead character poses, rim light and living flame are separately replaceable',()=>{
  const view=fs.readFileSync('assets/kienaide-view.js','utf8');
  for(const name of ['hero-body','hero-shield','hero-walk','hero-brace','hero-rim','flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'])assert.ok(fs.statSync('assets/kienaide/paint/'+name+'.webp').size>2000,name);

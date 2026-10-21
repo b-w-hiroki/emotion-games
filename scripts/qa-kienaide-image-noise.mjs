@@ -31,5 +31,19 @@ for(const name of ['hero-walk','hero-shield']){
 }
 const files=JSON.parse(fs.readFileSync(dir+'manifest.json','utf8')).files;
 for(const file of files){const m=await sharp(dir+file).metadata();assert.ok(m.width>0&&m.height>0,file+' must decode')}
-fs.writeFileSync(path.join(out,'image-noise-report.json'),JSON.stringify({filesDecoded:files.length,results},null,2)+'\n');
-console.log('PASS image noise / silhouette audit',JSON.stringify(results));
+const variants=[];
+for(const name of ['hero-body','hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup','end-blown','end-smother','end-wish','end-survive','end-dawn']){
+ const source=dir+name+'.webp',alternative=dir+name+'.avif',meta=await sharp(source).metadata(),w=meta.width,h=meta.height;
+ const a=await sharp(source).ensureAlpha().raw().toBuffer(),b=await sharp(alternative).ensureAlpha().raw().toBuffer();let intersection=0,union=0,energyA=0,energyB=0;
+ for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+  const i=(y*w+x)*4,aa=a[i+3]>128,bb=b[i+3]>128;if(aa&&bb)intersection++;if(aa||bb)union++;
+  if(a[i+3]<245||b[i+3]<245)continue;
+  const lap=d=>{const l=j=>.2126*d[j]+.7152*d[j+1]+.0722*d[j+2];return Math.abs(4*l(i)-l(i-4)-l(i+4)-l(i-w*4)-l(i+w*4))};energyA+=lap(a);energyB+=lap(b);
+ }
+ const silhouetteIoU=intersection/union,detailRatio=energyB/energyA;
+ assert.ok(silhouetteIoU>.995,name+' AVIF must keep the approved silhouette: '+silhouetteIoU);
+ assert.ok(detailRatio>.9&&detailRatio<1.05,name+' AVIF must preserve painted detail without adding speckle: '+detailRatio);
+ variants.push({name,silhouetteIoU,detailRatio});
+}
+fs.writeFileSync(path.join(out,'image-noise-report.json'),JSON.stringify({filesDecoded:files.length,results,variants},null,2)+'\n');
+console.log('PASS image noise / silhouette audit',JSON.stringify({results,variants:variants.length}));
