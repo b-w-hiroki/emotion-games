@@ -1,4 +1,4 @@
-// Compare the previous all-at-once loader with the current opening-first loader on one build.
+// Compare the old all-at-once and opening-first loaders with the current prioritized loader.
 // Diagnostic only: network emulation is not a physical-device or public-network measurement.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -7,7 +7,8 @@ import {execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 
 const root=path.resolve('dist');
-const baseline=execFileSync('git',['show','0a3a25e:assets/kienaide-view.js'],{encoding:'utf8'});
+const allAtOnce=execFileSync('git',['show','0a3a25e:assets/kienaide-view.js'],{encoding:'utf8'});
+const openingFirst=execFileSync('git',['show','07aa74b:assets/kienaide-view.js'],{encoding:'utf8'});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webp':'image/webp','.avif':'image/avif','.png':'image/png'};
 const server=http.createServer((req,res)=>{
  const rel=new URL(req.url,'http://localhost').pathname.replace(/^\/emotion-games\//,'');
@@ -18,7 +19,7 @@ const server=http.createServer((req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
- for(const [label,view] of [['all-at-once',baseline],['opening-first',null]]){
+ for(const [label,view] of [['all-at-once',allAtOnce],['opening-first',openingFirst],['prioritized',null]]){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   if(view)await context.route('**/assets/kienaide-view.js',route=>route.fulfill({status:200,contentType:'text/javascript',body:view}));
   const page=await context.newPage(),session=await context.newCDPSession(page);
