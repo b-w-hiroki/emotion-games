@@ -34,9 +34,10 @@ try{
   release();await page.waitForFunction(()=>!document.querySelector('#play').disabled);
   assert.equal(await page.locator('#journey-loading').count(),0);await page.locator('#play').click();
   assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('kienaide-playing')));
-  const formats=await page.evaluate(()=>{const entries=performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/paint/'));return {avif:entries.filter(entry=>entry.name.endsWith('.avif')).length,webp:entries.filter(entry=>entry.name.endsWith('.webp')).length}});
-  assert.ok(formats.avif>=34||formats.webp>=34,'the playable opening needs its complete painting set');
-  if(engine==='chromium')assert.ok(formats.avif>=34,'Chromium should use the smaller AVIF opening set');
+  const formats=await page.evaluate(()=>{const entries=performance.getEntriesByType('resource').filter(entry=>entry.name.includes('/paint/'));return {avif:entries.filter(entry=>entry.name.endsWith('.avif')).length,webp:entries.filter(entry=>entry.name.endsWith('.webp')).length,unused:entries.filter(entry=>/\/(?:hero-blink|hero-walk|hero-rim|hero-hands|flame)\.(?:avif|webp)$/.test(entry.name)).map(entry=>entry.name)}});
+  assert.ok(formats.avif>=24||formats.webp>=24,'the playable opening needs its complete painting set');
+  if(engine==='chromium')assert.ok(formats.avif>=24,'Chromium should use the smaller AVIF opening set');
+  assert.deepEqual(formats.unused,[],'unused legacy paintings should not consume network bandwidth');
   await ctx.close();console.log('PASS delayed opening paintings gate the start without consuming play time',formats);
  }
  {
@@ -69,6 +70,16 @@ try{
   await ctx.unroute('**/paint/ch2-mid.*');await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#chapter-wait button').click()]);
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);assert.equal(await page.locator('#collection-progress').innerText(),'結末 1 / 5');
   await ctx.close();console.log('PASS failed deferred chapter offers a visible recovery');
+ }
+ {
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/end-dawn.*',async route=>{await gate;await route.continue()});
+  const page=await ctx.newPage();await page.goto(base+'?qa=1&t=70&speed=1',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
+  await page.locator('#chapter-wait').waitFor({state:'visible',timeout:12000});
+  assert.equal(await page.locator('#stage').getAttribute('data-chapter'),'4','the final painting remains visible while its ending art streams');
+  assert.ok(await page.locator('#action').isDisabled());release();await page.locator('#chapter-wait').waitFor({state:'hidden'});
+  assert.ok(await page.locator('#action').isEnabled());await ctx.close();console.log('PASS final chapter waits for return ending art without delaying Play');
  }
  for(const asset of ['hero-body','manifest.json']){
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});

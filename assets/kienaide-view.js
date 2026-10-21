@@ -7,8 +7,9 @@ const H=480,PW=900,PH=1200;
 const CH=['ch1','ch2','ch3','ch4'],BANDS=['sky','far','mid','fore'];
 // Weighted premultiplied layers keep their opaque overlap solid instead of leaking the scenery.
 function blendPose(g,previous,current,fade){g.clearRect(0,0,g.canvas.width,g.canvas.height);g.save();g.globalAlpha=1-fade;g.drawImage(previous,0,0,g.canvas.width,g.canvas.height);g.globalCompositeOperation='lighter';g.globalAlpha=fade;g.drawImage(current,0,0,g.canvas.width,g.canvas.height);g.restore()}
-const HERO_POSES=['hero-shield','hero-blink','hero-walk','hero-brace','hero-cold','hero-breathless','hero-relief','hero-lookup'];
-const END_POSES=['end-blown','end-smother','end-wish','end-survive','end-dawn'];
+const OPENING_HERO_POSES=['hero-shield','hero-brace','hero-breathless','hero-relief'];
+const LOSS_END_POSES=['end-blown','end-smother'];
+const RETURN_END_POSES=['end-wish','end-survive','end-dawn'];
 const FLAME_POSES=['flame-calm','flame-afraid','flame-comfort','flame-suffocating','flame-hope'];
 const AVIF_PROBE='data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAAImlsb2MAAAAAREAAAQABAAAAAAD6AAEAAAAAAAAAFwAAACNpaW5mAAAAAAABAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAAfbWRhdBIACgc4AAYQENBpMgoZgAAAQACwEqAg';
 function supportsAvif(){return new Promise(resolve=>{const probe=new Image();probe.onload=()=>resolve(probe.naturalWidth===1);probe.onerror=()=>resolve(false);probe.src=AVIF_PROBE})}
@@ -30,9 +31,11 @@ function create(base){
  const imgs={},cache=new Map();let manifest=null,failed=0,format='webp';
  const dir=base+'assets/kienaide/paint/';
  const chapterNames=c=>[...BANDS,'lights'].map(l=>c+'-'+l);
- const deferredNames=['ch2','ch3'].flatMap(chapterNames);
+ const chapterExtras={ch3:['hero-cold'],ch4:['hero-lookup',...RETURN_END_POSES]};
+ const requiredForChapter=c=>[...chapterNames(c),...(chapterExtras[c]||[])];
+ const deferredNames=[...['ch2','ch3'].flatMap(chapterNames),...chapterExtras.ch3,...chapterExtras.ch4];
  const startNames=['ch1','ch4'].flatMap(chapterNames);
- startNames.push('intro-room','frost-edge','hero-body','hero-hands','hero-rim','flame',...HERO_POSES,...END_POSES,...FLAME_POSES);
+ startNames.push('intro-room','frost-edge','hero-body',...OPENING_HERO_POSES,...LOSS_END_POSES,...FLAME_POSES);
  const names=[...startNames,...deferredNames],failures=new Set();
  const metadata=fetch(dir+'manifest.json').then(r=>{if(!r.ok)throw new Error('manifest');return r.json()}).then(m=>{manifest=m;return true}).catch(()=>{failed++;return false});
  function load(n){return new Promise(resolve=>{
@@ -41,12 +44,12 @@ function create(base){
   img.src=dir+n+'.'+format;
  })}
  const loaded=supportsAvif().then(avif=>{format=avif?'avif':'webp';return Promise.all([...startNames.map(load),metadata]).then(results=>results.every(Boolean))});
- // Later chapters begin only after the playable opening is complete, so they cannot compete
- // with the room, the first street and the finale for the first connection's bandwidth.
+ // Later chapters and return-only poses begin after the playable opening is complete.
+ // The bridge and final chapter gates also wait for the poses each scene can actually use.
  const allLoaded=loaded.then(ok=>ok?Promise.all(deferredNames.map(load)).then(results=>results.every(Boolean)):false);
  const ready=n=>{const i=imgs[n];return !!(i&&i.complete&&i.naturalWidth>0)};
- const chapterReady=ci=>!!manifest&&chapterNames(CH[ci]).every(ready);
- const chapterFailed=ci=>chapterNames(CH[ci]).some(n=>failures.has(n));
+ const chapterReady=ci=>!!manifest&&requiredForChapter(CH[ci]).every(ready);
+ const chapterFailed=ci=>requiredForChapter(CH[ci]).some(n=>failures.has(n));
  // A fixed paper grain helps separately generated paintings sit inside the same film.
  // Keep it fixed: stepping the tile made fine painted edges appear to crawl.
  const grain=document.createElement('canvas');grain.width=grain.height=64;
