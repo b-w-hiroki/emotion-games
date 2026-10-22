@@ -2,4 +2,3 @@ node_modules/
 dist/
 artifacts/
 assets/kienaide/paint/incoming/
-package-lock.json
