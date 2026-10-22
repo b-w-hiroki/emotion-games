@@ -1,6 +1,6 @@
 # 004「きえないで。」現行設計
 
-最終照合: 2026-10-22。プレイヤー向けの振る舞いは [仕様書](./KIENAIDE-SPEC.md) を正本とする。本書は変更箇所とテストを判断するための責務・データ・不変条件を記す。
+最終照合: 2026-10-23。プレイヤー向けの振る舞いは [仕様書](./KIENAIDE-SPEC.md) を正本とする。本書は変更箇所とテストを判断するための責務・データ・不変条件を記す。
 
 ## 構成と依存方向
 
@@ -13,7 +13,7 @@
 | 結末PNGの準備、共有・ダウンロード、失敗と周回競合 | `assets/kienaide-card.js` | `tests/kienaide-card.test.mjs`、`scripts/qa-kienaide-card.mjs` |
 | 絵画原本とruntime WebP | `assets/kienaide/paint/src/`、`assets/kienaide/paint/manifest.json`、`scripts/art/kienaide-paint.mjs` | 画像デコード、ノイズ比較、四章・五結末キャプチャ |
 | 静的サイトの組立と配信 | `scripts/build.mjs`、`.github/workflows/pages.yml` | `npm run verify`、公開URL |
-| 004専用の入口と題字 | `assets/app.js`、`assets/style.css`、`assets/kienaide-lettering.svg` | ルートとタイトル画面のモバイル表示、他作品の直通URL維持 |
+| 004専用の入口と題字 | `assets/app.js`、`assets/style.css`、`assets/kienaide-lettering.webp`、`assets/kienaide/paint/src/title-brush-master.png` | ルートとタイトル画面のモバイル表示、他作品の直通URL維持、共有画像との題字一致 |
 | 共有サムネイル | `assets/kienaide-thumbnail-bg.webp`、`scripts/art/kienaide-thumbnail.mjs`、`assets/kienaide-thumbnail.png` | 1200×630、題字の判読性、少女と炎の位置、入口と004のOG画像一致 |
 | 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域 | `scripts/qa-research.mjs`、360×640／390×844の回答スクリーンショット |
 
