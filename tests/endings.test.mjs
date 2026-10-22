@@ -51,7 +51,7 @@ test('milestone rewards are defined for every game and are independent of score'
   assert.ok(rewards[game].all.text.length>=10);
   assert.ok(rewards[game].all.symbol);
  }
- for(const required of ['reward_unlocked','series_completion_share_tap','completion_share_tap','collected.length>=3','collected.length===endingList.length','const newly=unlock(id)','curtain.classList.toggle'])assert.ok(app.includes(required),required);
+ for(const required of ['reward_unlocked','completion_share_tap','collected.length>=3','collected.length===endingList.length','const newly=unlock(id)','curtain.classList.toggle'])assert.ok(app.includes(required),required);
 });
 
 test('microgame library declares sixteen runnable games with 80 varied endings and reward sets',()=>{

@@ -13,6 +13,7 @@
 | 結末PNGの準備、共有・ダウンロード、失敗と周回競合 | `assets/kienaide-card.js` | `tests/kienaide-card.test.mjs`、`scripts/qa-kienaide-card.mjs` |
 | 絵画原本とruntime WebP | `assets/kienaide/paint/src/`、`assets/kienaide/paint/manifest.json`、`scripts/art/kienaide-paint.mjs` | 画像デコード、ノイズ比較、四章・五結末キャプチャ |
 | 静的サイトの組立と配信 | `scripts/build.mjs`、`.github/workflows/pages.yml` | `npm run verify`、公開URL |
+| 004専用の入口と題字 | `assets/app.js`、`assets/style.css`、`assets/kienaide-lettering.svg` | ルートとタイトル画面のモバイル表示、他作品の直通URL維持 |
 | 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域 | `scripts/qa-research.mjs`、360×640／390×844の回答スクリーンショット |
 
 `kienaide-core.js` はDOM・音・保存を知らない決定論的なルール層。`app.js` が入力をcoreへ渡し、返されたイベントをview/audio/DOM/計測へ配る。表示やサウンドを変更しても、結末判定の正本を別に作らない。
