@@ -37,9 +37,10 @@ try{
   console.log('PASS',game.slug,game.theme);
  }
  await page.goto(base);
- assert.ok((await page.locator('.archive-progress').innerText()).includes(' / 100')||(await page.locator('.archive-progress').innerText()).includes('/100'));
- assert.equal(await page.locator('.card').count(),20);
- await page.screenshot({path:path.join(out,'all-20-hub-390.png'),fullPage:true});
+ assert.ok(await page.locator('#home-title').isVisible());
+ assert.equal(new URL(await page.locator('.kienaide-home-play').getAttribute('href'),base).pathname,'/emotion-games/kienaide/');
+ assert.ok(await page.evaluate(slugs=>slugs.every(slug=>JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)||'[]').length===1),extras.map(game=>game.slug)),'the focused home preserves all sixteen prototype discoveries');
+ await page.screenshot({path:path.join(out,'kienaide-focused-home-390.png'),fullPage:true});
  await browserContext.close();
  // Compact phone should not clip the primary controls.
  const small=await browser.newContext({viewport:{width:360,height:640},isMobile:true,hasTouch:true});
@@ -51,5 +52,5 @@ try{
  }
  await small.close();
  assert.deepEqual(issues,[]);
- console.log('PASS all sixteen games / collection persistence / full hub / small-phone layout');
+ console.log('PASS all sixteen games / collection persistence / focused home / small-phone layout');
 }finally{await browser.close();await new Promise(ok=>server.close(ok))}

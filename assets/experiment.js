@@ -23,14 +23,14 @@ function exportJson(){
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function menu(){
- const el=document.querySelector('.hero');
+ const el=document.querySelector('.hero,.kienaide-home');
  if(!el)return;
  const panel=document.createElement('section');panel.className='study-dashboard';
  panel.innerHTML='<strong>検証モード / RESEARCH</strong><p>初見理解・感情・再プレイ動機を、1プレイごとに任意で記録できます。データはこの端末内だけに保存され、送信されません。</p><div class="study-actions"><span id="study-count"></span><button type="button" id="study-export">結果JSONを保存</button><button type="button" id="study-clear">記録を削除</button></div>';
  el.append(panel);panel.querySelector('#study-export').addEventListener('click',exportJson);
  panel.querySelector('#study-clear').addEventListener('click',()=>{if(!window.confirm('この端末の検証記録を削除しますか？'))return;records=[];save();panel.querySelector('#study-count').textContent='0 回のプレイ'});
  panel.querySelector('#study-count').textContent=records.length+' 回のプレイ';
- document.querySelectorAll('.card').forEach(a=>{const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()});
+ document.querySelectorAll('.card,.kienaide-home-play').forEach(a=>{const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()});
 }
 function optionPairs(options){return options.map(option=>Array.isArray(option)?option:[option,option])}
 function survey(){

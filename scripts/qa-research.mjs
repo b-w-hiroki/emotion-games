@@ -77,7 +77,13 @@ try{
  const selected=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
  assert.equal(selected.route,'rest','the choice is saved before an ending, including if the player exits early');
  assert.equal(selected.completed,false);
- await page.waitForFunction(()=>!document.querySelector('#study-feedback').hidden,null,{timeout:15000});
+ const decision=page.locator('#route-choice [data-decision]').first();
+ const deadline=Date.now()+20000;
+ while(Date.now()<deadline&&await page.locator('#study-feedback').isHidden()){
+  if(await decision.isVisible())await decision.click();
+  else await page.waitForTimeout(100);
+ }
+ await page.locator('#study-feedback').waitFor({state:'visible',timeout:1000});
  await page.locator('#study-feedback summary').click();
  assert.equal(await page.locator('.study-questions fieldset').count(),4);
  assert.match(await page.locator('[data-question="intensity"] legend').innerText(),/1:弱い／5:強い/);
@@ -115,9 +121,16 @@ try{
  assert.ok(await page.locator('#study-export').isVisible());
  assert.ok(await page.locator('#study-clear').isVisible());
  assert.ok((await page.locator('.study-dashboard').innerText()).includes('3 回のプレイ'));
- const first=await page.locator('.card').first().getAttribute('href');assert.ok(first.includes('study=1'));
+ await page.setViewportSize({width:360,height:640});
+ const dashboardButtons=await page.locator('.study-actions button').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {height:r.height,left:r.left,right:r.right}}));
+ for(const button of dashboardButtons)assert.ok(button.height>=44&&button.left>=0&&button.right<=360,'study export and clear must be reachable on a narrow phone: '+JSON.stringify(button));
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'study home must not scroll sideways');
+ await page.screenshot({path:'artifacts/screenshots/kienaide-study-home-'+engine+'-360.png',fullPage:true});
+ const first=await page.locator('.kienaide-home-play').getAttribute('href');assert.ok(first.includes('study=1'));
+ await page.locator('.kienaide-home-play').click();assert.equal(new URL(page.url()).searchParams.get('study'),'1');
  console.log('PASS blind research mode / four-question survey / local persistence / export UI');
  // No experimental data is added for a regular visitor.
+ await page.goto(origin);assert.equal(await page.locator('.study-dashboard').count(),0);
  await page.goto(origin+'kasa-o/');
  assert.equal(await page.locator('#study-feedback').count(),0);
  assert.deepEqual(errors,[]);
