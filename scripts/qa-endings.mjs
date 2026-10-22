@@ -227,13 +227,17 @@ async function chooseFork(page,route='rest'){
     'kienaide':['blown','smother','wish','survive','dawn']};
   await page.addInitScript(all=>{for(const [slug,ids] of Object.entries(all))localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(ids))},all);
   await page.goto(base);
-  assert.ok(await page.locator('.archive-award').isVisible(),'archive completion badge');
-  assert.ok((await page.locator('.archive-progress').innerText()).includes('100/100'));
-  assert.ok(await page.locator('#share-archive').isVisible());
+  assert.ok(await page.locator('.kienaide-home-play').isVisible(),'Kienaide remains the home focus');
+  assert.equal(new URL(await page.locator('.kienaide-home-play').getAttribute('href'),base).pathname,'/emotion-games/kienaide/');
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
   assert.equal(overflow,false,'no horizontal scrolling');
-  await page.screenshot({path:'artifacts/screenshots/archive-100of100-390.png'});
+  await page.screenshot({path:'artifacts/screenshots/kienaide-home-100of100-390.png'});
+  await page.goto(base+'girigiri/');
+  assert.equal(await page.locator('#collection-progress').innerText(),'結末 5 / 5','a retained prototype keeps its discoveries');
+  await page.goto(base+'kienaide/');
+  assert.equal(await page.locator('#collection-progress').innerText(),'結末 5 / 5','Kienaide keeps its discoveries');
+  assert.ok(await page.evaluate(all=>Object.entries(all).every(([slug,ids])=>JSON.stringify(JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)))===JSON.stringify(ids)),all),'all 100 discoveries survive the home change');
   assert.deepEqual(errors,[]);
-  await ctx.close();console.log('PASS: complete 20/20 archive');
+  await ctx.close();console.log('PASS: focused home retains 20 playable routes and 100 discoveries');
  }
 }finally{await browser.close();await new Promise(ok=>server.close(ok))}
