@@ -379,6 +379,23 @@ body[data-game=kienaide] .result-more summary::-webkit-details-marker{display:no
 body[data-game=kienaide] .result-more summary::after{content:'＋';color:#e6c389}
 body[data-game=kienaide] .result-more[open] summary::after{content:'−'}
 body[data-game=kienaide] .result-more .share-btn,body[data-game=kienaide] .result-more .related{display:block;width:100%;min-height:44px;margin:8px 0 0;text-align:center}
+
+/* 004 has its own hand-drawn wordmark; keep the real heading text for accessibility. */
+.kienaide-lettering{display:block;color:transparent!important;text-shadow:none!important;font-size:0!important;line-height:0!important;overflow:hidden;background:url('./kienaide-lettering.svg') center/contain no-repeat;width:min(100%,520px);height:clamp(64px,18vw,108px);margin-inline:auto!important;white-space:nowrap}
+body[data-game=kienaide] .game-heading .kienaide-lettering{height:52px;width:230px;margin-block:3px 1px}
+body.kienaide-playing[data-game=kienaide] .game-heading .kienaide-lettering{height:34px;width:160px}
+body.kienaide-title-screen #curtain-title.kienaide-lettering{height:clamp(75px,23vw,120px);width:min(100%,430px);margin:8px auto 5px}
+.kienaide-home{max-width:1140px;margin:auto;padding:8px clamp(14px,4vw,36px) 24px}
+.kienaide-home-art{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:min(730px,calc(100svh - 130px));overflow:hidden;border:1px solid #856c66;border-radius:24px;background:linear-gradient(180deg,#07101dc9 0%,#07101d05 35%,#07101d16 61%,#07101de6 100%),url('./kienaide-v3/snow-town.webp') center 53%/cover no-repeat;box-shadow:0 25px 70px #02050c99}
+.kienaide-home-copy{text-align:center;padding:clamp(44px,9vh,84px) 20px 0;text-shadow:0 2px 18px #040b18}
+.kienaide-home-kicker{font-size:11px;letter-spacing:.24em;font-weight:700;color:#f7d6a7}
+.kienaide-home-copy .kienaide-lettering{margin-block:12px 0!important}
+.kienaide-home-copy p{margin:0;font-size:clamp(14px,3.4vw,17px);letter-spacing:.13em;color:#fff0d7}
+.kienaide-home-bottom{display:flex;align-items:end;justify-content:space-between;gap:20px;padding:20px clamp(20px,5vw,50px) clamp(24px,5vw,42px)}
+.kienaide-home-bottom>span{font-size:13px;color:#e7decd;text-shadow:0 2px 9px #030814}
+.kienaide-home-play{display:flex;align-items:center;justify-content:space-between;gap:32px;min-width:240px;min-height:62px;padding:14px 23px;border:1px solid #e4c18d;border-radius:15px;background:#122039ed;color:#fff1d5;font-size:19px;font-weight:750;box-shadow:0 8px 25px #02071399}
+.kienaide-home-play:hover{background:#213653}
+@media(max-width:600px){.kienaide-home{padding-top:0}.kienaide-home-art{min-height:calc(100svh - 135px);border-radius:18px;background-position:center}.kienaide-home-bottom{flex-direction:column;align-items:stretch;text-align:center;gap:12px}.kienaide-home-play{min-width:0;justify-content:center}}
 body[data-game=kienaide] .result-more .volume-row{justify-content:center;min-height:44px}
 body[data-game=kienaide] .result-more .next-hint{text-align:center}
 @media(prefers-reduced-motion:reduce){body[data-game=kienaide] .game-shell.ember .story-beat.show{animation:none;opacity:1}}

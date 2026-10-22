@@ -7,7 +7,7 @@ const DT=1/30;
 // Replays a whole night. policy(state,time,holding) → holding; collect=true taps every memory.
 function play(seed,policy,{collect=false,until=95,route}={}){
  const s=K.create({seed}),log=[];let t=0,hold=false;
- while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was,releaseIntent:was&&!hold}))log.push({...e,t});if(s.routeChoice==='pending'){if(route)K.chooseRoute(s,route,t);else s.routeChoice='legacy-test'}if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
+ while(!s.ended&&t<until){const was=hold;hold=!!policy(s,t,hold);for(const e of K.step(s,t,DT,{shield:hold,wasShield:was,releaseIntent:was&&!hold}))log.push({...e,t});if(s.routeChoice==='pending'){if(route)K.chooseRoute(s,route,t);else s.routeChoice='legacy-test'}if(s.decisionPending)K.chooseDecision(s,s.decisionPending==='hearth'?'feed':'shelter',t);if(collect&&s.mote)K.collect(s,s.mote.id);t+=DT}
  return {s,log};
 }
 const tele=(s,t,h)=>(!h&&s.wind>.61)?true:(h&&(s.wind<.44||s.oxygen<28))?false:h;
@@ -23,6 +23,20 @@ test('the five endings are reachable by distinct play styles',()=>{
  assert.equal(play(1,tele,{collect:true}).s.ended,'dawn','memories + a bright flame reach おかえり');
  const d=delayed(.6),wish=play(2,(s,t,h)=>s.finalePhase==='silence'?true:d(s,t,h),{collect:true});
  assert.equal(wish.s.memories,3);assert.equal(wish.s.ended,'wish','memories without the window reply stay わすれない');
+});
+test('three choices pause the night and trade flame, breath and exposure',()=>{
+ const s=K.create({seed:7});K.step(s,28,DT,{});assert.equal(K.chooseRoute(s,'rest',28),true);
+ assert.equal(K.step(s,42,DT,{}).some(e=>e.type==='decision-choice'&&e.kind==='hearth'),true);
+ assert.deepEqual(K.step(s,42,DT,{}),[],'the clock stays frozen until a choice');
+ const flame=s.flame,oxygen=s.oxygen;assert.equal(K.chooseDecision(s,'feed',42),true);assert.equal(s.flame,flame+14);assert.equal(s.oxygen,oxygen-18);
+ assert.equal(K.step(s,56,DT,{}).some(e=>e.type==='decision-choice'&&e.kind==='bridge'),true);
+ assert.equal(K.chooseDecision(s,'spark',56),true);assert.equal(s.flame,Math.min(100,flame+24));assert.equal(s.emberRiskUntil,62);
+ const exposed=K.create({seed:7});exposed.routeChoice='rest';exposed.decisionIndex=2;K.step(exposed,57,DT,{});K.step(s,57,DT,{});assert.ok(s.wind>exposed.wind,'fire recovery exposes the hands to stronger wind');
+ assert.equal(s.decisions.length,2);assert.equal(K.chooseDecision(s,'shelter',57),false);
+});
+test('a warm tailwind rewards release rather than shielding',()=>{
+ const one=K.create({seed:3}),event=one.events.find(e=>e.kind==='lull');one.events=[event];one.routeChoice='rest';one.decisionIndex=2;const two=K.create({seed:3});two.events=[event];two.routeChoice='rest';two.decisionIndex=2;
+ K.step(one,event.at+.1,1,{shield:false});K.step(two,event.at+.1,1,{shield:true});assert.ok(one.flame>two.flame+2.5);assert.ok(one.oxygen>two.oxygen);
 });
 test('ending resolution is the single gallery source of truth',()=>{
  assert.equal(K.arrivalEnding({memories:3,flame:68,replyLevel:'bright'}),'dawn');
@@ -203,6 +217,7 @@ test('both routes give the final chapter twenty seconds before arrival',()=>{
  assert.equal(K.chapterAt(69.9),2);assert.equal(K.chapterAt(70),3,'the unbranched night keeps its chapter boundary');
  for(const [route,arrival] of [['shortcut',82],['rest',98]]){
   const s=K.create({seed:4});s.events=[];K.step(s,28,DT,{});K.chooseRoute(s,route,28);
+  s.decisionIndex=2;
   const boundary=arrival-20;
   assert.equal(K.chapterAt(boundary-.1,s.journey),2);assert.equal(K.chapterAt(boundary,s.journey),3);
   s.chapter=2;s.bridgeFrost=.8;

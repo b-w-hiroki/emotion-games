@@ -128,12 +128,12 @@ function create(base,{introSeen=false}={}){
    if(f.d===3){ctx.fillStyle='rgba(225,235,250,.055)';ctx.beginPath();ctx.arc(x,y,r*3.8,0,6.283);ctx.fill()}}
   ctx.restore();
  }
- function windLines(ctx,t,wind,warn,reduced){
-  const W=view.W,strength=Math.max(0,wind-.25)+warn*.5;if(strength<=0)return;
+ function windLines(ctx,t,wind,warn,reduced,kind){
+  const warm=kind==='lull',W=view.W,strength=Math.max(0,wind-.25)+warn*.5+(warm?.18:0);if(strength<=0)return;
   ctx.save();ctx.lineCap='round';
   for(let i=0;i<8;i++){const y=100+i*38+Math.sin(i*2.1)*12,len=60+strength*100,speed=reduced?60:150+strength*260;
    const x0=((t*speed+i*137)%(W+len*2))-len,g=ctx.createLinearGradient(x0,0,x0+len,0);
-   g.addColorStop(0,'rgba(210,225,245,0)');g.addColorStop(.5,'rgba(220,232,248,'+Math.min(.45,.08+strength*.38)+')');g.addColorStop(1,'rgba(210,225,245,0)');
+   g.addColorStop(0,warm?'rgba(255,207,141,0)':'rgba(210,225,245,0)');g.addColorStop(.5,(warm?'rgba(255,211,151,':'rgba(220,232,248,')+Math.min(.45,.08+strength*.38)+')');g.addColorStop(1,warm?'rgba(255,207,141,0)':'rgba(210,225,245,0)');
    ctx.strokeStyle=g;ctx.lineWidth=1+strength*2.4;ctx.beginPath();ctx.moveTo(x0,y);ctx.quadraticCurveTo(x0+len*.5,y-6-strength*10,x0+len,y);ctx.stroke()}
   ctx.restore();
  }
@@ -147,7 +147,7 @@ function create(base,{introSeen=false}={}){
   ctx.restore();return true;
  }
  function embers(ctx,st){
-  if(!(st.flame>0)||st.reduced)return false;const a=flameAnchor(),energy=Math.min(1,st.flame/70)*(st.shield?.55:Math.min(1,.2+(st.wind||0)));
+  if(!(st.flame>0)||st.reduced)return false;const a=st.at||flameAnchor(),energy=Math.min(1,st.flame/70)*(st.shield?.55:Math.min(1,.2+(st.wind||0)));
   ctx.save();ctx.globalCompositeOperation='lighter';
   for(let i=0;i<7;i++){const age=((st.t*.42+i*.173)%1),curl=Math.sin(st.t*2.1+i*2.7);const x=a.x+curl*(5+age*10)+(st.wind||0)*age*15,y=a.y+(st.bob||0)-8-age*(22+i*2);ctx.globalAlpha=(1-age)*energy;ctx.fillStyle=i%3?'#ffc477':'#fff0b4';ctx.fillRect(x,y,i%3?1.4:2,i%3?2.6:2)}
   ctx.restore();return true;
@@ -174,7 +174,10 @@ function create(base,{introSeen=false}={}){
   const t=manifest?.traveller,w0=t?t.size[0]:556,h0=t?t.size[1]:900,h=Math.min(H*.76,view.W*1.25),k=h/h0,w=w0*k;
   return {x:view.W/2-w*.5,y:H-h+6,w,h,k,t};
  }
- function flameAnchor(){const b=heroBox(),h=b.t?.hands||{x:311,y:229,w:94,h:78};return {x:b.x+(h.x+h.w*.55)*b.k,y:b.y+(h.y+h.h*.32)*b.k}}
+ // Hand centres measured on each transparent pose master, in the manifest's 675×900 space.
+ // The painted poses do not share one hand position; a fixed anchor put the spirit over her face.
+ const HAND_ANCHORS={'hero-body':[431,290],'hero-shield':[506,265],'hero-relief':[442,310],'hero-breathless':[405,265],'hero-cold':[390,248],'hero-brace':[345,290],'hero-lookup':[413,285]};
+ function flameAnchor(st){const b=heroBox(),pose=st?heroPose(st):poseFx.current||'hero-body',target=HAND_ANCHORS[pose]||HAND_ANCHORS['hero-body'];let x=target[0],y=target[1];if(st&&poseFx.current===pose&&poseFx.previous){const q=st.reduced?1:Math.max(0,Math.min(1,((root.performance?.now?.()??Date.now())/1000-poseFx.changedAt)/.24)),fade=q*q*(3-2*q),from=HAND_ANCHORS[poseFx.previous]||target;x=from[0]*(1-fade)+x*fade;y=from[1]*(1-fade)+y*fade}return {x:b.x+x*b.k,y:b.y+y*b.k}}
  // Each chapter's ambient light is multiplied into the painted figure so she sits inside the scene.
  const AMBIENT=['#b9c3dd','#a9b3d4','#94a6d6','#c1b5d0'];
  function heroLit(name,ci){
@@ -335,10 +338,10 @@ function create(base,{introSeen=false}={}){
   if(ci===1&&s.routeChoice==='rest'&&t<s.restUntil){const warmth=Math.min(1,(s.restUntil-t)/1.5),g=ctx.createRadialGradient(W*.8,220,8,W*.8,220,190);g.addColorStop(0,'rgba(255,187,105,'+(.2*warmth)+')');g.addColorStop(1,'rgba(255,187,105,0)');ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.fillRect(0,20,W,400);ctx.restore()}
   snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
   if(ci===3)dawnGrade(ctx,Math.max(0,(t-finalStart)/20)*.6);
-  const a=flameAnchor();
   const bob=drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing});
+  const a=flameAnchor({...s,t,ci,reduced});
   vignette(ctx,light,{x:a.x,y:a.y});
-  drawFirelight(ctx,{light,bob});
+  drawFirelight(ctx,{light,bob,at:a});
   if(ci===3){
    const w=windowGlow(ctx,cam,reply>0?reply:.08);
    if(s.rescue&&t-s.rescueAt<6)beam(ctx,w,a,Math.max(0,1-(t-s.rescueAt)/6));
@@ -347,16 +350,16 @@ function create(base,{introSeen=false}={}){
   if(s.event&&t>=s.event.at&&s.event.kind==='lantern'&&s.routeChoice!=='shortcut'){const g=ctx.createRadialGradient(W*.15,250,4,W*.15,250,120);g.addColorStop(0,'rgba(255,214,150,.45)');g.addColorStop(1,'rgba(255,190,110,0)');ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(0,120,W,260);ctx.restore()}
   const quiet=s.finalePhase==='silence'||s.finalePhase==='window-reply';
   const warn=(s.event&&t<s.event.at&&(s.event.kind==='gust'||s.event.kind==='eddy'))||s.finalePhase==='gust-warning'?1:0;
-  drawFlame(ctx,{t,flame:s.flame,wind,shield:s.shield,reduced,expression:o.expression,hope:o.expression==='hope',bob,smoke:1,lookAt:ci===3&&quiet?1:0});
+  drawFlame(ctx,{t,flame:s.flame,wind,shield:s.shield,reduced,expression:o.expression,hope:o.expression==='hope',bob,smoke:1,lookAt:ci===3&&quiet?1:0},a);
   // Hands over the flame while shielding, so the gesture visibly closes around it.
   if(s.shield&&!ready('hero-shield'))drawHands(ctx,{shield:true,light,bob});
   if(changing){drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,0,['fore']);drawPlate(ctx,ci,{...cam,p:0},mix,0,['fore'])}
   else drawPlate(ctx,ci,cam,1,0,['fore']);
   cinematicGrade(ctx,ci,light,t,reduced);
   const hasBreath=breath(ctx,{...s,t,ci,reduced,bob,wind});
-  const hasEmbers=embers(ctx,{...s,t,reduced,bob,wind});
+  const hasEmbers=embers(ctx,{...s,t,reduced,bob,wind,at:a});
   snow(ctx,t,quiet?.02:wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'front');
-  windLines(ctx,t,quiet?0:wind,warn,reduced);
+  windLines(ctx,t,quiet?0:wind,warn,reduced,s.event&&t>=s.event.at?s.event.kind:'');
   const hasFrost=frost(ctx,{...s,ci});paperGrain(ctx,t,reduced);
   ctx.canvas.dataset.vfx=['grade','grain','snow-depth',hasBreath&&'breath',hasEmbers&&'embers',hasFrost&&'frost'].filter(Boolean).join(' ');
   if(s.mote)memoryMote(ctx,s.mote,t,reduced);

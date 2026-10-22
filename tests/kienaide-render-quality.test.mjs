@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync('assets/kienaide-view.js','utf8');
+test('the flame follows each painted hand position and the pose dissolve',()=>{
+ const fn=source.slice(source.indexOf('const HAND_ANCHORS='),source.indexOf('// Each chapter'));
+ const poseFx={current:'',previous:'',changedAt:0},context={heroBox:()=>({x:0,y:0,k:1}),heroPose:s=>s.pose,poseFx,root:{performance:{now:()=>120}},Date,Math};
+ const anchor=vm.runInNewContext(fn+';flameAnchor',context);
+ const body=anchor({pose:'hero-body',reduced:true}),shield=anchor({pose:'hero-shield',reduced:true});
+ assert.ok(shield.x>body.x+60,'a shielded spirit must sit between the raised mittens, not over the face');
+ poseFx.current='hero-shield';poseFx.previous='hero-body';const midway=anchor({pose:'hero-shield'});
+ assert.ok(midway.x>body.x&&midway.x<shield.x,'the spirit moves with the same painted-pose dissolve');
+});
 test('adaptive resolution preserves Retina CSS density and bounds 1x display fallback to 80 percent',()=>{
  const resize=source.slice(source.indexOf('function resize(canvas)'),source.indexOf('function toWorld'));
  for(const devicePixelRatio of [1,2,3])for(const quality of [.5,.8,1]){

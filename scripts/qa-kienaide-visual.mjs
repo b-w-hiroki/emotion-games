@@ -14,7 +14,7 @@ const sizes=[{width:390,height:844},{width:360,height:640}];
 const results=[];
 const appSource=fs.readFileSync('assets/app.js','utf8');
 const guidanceSource=appSource.match(/^function guidanceMarkup\(text\)\{.*\}$/m)[0];
-const storyCopy=[...appSource.slice(appSource.indexOf('function candleEvents('),appSource.indexOf('function candleCaption(')).matchAll(/'([^']*[\u3040-\u9fff][^']*)'/g)].map(m=>m[1]);
+const storyCopy=[...appSource.slice(appSource.indexOf('function candleEvents('),appSource.indexOf('function candleCaption(')).matchAll(/'([^']*[\u3040-\u9fff][^']*)'/g)].map(m=>m[1]).filter(s=>!s.includes('<'));
 const captionCopy=[...appSource.slice(appSource.indexOf('function candleCaption('),appSource.indexOf('function drawCandle(')).matchAll(/'([^']*[\u3040-\u9fff][^']*)'/g)].map(m=>m[1]);
 const done=x=>{results.push(x);console.log('step ok:',x)};
 const warmth=page=>page.evaluate(()=>{const c=document.querySelector('#stage'),[x,y]=c.dataset.flame.split(',').map(Number),k=c.width/c.getBoundingClientRect().width;
@@ -96,6 +96,13 @@ try{
    assert.deepEqual(errors,[]);await ctx.close();done('lantern shortcut tradeoff '+tag);
   }
   // Measure rendered character lines, not just CSS properties: no <=5-character orphan.
+  if(size.width===390){
+   const warm=await open(size,'?qa=1&seed=1&speed=0.0001&t=8.3');await warm.page.locator('#play').click();
+   await warm.page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='lull',null,{timeout:3000});
+   assert.match(await warm.page.locator('.action-cue').innerText(),/追い風/,'the beneficial wind must ask for release');
+   await warm.page.screenshot({path:path.join(out,`${engine}-warm-tailwind.png`)});
+   assert.deepEqual(warm.errors,[]);await warm.ctx.close();done('warm wind visual cue and release guidance');
+  }
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=3&speed=0.0001&t=8');
    await page.locator('#play').click();await page.waitForTimeout(500);
@@ -226,6 +233,7 @@ try{
    await fork.page.locator('#route-choice [data-route="'+route+'"]').waitFor({state:'visible',timeout:10000});await fork.page.locator('#route-choice [data-route="'+route+'"]').click();
    let held=false,scene=null;
    for(let i=0;i<700;i++){
+    const decision=fork.page.locator('#route-choice [data-decision]');if(await decision.first().isVisible()){if(held){await fork.page.keyboard.up('Space');held=false}await decision.first().click()}
     scene=await fork.page.locator('#stage').evaluate(el=>({chapter:el.dataset.chapter,elapsed:Number(el.dataset.elapsed),wind:Number(el.dataset.wind),ending:el.dataset.ending}));
     if(scene.chapter==='4'||scene.ending)break;
     const oxygen=Number(await fork.page.locator('#breath-meter').getAttribute('aria-valuenow'));
@@ -267,6 +275,16 @@ try{
   await fork.page.screenshot({path:path.join(out,`${engine}-${choice}-after-choice${suffix}.png`)});
   if(choice==='rest')assert.ok(Number(await fork.page.locator('#stage').getAttribute('data-wind'))<=.23,'rest must shelter from actual wind after choosing');
   assert.deepEqual(fork.errors,[]);await fork.ctx.close();done('route choice touch targets '+routeSize.width);
+  }
+  if(size.width===390){
+   const choices=await open(size,'?qa=1&seed=3&speed=12&t=27&vital=flame-full');await choices.page.locator('#play').click();await choices.page.locator('#route-choice [data-route="rest"]').click();
+   await choices.page.locator('#route-choice [data-decision="feed"]').waitFor({state:'visible',timeout:10000});
+   const before=await choices.page.locator('#timer').innerText();await choices.page.waitForTimeout(250);assert.equal(await choices.page.locator('#timer').innerText(),before,'the hearth choice pauses the clock');
+   await choices.page.screenshot({path:path.join(out,`${engine}-hearth-choice.png`)});await choices.page.locator('#route-choice [data-decision="feed"]').click();
+   await choices.page.locator('#route-choice [data-decision="spark"]').waitFor({state:'visible',timeout:10000});
+   assert.equal(await choices.page.locator('#route-choice button').count(),2);await choices.page.screenshot({path:path.join(out,`${engine}-bridge-choice.png`)});
+   await choices.page.locator('#route-choice [data-decision="shelter"]').click();assert.equal(await choices.page.locator('#route-choice').isVisible(),false);
+   assert.deepEqual(choices.errors,[]);await choices.ctx.close();done('three playable choices');
   }
   const full=await open(sizes[1],'?qa=1&seed=3&speed=1&t=27');await full.page.locator('#play').click();
   await full.page.locator('#route-choice [data-route="rest"]').waitFor({state:'visible',timeout:10000});
@@ -383,7 +401,7 @@ try{
   if(r.policy==='hold')await press(true);
   for(let i=0;i<4000&&!(await page.locator('#stage').getAttribute('data-ending'));i++){
    if(await page.locator('#route-choice').isVisible()){
-    const route=r.route||(id==='blown'?'shortcut':'rest');await press(false);await page.locator('#route-choice [data-route="'+route+'"]').click();
+    const route=r.route||(id==='blown'?'shortcut':'rest');await press(false);await page.locator('#route-choice [data-route="'+route+'"],#route-choice [data-decision]').first().click();
     if(r.policy==='hold')await press(true);
    }
    if(r.policy==='tele'){

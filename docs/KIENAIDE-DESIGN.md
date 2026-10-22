@@ -1,6 +1,6 @@
 # 004「きえないで。」現行設計
 
-最終照合: 2026-10-21。プレイヤー向けの振る舞いは [仕様書](./KIENAIDE-SPEC.md) を正本とする。本書は変更箇所とテストを判断するための責務・データ・不変条件を記す。
+最終照合: 2026-10-22。プレイヤー向けの振る舞いは [仕様書](./KIENAIDE-SPEC.md) を正本とする。本書は変更箇所とテストを判断するための責務・データ・不変条件を記す。
 
 ## 構成と依存方向
 
@@ -13,6 +13,8 @@
 | 結末PNGの準備、共有・ダウンロード、失敗と周回競合 | `assets/kienaide-card.js` | `tests/kienaide-card.test.mjs`、`scripts/qa-kienaide-card.mjs` |
 | 絵画原本とruntime WebP | `assets/kienaide/paint/src/`、`assets/kienaide/paint/manifest.json`、`scripts/art/kienaide-paint.mjs` | 画像デコード、ノイズ比較、四章・五結末キャプチャ |
 | 静的サイトの組立と配信 | `scripts/build.mjs`、`.github/workflows/pages.yml` | `npm run verify`、公開URL |
+| 004専用の入口と題字 | `assets/app.js`、`assets/style.css`、`assets/kienaide-lettering.svg` | ルートとタイトル画面のモバイル表示、他作品の直通URL維持 |
+| 共有サムネイル | `assets/kienaide-thumbnail-bg.webp`、`scripts/art/kienaide-thumbnail.mjs`、`assets/kienaide-thumbnail.png` | 1200×630、題字の判読性、少女と炎の位置、入口と004のOG画像一致 |
 | 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域 | `scripts/qa-research.mjs`、360×640／390×844の回答スクリーンショット |
 
 `kienaide-core.js` はDOM・音・保存を知らない決定論的なルール層。`app.js` が入力をcoreへ渡し、返されたイベントをview/audio/DOM/計測へ配る。表示やサウンドを変更しても、結末判定の正本を別に作らない。
@@ -20,6 +22,10 @@
 小風イベントの `lantern` は見た目の琥珀色と字幕だけでなく、発生中の風を0.2倍にする。イベント袋では `lantern` を分岐後かつ窓のある第二章の38秒枠に固定し、近道が飛ばす窓を分岐前や窓のない橋へ出さない。他の3種は7秒・27秒・66秒枠でseed順に並べ替える。`lull` の0.3倍や道の休息・自然の安全地帯とは独立した一時的な防風効果で、炎の温かさは従来どおり手放し中に加算する。近道選択中は窓の防風を適用せず、近道の風リスクを維持する。灯りの防風だけで第二章の自然の安全地帯を消費しない。イベント終了後は通常の風へ戻り、最終10秒の固定された風と窓の返事には介入しない。
 
 ## 状態と時刻
+
+28秒の経路に加え、42秒の窓辺と56秒の橋で `decisionPending` を立て、選択まで `step` と画面の時計を止める。`chooseDecision` が火・息・一時的な風よけ／風の強化を更新し、`decisions` に選択を残す。窓辺の火分けは火+14・息−18、深呼吸は息+28・風よけ3秒。橋の火育ては火+10・風6秒強化、欄干の陰は息+15・風よけ3秒。`lull` は画面上「ぬくい追い風」と呼び、手放し中だけ追加の火回復を与える。火を守る突風と、手放したほうが得な追い風を見分ける操作ループにする。
+
+人物の透明絵は姿勢ごとに手の位置が異なる。`flameAnchor` は各ポーズの手中心を採用し、0.24秒の人物クロスフェードと同じ比率で補間する。炎・光・窓からの光線は同じ座標を使い、固定座標で顔に重なる状態を防ぐ。
 
 分岐時の `routeStartMeters` は選択直前の連続値を保存する。近道・休息で16mの加減算はせず、`journey` の82秒／98秒への変更によって以降の距離減少速度だけを変える。距離表示は選択直前・直後で同値となり、両ルートとも到着時に0mとなる。
 

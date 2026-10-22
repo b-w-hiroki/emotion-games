@@ -26,6 +26,8 @@ try{
 async function chooseFork(page,route='rest'){
  const option=page.locator('#route-choice [data-route="'+route+'"]');
  if(await option.isVisible()){await page.mouse.up();await option.click();return true}
+ const decision=page.locator('#route-choice [data-decision]');
+ if(await decision.first().isVisible()){await page.mouse.up();await decision.first().click();return true}
  return false;
 }
  {
