@@ -287,7 +287,7 @@ try{
   assert.equal(await page.locator('#result-more summary').evaluate(el=>getComputedStyle(el).whiteSpace),'nowrap','the plus sign stays on the same line');
   assert.doesNotMatch(await page.locator('#discovery-counter').innerText(),/COLLECTION/,'the count does not repeat an English label');
   await page.locator('#result-more summary').click();
-  assert.ok(await page.locator('#related').isVisible());assert.ok(await page.locator('#volume').isVisible());
+  assert.equal(await page.locator('#related').count(),0,'the focused Kienaide result has no next-game promotion');assert.ok(await page.locator('#volume').isVisible());assert.ok(await page.locator('#share').isVisible());
   await page.locator('#share').click();const shared=await page.evaluate(()=>window.sharedResult);
   assert.equal(new URL(shared.url).search,'','real result share strips all simulation presets');
   assert.match(shared.text,/きえないで。/);assert.deepEqual(errors,[]);await ctx.close();console.log('PASS clean public result URL');

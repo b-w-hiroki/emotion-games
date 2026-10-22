@@ -115,7 +115,7 @@ body[data-game=kienaide] .study-options button{min-width:44px;min-height:44px;pa
 .study-dashboard p{font-size:12px;line-height:1.6;color:#bfcbd6;margin:8px 0}
 .study-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .study-actions span{font-size:11px;color:#d0d7df;margin-right:auto}
-.study-actions button{border:1px solid #6b879c;border-radius:8px;background:#263a4f;color:#e9ecf2;padding:7px 10px;font-size:11px}
+.study-actions button{min-height:44px;border:1px solid #6b879c;border-radius:8px;background:#263a4f;color:#e9ecf2;padding:7px 10px;font-size:11px}
 @media(max-height:720px){.study-feedback{margin-top:5px}.study-feedback details{padding:5px 7px}}
 
 /* Shareable moment, kept in the game result overlay and not the play HUD. */
