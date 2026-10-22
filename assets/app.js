@@ -144,7 +144,7 @@ if(candle){
  const controls=document.querySelector('.play-controls');routePanel=document.createElement('section');routePanel.className='route-choice';routePanel.id='route-choice';routePanel.hidden=true;routePanel.setAttribute('aria-label','道を選ぶ');routePanel.setAttribute('role','dialog');routePanel.setAttribute('aria-modal','true');
  routePanel.innerHTML='<p>この先、道が分かれている。</p><div><button type="button" data-route="shortcut"><strong>吹雪の近道</strong><small>8秒早く・強風8秒</small></button><button type="button" data-route="rest"><strong>軒先でひと息</strong><small id="route-rest-effect"></small></button></div>';
  action.before(routePanel);
- routePanel.addEventListener('click',e=>{const btn=e.target.closest('[data-route]');if(!btn||!K.chooseRoute(state,btn.dataset.route,elapsed))return;setCandleDialog(routePanel,false);document.body.classList.remove('has-route-choice');const shortcut=btn.dataset.route==='shortcut';setStory(shortcut?'吹雪の坂へ':'軒先のあかり',''+(shortcut?'近道へ踏み出した。風が強まる。':'戸口が開いた。胸の奥まで、やっと息を吸えた。'));state.storyPause=elapsed+3;mark('route_selected',{route:btn.dataset.route,flame:Math.round(state.flame),oxygen:Math.round(state.oxygen)});focusCandleAction()});
+ routePanel.addEventListener('click',e=>{const btn=e.target.closest('[data-route],[data-decision]');if(!btn)return;const route=btn.dataset.route,choice=btn.dataset.decision,kind=state.decisionPending;if(route?!K.chooseRoute(state,route,elapsed):!K.chooseDecision(state,choice,elapsed))return;setCandleDialog(routePanel,false);document.body.classList.remove('has-route-choice');if(route){const shortcut=route==='shortcut';setStory(shortcut?'吹雪の坂へ':'軒先のあかり',shortcut?'近道へ踏み出した。風が強まる。':'戸口が開いた。胸の奥まで、やっと息を吸えた。');mark('route_selected',{route,flame:Math.round(state.flame),oxygen:Math.round(state.oxygen)})}else{const lines={feed:['火を分ける','炎が息を吸った。自分の呼吸は浅くなる。'],breathe:['深呼吸','暖かな壁に背を預け、息を取り戻した。'],spark:['火を育てる','火が強まる。手を開いたぶん、風が追いかける。'],shelter:['橋の陰へ','石の欄干が風を遮った。息を整える。']};setStory(...lines[choice]);mark('decision_selected',{kind,choice,flame:Math.round(state.flame),oxygen:Math.round(state.oxygen)})}state.storyPause=elapsed+3;focusCandleAction()});
  const menuButton=document.createElement('button');menuButton.id='journey-menu-open';menuButton.className='journey-menu-open';menuButton.type='button';menuButton.textContent='休む';menuButton.setAttribute('aria-label','旅を休止してメニューを開く');menuButton.setAttribute('aria-haspopup','dialog');document.querySelector('.arena').append(menuButton);
  const tools=document.createElement('div');tools.className='journey-tools';tools.append(menuButton,$('sound-toggle'));document.querySelector('.arena').append(tools);
  const menu=document.createElement('section');menu.id='journey-menu';menu.className='journey-menu';menu.hidden=true;menu.setAttribute('role','dialog');menu.setAttribute('aria-modal','true');menu.setAttribute('aria-labelledby','journey-menu-title');
@@ -386,7 +386,8 @@ function candleEvents(list){
  for(const e of list){
   if(e.type==='chapter'){mark('chapter_reached',{chapter:e.chapter+1});KA.cues.chapter()}
   if(e.type==='event'){mark('wind_event',{kind:e.event.kind});KA.cues.event(e.event.kind);if(e.event.kind==='gust'||e.event.kind==='eddy')navigator.vibrate?.(40);if(s.routeChoiceAt==null||elapsed-s.routeChoiceAt>=3){setStory(e.event.kind==='lantern'&&s.routeChoice==='shortcut'?'遠くの灯り':e.event.label,e.event.kind==='lantern'&&s.routeChoice==='shortcut'?'近道からは、あの窓に寄れない。':e.event.tip);s.storyPause=elapsed+3}}
-  if(e.type==='route-choice'){holdRelease();lastShield=false;const breath=Math.min(28,Math.round(100-s.oxygen));$('route-rest-effect').textContent='8秒遅く・風よけ4秒・'+(breath?'息+'+breath+'%':'息は満タン');setCandleDialog(routePanel,true);document.body.classList.add('has-route-choice');setStory('分かれ道','吹雪の坂を急ぐか、灯りを借りて休むか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
+  if(e.type==='route-choice'){holdRelease();lastShield=false;routePanel.setAttribute('aria-label','道を選ぶ');routePanel.innerHTML='<p>この先、道が分かれている。</p><div><button type="button" data-route="shortcut"><strong>吹雪の近道</strong><small>8秒早く・強風8秒</small></button><button type="button" data-route="rest"><strong>軒先でひと息</strong><small id="route-rest-effect"></small></button></div>';const breath=Math.min(28,Math.round(100-s.oxygen));$('route-rest-effect').textContent='8秒遅く・風よけ4秒・'+(breath?'息+'+breath+'%':'息は満タン');setCandleDialog(routePanel,true);document.body.classList.add('has-route-choice');setStory('分かれ道','吹雪の坂を急ぐか、灯りを借りて休むか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
+  if(e.type==='decision-choice'){holdRelease();lastShield=false;const hearth=e.kind==='hearth';routePanel.setAttribute('aria-label',hearth?'灯りを選ぶ':'橋で選ぶ');routePanel.innerHTML=hearth?'<p>窓辺に残り火がある。</p><div><button type="button" data-decision="feed"><strong>火を分けてもらう</strong><small></small></button><button type="button" data-decision="breathe"><strong>息を整える</strong><small></small></button></div>':'<p>橋の向こうに風がある。</p><div><button type="button" data-decision="spark"><strong>手を開いて火を育てる</strong><small></small></button><button type="button" data-decision="shelter"><strong>欄干の陰に寄る</strong><small></small></button></div>';const gain=(amount,value,label)=>Math.min(amount,Math.round(100-value))?label+'+'+Math.min(amount,Math.round(100-value)):label+'は満タン';for(const [choice,copy] of Object.entries(hearth?{feed:gain(14,s.flame,'灯り')+'・息−'+Math.min(18,Math.floor(s.oxygen-1)),breathe:gain(28,s.oxygen,'息')+'・風よけ3秒'}:{spark:gain(10,s.flame,'灯り')+'・風が6秒強まる',shelter:gain(15,s.oxygen,'息')+'・風よけ3秒'}))routePanel.querySelector('[data-decision="'+choice+'"] small').textContent=copy;setCandleDialog(routePanel,true);document.body.classList.add('has-route-choice');setStory(hearth?'窓辺の残り火':'凍った橋',hearth?'灯りを分けるか、息を整えるか。':'火を強めるか、風を避けるか。');requestAnimationFrame(()=>routePanel.querySelector('button')?.focus())}
   if(e.type==='shelter'){mark('shelter_discovered',{chapter:2});setStory('風のトンネル　建物の陰','風が止まった。息を取り戻すなら今。');s.storyPause=elapsed+3;KA.cues.shelter()}
   if(e.type==='memory-lost'){setStory('記憶','記憶の灯りが、雪の中に消えた。');s.storyPause=elapsed+2.6;KA.cues.memoryLost();mark('memory_missed',{memory_id:e.id,count:s.memories})}
   if(e.type==='foreshadow'){setStory('夜明け前　小さな予感','向こうの窓が、こちらの灯りを見ている。');s.storyPause=elapsed+4;mark('rescue_foreshadowed',{flame:Math.round(s.flame)})}
@@ -411,7 +412,7 @@ function candleCaption(s){
  if(s.finalePhase==='gust-active')return [s.shield?'かばっている — 耐えて':'大突風 — 長押しでかばって',true];
  if(s.flame<=20&&s.wind<.44&&!incomingGust&&(s.chapter!==2||s.bridgeFrost<.5))return [s.shield?'風が弱い — いま離して':'風が弱い — 息を戻して',false];
  if(s.flame<=20)return ['灯りが消えそう — 風からかばって',true];
- if(ev&&elapsed<ev.at)return [ev.tip,true];
+ if(ev&&elapsed<ev.at)return [ev.tip,ev.kind==='gust'||ev.kind==='eddy'];
  if(s.chapter===2&&s.bridgeFrost>.3&&s.wind>.5)return [s.shield?'橋の霜をしのいでいる':'橋の霜が迫る — 長押しでかばって',!s.shield];
  if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['渦がほどけた — いま離して',false];
  if(ev?.kind==='eddy'&&s.eddyReleasedEvent===ev.id)return ['渦の隙間 — 息を整える',false];
@@ -427,7 +428,7 @@ function drawCandle(dt){
  const s=state;KV.resize(canvas);
  if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
- const paused=!!(document.hidden||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'),step=paused?0:dt*(s.qaSpeed||1);
+ const paused=!!(document.hidden||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'||s.decisionPending),step=paused?0:dt*(s.qaSpeed||1);
  const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
  candleEvents(events);if(mode!=='play')return;
@@ -482,7 +483,7 @@ function tick(now){
  let dt=last?Math.min((now-last)/1000,.035):0;last=now;
  const orientationPaused=!!(candle&&(landscapeMode.matches||document.hidden));if(orientationPaused)dt=0;
  if(mode==='play'&&$('collection-panel').hidden){
-  if(!(candle&&(state.routeChoice==='pending'||orientationPaused||candleDialog))){
+ if(!(candle&&(state.routeChoice==='pending'||state.decisionPending||orientationPaused||candleDialog))){
    const advance=dt*(candle?(state.qaSpeed||1):1);
    // A zero-delta frame must not recheck the previous, already-ready chapter.
    // Keep waiting for the chapter that first blocked the boundary.
