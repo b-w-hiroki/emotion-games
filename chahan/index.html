@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1d1716"><title>チャーハン大回転 | birdman studio</title><meta name="description" content="世界のどこでも鍋を振れ！ 揺れを読み、ごはんをこぼさず、最高のチャーハンを作るアクションゲーム。"><link rel="stylesheet" href="./style.css"></head>
+<body><main class="shell">
+  <header><span class="brand">BIRDMAN STUDIO <b>／ 遊べる試作</b></span><button id="sound" aria-label="音を切り替え">音 ON</button></header>
+  <section class="hud" aria-label="調理状況"><div><small>場所</small><strong id="place">路地裏の屋台</strong></div><div><small>残り時間</small><strong id="clock">54</strong></div><div><small>連続返し</small><strong id="combo">0</strong></div></section>
+  <div class="stage"><canvas id="scene" width="780" height="900" aria-label="鍋とチャーハンのゲーム画面"></canvas><div class="stage-tag" id="stageTag">01 / 03</div><div class="balance-label">← 左へ傾く <span>鍋のバランス</span> 右へ傾く →</div><div class="balance-track"><i id="balanceNeedle"></i><em></em></div><div class="tip" id="tip">左右で鍋を水平に。中央で振ると、きれいに混ざる。</div></div>
+  <section class="meters"><div><span>残ったごはん</span><div class="bar"><i id="riceBar"></i></div></div><div><span>火の通り</span><div class="bar"><i id="cookBar"></i></div></div><div><span>混ざり具合</span><div class="bar"><i id="mixBar"></i></div></div></section>
+  <div class="controls"><button id="left" class="side" aria-label="鍋を左へ">◀<small>左</small></button><button id="toss" class="toss">鍋を振る<small>SPACE</small></button><button id="right" class="side" aria-label="鍋を右へ">▶<small>右</small></button></div><div class="heat-controls"><button id="heatDown">火を弱める</button><span id="heatLabel">火力 48%</span><button id="heatUp">火を強める</button></div>
+  <p class="help">キーボード：← → でバランス、SPACE で鍋振り、↑ ↓ で火力。全3ステージ、約54秒。</p>
+  <div class="overlay" id="overlay"><div class="card"><div class="eyebrow">世界を渡る、ひと皿。</div><h1 id="overlayTitle">チャーハン<br><span>大回転</span></h1><p id="overlayText">揺れる場所で鍋のバランスを取り、中央で振って具を混ぜよう。火加減も忘れずに。</p><button id="start">調理スタート</button><div class="mini">屋台 → 列車 → 空中キッチン</div></div></div>
+  </main><script type="module" src="./game.js"></script></body></html>
