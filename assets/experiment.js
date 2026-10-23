@@ -30,7 +30,7 @@ function menu(){
  el.append(panel);panel.querySelector('#study-export').addEventListener('click',exportJson);
  panel.querySelector('#study-clear').addEventListener('click',()=>{if(!window.confirm('この端末の検証記録を削除しますか？'))return;records=[];save();panel.querySelector('#study-count').textContent='0 回のプレイ'});
  panel.querySelector('#study-count').textContent=records.length+' 回のプレイ';
- document.querySelectorAll('.card,.kienaide-home-play').forEach(a=>{const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()});
+ document.querySelectorAll('.card,.kienaide-home-play,.game-detail-play').forEach(a=>{const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()});
 }
 function optionPairs(options){return options.map(option=>Array.isArray(option)?option:[option,option])}
 function survey(){

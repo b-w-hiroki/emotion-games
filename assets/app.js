@@ -86,6 +86,39 @@ function collectionCount(id){
 function top(){return '<header class="top"><a class="logo" href="'+base+'">birdman<span>studio</span><small>EMOTION GAMES</small></a><a class="follow" href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">X / 最新作 ↗</a></header>'}
 if(!game){
  root.innerHTML=top()+'<main class="kienaide-home"><section class="kienaide-home-art" aria-labelledby="home-title"><div class="kienaide-home-copy"><span class="kienaide-home-kicker">A SHORT NIGHT JOURNEY</span><h1 id="home-title" class="kienaide-lettering">きえないで。</h1><p>この灯りを、あの窓まで。</p></div><div class="kienaide-home-bottom"><span>雪の夜を歩く、約90秒の物語</span><a class="kienaide-home-play" href="./kienaide/">旅をはじめる <span aria-hidden="true">↗</span></a></div></section></main><footer class="foot"><a href="./privacy.html">プライバシー</a><span>© birdman studio</span></footer>';
+ document.querySelector('.kienaide-home-bottom').insertAdjacentHTML('beforeend','<button class="kienaide-home-details" id="home-details-open" type="button" aria-haspopup="dialog">作品を詳しく見る</button>');
+ root.insertAdjacentHTML('beforeend',`<dialog class="game-detail-modal" id="game-detail" aria-labelledby="game-detail-title" aria-describedby="game-detail-intro">
+  <div class="game-detail-head"><span>EMOTION 04 / 切なさ</span><button type="button" id="game-detail-close" aria-label="作品詳細を閉じる">閉じる ✕</button></div>
+  <div class="game-detail-content"><div class="game-detail-gallery"><div class="game-detail-frame"><img id="game-detail-image" src="./assets/kienaide-detail/title.webp" alt="雪の町で少女と炎の精が旅立つタイトル画面" width="390" height="844"></div><div class="game-detail-gallery-nav"><button type="button" id="game-detail-prev" aria-label="前の画面">←</button><span id="game-detail-position" aria-live="polite">1 / 3</span><button type="button" id="game-detail-next" aria-label="次の画面">→</button></div><p id="game-detail-caption" aria-live="polite">灯りを抱えて、雪の町へ。</p></div>
+  <div class="game-detail-copy"><h2 id="game-detail-title">きえないで。</h2><p id="game-detail-intro">消えかけた炎の精を、雪の町の家まで届ける短編ゲーム。風が強まったらかばい、凪いだら手を離して息を戻そう。</p><dl><div><dt>プレイ時間</dt><dd>約90秒</dd></div><div><dt>操作</dt><dd>長押しと、手を離す判断</dd></div></dl><p>道中の選択や記憶によって、たどり着く結末が変わります。</p></div></div>
+  <div class="game-detail-actions"><a class="game-detail-play" href="./kienaide/">旅をはじめる ↗</a></div></dialog>`);
+ const detail=document.getElementById('game-detail');
+ const slides=[
+  {src:'./assets/kienaide-detail/title.webp',alt:'雪の町で少女と炎の精が旅立つタイトル画面',caption:'灯りを抱えて、雪の町へ。'},
+  {src:'./assets/kienaide-detail/street.webp',alt:'雪の路地で風を読みながら炎をかばうプレイ画面',caption:'風を読んでかばい、凪いだら息を戻す。'},
+  {src:'./assets/kienaide-detail/bridge.webp',alt:'吹雪の橋を渡り、遠い窓を目指すプレイ画面',caption:'選んだ道の先で、吹雪の橋を越える。'}
+ ];
+ let slide=0;
+ function showSlide(index){
+  slide=Math.max(0,Math.min(index,slides.length-1));
+  const item=slides[slide];
+  const image=document.getElementById('game-detail-image');image.src=item.src;image.alt=item.alt;
+  document.getElementById('game-detail-caption').textContent=item.caption;
+  document.getElementById('game-detail-position').textContent=(slide+1)+' / '+slides.length;
+  document.getElementById('game-detail-prev').disabled=slide===0;
+  document.getElementById('game-detail-next').disabled=slide===slides.length-1;
+ }
+ const opener=document.getElementById('home-details-open');
+ opener.addEventListener('click',()=>{showSlide(0);detail.showModal();document.body.classList.add('game-detail-open');document.getElementById('game-detail-close').focus()});
+ document.getElementById('game-detail-close').addEventListener('click',()=>detail.close());
+ detail.addEventListener('close',()=>{document.body.classList.remove('game-detail-open');opener.focus()});
+ document.getElementById('game-detail-prev').addEventListener('click',()=>showSlide(slide-1));
+ document.getElementById('game-detail-next').addEventListener('click',()=>showSlide(slide+1));
+ let touchStart=null;
+ const gallery=detail.querySelector('.game-detail-gallery');
+ gallery.addEventListener('touchstart',event=>{const touch=event.changedTouches[0];touchStart={x:touch.clientX,y:touch.clientY}},{passive:true});
+ gallery.addEventListener('touchend',event=>{if(!touchStart)return;const touch=event.changedTouches[0],dx=touch.clientX-touchStart.x,dy=touch.clientY-touchStart.y;touchStart=null;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3)showSlide(slide+(dx<0?1:-1))},{passive:true});
+ showSlide(0);
  return;
 }
 const candle=slug==='kienaide';
