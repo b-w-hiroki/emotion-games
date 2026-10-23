@@ -71,13 +71,16 @@ try{
    await guide.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('凪では離す'));
    await guide.page.screenshot({path:path.join(out,`${engine}-${tag}-first-play-guidance.png`)});
    assert.deepEqual(guide.errors,[]);await guide.ctx.close();
-   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=6');
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=0.0001&t=2.2&vital=breath-mid');
    await page.locator('#play').click();
+   await page.waitForFunction(()=>Number(document.querySelector('#breath-meter').getAttribute('aria-valuenow'))===80);
+   const breathBefore=Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'));
    await page.locator('#action').focus();await page.keyboard.down('Space');
-   await page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.elapsed)>2.2);
+   await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
    await page.keyboard.up('Space');
    await page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('火の子が手を温めた'));
    assert.match(await page.locator('#story-beat').innerText(),/息が少し戻る/);
+   assert.ok(Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'))>=breathBefore+5,'the warmth restores actual breath');
    await page.screenshot({path:path.join(out,`${engine}-${tag}-companion-warmth.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('first-play guidance and companion response '+tag);
   }
