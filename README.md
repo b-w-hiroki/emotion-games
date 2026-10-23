@@ -6,6 +6,9 @@ birdman studioのショート・ワンアイデア・ブラウザゲーム。SNS
 - https://play.birdman-studio.com/
 - https://play.birdman-studio.com/kienaide/
 
+## 別ジャンル試作：チャーハン大回転
+`/chahan/` は制作プレイブックを別ジャンルで試す、独立したアクションゲームです。左右で鍋の傾きを戻し、中央に来た時に振って具を混ぜ、火力を調整します。屋台・列車・空中キッチンの揺れ方が変わります。20作品のカタログと結末図鑑にはまだ追加していません。ローカルでは `npm run build` の後、`npx serve dist` から遊べます。設計と未検証項目は [縦切り依頼書](studio-playbook/CHAHAN-SLICE-BRIEF.md) を参照してください。
+
 ## ローカル開発
 
 ```sh
