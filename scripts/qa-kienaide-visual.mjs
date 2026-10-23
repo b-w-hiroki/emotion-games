@@ -40,6 +40,50 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // Every full-screen phase offers an exit. During play, leaving requires confirmation.
+  {
+   const title=await open(size,'?qa=1&speed=0.0001');
+   assert.equal(await title.page.locator('.journey-back').getAttribute('href'),'../');
+   await title.page.locator('.journey-back').click();
+   await title.page.waitForURL(url=>url.pathname==='/emotion-games/');
+   assert.deepEqual(title.errors,[]);await title.ctx.close();
+   const intro=await open(size,'?qa=1&speed=0.0001',{intro:true});
+   await intro.page.locator('#play').click();await intro.page.locator('.intro-back').click();
+   await intro.page.waitForURL(url=>url.pathname==='/emotion-games/');
+   assert.deepEqual(intro.errors,[]);await intro.ctx.close();
+   const play=await open(size,'?qa=1&speed=0.0001');
+   await play.page.locator('#play').click();
+   await play.page.locator('#journey-back-play').click();
+   assert.equal(await play.page.locator('#pause-confirm-action').innerText(),'作品一覧へ戻る');
+   await play.page.screenshot({path:path.join(out,`${engine}-${tag}-return-confirm.png`)});
+   await play.page.locator('#pause-cancel').click();
+   await play.page.locator('#pause-resume').click();
+   assert.equal(new URL(play.page.url()).pathname,'/emotion-games/kienaide/');
+   await play.page.locator('#journey-back-play').click();
+   await play.page.locator('#pause-confirm-action').click();
+   await play.page.waitForURL(url=>url.pathname==='/emotion-games/');
+   assert.deepEqual(play.errors,[]);await play.ctx.close();done('full-screen return routes '+tag);
+  }
+  {
+   const guide=await open(size,'?qa=1&seed=2&speed=0.0001');
+   await guide.page.locator('#play').click();
+   assert.match(await guide.page.locator('#story-beat').innerText(),/長押し.*離して/,'the opening teaches both actions');
+   await guide.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('凪では離す'));
+   await guide.page.screenshot({path:path.join(out,`${engine}-${tag}-first-play-guidance.png`)});
+   assert.deepEqual(guide.errors,[]);await guide.ctx.close();
+   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=0.0001&t=2.2&vital=breath-mid');
+   await page.locator('#play').click();
+   await page.waitForFunction(()=>Number(document.querySelector('#breath-meter').getAttribute('aria-valuenow'))===80);
+   const breathBefore=Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'));
+   await page.locator('#action').focus();await page.keyboard.down('Space');
+   await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await page.keyboard.up('Space');
+   await page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('火の子が手を温めた'));
+   assert.match(await page.locator('#story-beat').innerText(),/息が少し戻る/);
+   assert.ok(Number(await page.locator('#breath-meter').getAttribute('aria-valuenow'))>=breathBefore+5,'the warmth restores actual breath');
+   await page.screenshot({path:path.join(out,`${engine}-${tag}-companion-warmth.png`)});
+   assert.deepEqual(errors,[]);await ctx.close();done('first-play guidance and companion response '+tag);
+  }
   // A tunnel lull becomes a safe place only after a deliberate release.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');
@@ -431,6 +475,7 @@ try{
   const scenePath=path.join(out,`${engine}-ending-${id}-scene.png`);
   await page.screenshot({path:scenePath});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
+  assert.equal(await page.locator('.journey-back').getAttribute('href'),'../','the ending can return to the game list');
   const heading=await page.locator('#curtain-title').evaluate(el=>({height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight),overflow:el.scrollWidth>el.clientWidth+1}));
   assert.ok(heading.height<heading.lineHeight*1.5&&!heading.overflow,id+' ending headline must fit one line immediately: '+JSON.stringify(heading));
   await page.waitForTimeout(400);

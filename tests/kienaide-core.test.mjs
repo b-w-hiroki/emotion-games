@@ -13,6 +13,24 @@ function play(seed,policy,{collect=false,until=95,route}={}){
 const tele=(s,t,h)=>(!h&&s.wind>.61)?true:(h&&(s.wind<.44||s.oxygen<28))?false:h;
 function delayed(lat){let want=false,since=0;return (s,t,h)=>{const w=tele(s,t,want);if(w!==want){want=w;since=t}return t-since>=lat?want:h}}
 
+test('the flame returns warmth only after an intentional calm release',()=>{
+ const make=()=>{const s=K.create({seed:2});s.events=[];s.oxygen=60;return s};
+ const calm=make();K.step(calm,2,DT,{shield:true,wasShield:false});
+ const before=calm.oxygen;
+ const response=K.step(calm,2.1,DT,{shield:false,wasShield:true,releaseIntent:true});
+ assert.equal(response.filter(e=>e.type==='companion-warmth').length,1);
+ assert.ok(calm.oxygen>before+6,'the response restores breath beyond normal recovery');
+ assert.equal(calm.companionSeen,true);
+ K.step(calm,2.2,DT,{shield:true,wasShield:false});
+ assert.equal(K.step(calm,2.3,DT,{shield:false,wasShield:true,releaseIntent:true}).some(e=>e.type==='companion-warmth'),false,'only one response per journey');
+ const canceled=make();K.step(canceled,2,DT,{shield:true,wasShield:false});
+ assert.equal(K.step(canceled,2.1,DT,{shield:false,wasShield:true,releaseIntent:false}).some(e=>e.type==='companion-warmth'),false);
+ const gust=make();gust.events=[{id:'test-gust',kind:'gust',label:'突風',tip:'風',warnAt:8,at:8,end:10}];K.step(gust,2,DT,{shield:true,wasShield:false});
+ assert.equal(K.step(gust,9,DT,{shield:false,wasShield:true,releaseIntent:true}).some(e=>e.type==='companion-warmth'),false,'the response needs a lull');
+ const finale=make();finale.events=[];finale.chapter=3;
+ assert.equal(K.step(finale,88,DT,{shield:false,wasShield:true,releaseIntent:true}).some(e=>e.type==='companion-warmth'),false,'the companion does not interrupt the final silence');
+});
+
 test('same seed and same inputs always reach the same ending',()=>{
  for(const seed of [1,7,99]){const a=play(seed,delayed(.6),{collect:true}),b=play(seed,delayed(.6),{collect:true});assert.equal(a.s.ended,b.s.ended);assert.equal(a.s.flame,b.s.flame)}
 });
