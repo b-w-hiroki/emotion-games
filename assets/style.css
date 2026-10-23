@@ -206,6 +206,7 @@ body[data-game=kienaide] .game-shell.ember .curtain.tableau #play{margin-top:aut
 #kienaide-intro canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #kienaide-intro .intro-line{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #kienaide-intro button{position:absolute;right:16px;bottom:max(22px,env(safe-area-inset-bottom));min-height:44px;padding:10px 18px;border-radius:22px;border:1px solid #e0c99c;background:#17263acc;color:#fff2d8;font:600 14px system-ui,sans-serif}
+#kienaide-intro .intro-back{position:absolute;z-index:2;top:max(14px,env(safe-area-inset-top));left:14px;display:flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid #e0c99c88;border-radius:14px;background:#111b29df;color:#fff2d8;font:600 13px system-ui,sans-serif;text-decoration:none}
 @media(max-height:700px){body[data-game=kienaide] .game-shell.ember .arena{min-height:236px}}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 body[data-game=kienaide] #stage:focus-visible{outline:2px solid #ffd39a;outline-offset:-3px}
@@ -290,6 +291,7 @@ body[data-game=kienaide] .sound-toggle{top:max(14px,env(safe-area-inset-top));ri
 body[data-game=kienaide]:not(.kienaide-playing) .sound-toggle{display:none}
 body[data-game=kienaide] .journey-tools{position:absolute;z-index:6;top:max(14px,env(safe-area-inset-top));right:14px;display:flex;align-items:center;gap:10px}
 body[data-game=kienaide] .journey-menu-open{min-width:46px;min-height:44px;padding:8px;border:1px solid #e9d0a766;border-radius:16px;background:#111b29e6;color:#fff1d9;font-size:12px}
+body[data-game=kienaide] .journey-back-play{min-height:44px;padding:8px 10px;border:1px solid #e9d0a766;border-radius:16px;background:#111b29e6;color:#fff1d9;font-size:12px}
 body[data-game=kienaide] .journey-tools .sound-toggle{position:static;min-height:44px}
 body[data-game=kienaide]:not(.kienaide-playing) .journey-tools{display:none}
 body[data-game=kienaide] .journey-menu{position:absolute;z-index:9;inset:0;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:#07101de8;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -311,6 +313,7 @@ body[data-game=kienaide] .curtain p{max-width:340px;font-size:15px;line-height:1
 body[data-game=kienaide] .curtain .btn.art-start{width:min(88%,370px)}
 /* The first frame is a storybook cover: town, traveller, title, then the road. */
 body.kienaide-title-screen .curtain.journey-title{overflow:hidden;justify-content:flex-start;gap:0;padding:max(70px,calc(env(safe-area-inset-top) + 58px)) 20px max(8px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#07101dc9 0%,#07101d78 25%,#07101d70 47%,#07101d8c 70%,#07101df2 100%),url('./kienaide-v3/snow-town.webp') center 54%/cover no-repeat;backdrop-filter:none;-webkit-backdrop-filter:none}
+body[data-game=kienaide] .curtain .journey-back{position:absolute;z-index:5;top:max(14px,env(safe-area-inset-top));left:14px;display:flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid #e9d0a788;border-radius:14px;background:#111b29dc;color:#fff1d9;font-size:13px;font-weight:650;text-decoration:none}
 body.kienaide-title-screen .journey-title-hero{position:absolute;z-index:0;bottom:clamp(78px,12vh,122px);left:50%;width:min(78vw,390px);height:min(59vh,620px);object-fit:contain;object-position:center bottom;transform:translateX(-50%);filter:drop-shadow(0 12px 36px #050915aa);pointer-events:none}
 body.kienaide-title-screen #curtain-kicker,body.kienaide-title-screen #curtain-title,body.kienaide-title-screen #curtain-description{position:relative;z-index:1}
 body.kienaide-title-screen #curtain-kicker{margin-top:0;color:#ffe0ad;text-shadow:0 2px 12px #07101d}

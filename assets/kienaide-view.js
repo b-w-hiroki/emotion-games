@@ -235,6 +235,7 @@ function create(base,{introSeen=false}={}){
   ctx.save();ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(a.x,H-10,4,a.x,H-10,90+st.light*80);g.addColorStop(0,'rgba(255,184,104,'+(.3*st.light)+')');g.addColorStop(1,'rgba(255,170,90,0)');ctx.fillStyle=g;ctx.fillRect(0,H-170,view.W,170);
   const hands=ctx.createRadialGradient(a.x,a.y,2,a.x,a.y,42+st.light*62);hands.addColorStop(0,'rgba(255,207,131,'+(.18*st.light)+')');hands.addColorStop(1,'rgba(255,170,90,0)');ctx.fillStyle=hands;ctx.fillRect(a.x-110,a.y-110,220,220);
+  if(st.warmth>0){const comfort=ctx.createRadialGradient(a.x-25,a.y-11,3,a.x-25,a.y-11,88);comfort.addColorStop(0,'rgba(255,202,127,'+(.36*st.warmth)+')');comfort.addColorStop(1,'rgba(255,172,92,0)');ctx.fillStyle=comfort;ctx.fillRect(a.x-120,a.y-105,190,190)}
   // The old full-body rim used the neutral silhouette for every pose, creating a conspicuous
   // human-shaped outline around moving paintings. Local flame spill provides the light instead.
   ctx.restore();
@@ -352,7 +353,7 @@ function create(base,{introSeen=false}={}){
   const bob=drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing});
   const a=flameAnchor({...s,t,ci,reduced});
   vignette(ctx,light,{x:a.x,y:a.y});
-  drawFirelight(ctx,{light,bob,at:a});
+  drawFirelight(ctx,{light,bob,at:a,warmth:s.companionUntil>t?Math.min(1,(s.companionUntil-t)/2.4):0});
   if(ci===3){
    const w=windowGlow(ctx,cam,reply>0?reply:.08);
    if(s.rescue&&t-s.rescueAt<6)beam(ctx,w,a,Math.max(0,1-(t-s.rescueAt)/6));

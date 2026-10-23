@@ -36,7 +36,7 @@ function memorySlots(seed){
 function create(opts={}){
  const seed=(opts.seed>>>0)||1;
  return {seed,shield:false,flame:72,oxygen:100,wind:.18,memories:0,chapter:0,mote:null,memoryGot:new Set(),journey:JOURNEY,
-  story:'',storyPause:0,shelterReady:true,shelterUntil:-1,bridgeFrost:0,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,
+  story:'',storyPause:0,shelterReady:true,shelterUntil:-1,bridgeFrost:0,miracleHint:false,rescue:false,rescueAt:-100,releaseAt:-100,companionSeen:false,companionUntil:-1,companionGain:0,
   routeChoice:'none',routeChoiceAt:null,routeStartMeters:100,shortcutUntil:-1,restUntil:-1,decisionIndex:0,decisionPending:'',decisions:[],emberRiskUntil:-1,
   lowestFlame:72,peakWind:0,events:eventSchedule(seed),slots:memorySlots(seed),event:null,eventSeen:new Set(),eddyReleasedEvent:'',
   finalePhase:'approach',previousFinalePhase:'approach',gustShield:0,gustExposed:0,silenceRelease:0,reply:0,replyLevel:'',
@@ -131,6 +131,12 @@ function step(s,time,dt,input){
   s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45+s.bridgeFrost*1.4:0)+warm)*dt));
  }
  if(!s.shield&&input.wasShield)s.releaseAt=time;
+ // A deliberate release in calm air lets the flame look after the traveller once.
+ // Blur, cancellation and releases in a gust cannot claim this moment.
+ if(!s.companionSeen&&time<s.journey-20&&!s.shield&&input.wasShield&&input.releaseIntent&&s.wind<.44&&s.flame>=25&&s.oxygen<=94){
+  const before=s.oxygen;s.oxygen=Math.min(100,s.oxygen+6);s.companionGain=+(s.oxygen-before).toFixed(1);
+  s.companionSeen=true;s.companionUntil=time+2.4;emit('companion-warmth',{oxygenGain:s.companionGain});
+ }
  if(!s.shield&&input.wasShield&&live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;
  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){s.miracleHint=true;emit('foreshadow');}
  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,s.wind);
