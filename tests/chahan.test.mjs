@@ -35,13 +35,14 @@ test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');
   for(const token of ['pointerdown','pointermove','pointerup','pointercancel','ArrowLeft','ArrowRight','Space','KeyS','visibilitychange']) assert.ok(src.includes(token),token);
 });
-test('physical vertical impulse becomes a toss with strength and lateral direction', () => {
-  assert.equal(motionToss({ x: 0, y: 1, z: 0 }), null, 'hand tremor is ignored');
-  assert.equal(motionToss({ x: 6, y: 3, z: 0 }), null, 'sideways shake is ignored');
-  assert.deepEqual(motionToss({ x: 0, y: 5.6, z: 0 }), { lift: .7, lean: 0 });
-  assert.ok(motionToss({ x: 3, y: 6, z: 0 }).lean > 0);
-  assert.ok(motionToss({ x: 0, y: 18, z: 0 }).lift > 1.25, 'hard shake risks a spill');
-  assert.equal(motionToss({ x: null, y: 8, z: 0 }), null);
+test('physical pull toward the player becomes a toss with strength and lateral direction', () => {
+  assert.equal(motionToss({ x: 0, y: 0, z: 1 }), null, 'hand tremor is ignored');
+  assert.equal(motionToss({ x: 0, y: 0, z: -8 }), null, 'pushing away does not toss');
+  assert.equal(motionToss({ x: 6, y: 0, z: 3 }), null, 'sideways shake is ignored');
+  assert.deepEqual(motionToss({ x: 0, y: 0, z: 5.6 }), { lift: .7, lean: 0 });
+  assert.ok(motionToss({ x: 3, y: 0, z: 6 }).lean > 0);
+  assert.ok(motionToss({ x: 0, y: 0, z: 18 }).lift > 1.25, 'hard pull risks a spill');
+  assert.equal(motionToss({ x: null, y: 0, z: 8 }), null);
 });
 test('tilt steering is calibrated and bounded', () => {
   assert.equal(motionSteer(12, 12), 0);

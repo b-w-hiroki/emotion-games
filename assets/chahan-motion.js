@@ -1,13 +1,13 @@
-// DeviceMotion acceleration is in m/s². Ignore small hand tremors and use the
-// vertical impulse for the toss; lateral impulse decides where the rice flies.
+// DeviceMotion acceleration is in m/s². Positive Z points out of the screen,
+// toward the player: the same direction as pulling the wok toward oneself.
 export function motionToss(acceleration) {
   const x = acceleration?.x, y = acceleration?.y, z = acceleration?.z;
   if (![x, y, z].every(Number.isFinite)) return null;
-  const vertical = Math.abs(y);
-  if (vertical < 3.2 || vertical < Math.abs(x) * 0.9 || vertical < Math.abs(z) * 0.65) return null;
+  const pull = z;
+  if (pull < 3.2 || pull < Math.abs(x) * 0.9 || pull < Math.abs(y) * 0.65) return null;
   return {
-    lift: Math.min(2, vertical / 8),
-    lean: Math.max(-1.5, Math.min(1.5, x / Math.max(vertical, 1))),
+    lift: Math.min(2, pull / 8),
+    lean: Math.max(-1.5, Math.min(1.5, x / Math.max(pull, 1))),
   };
 }
 
