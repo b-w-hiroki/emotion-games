@@ -22,8 +22,8 @@ const LAMP={x:810,y:534};
 const INTRO=[
  {at:0,text:'雪の夜。小さな家の暖炉が、消えかけていた。',rows:['雪の夜。小さな家の暖炉が、','消えかけていた。']},
  {at:4,text:'灰の中で、最後の灯りだけが震えていた。',rows:['灰の中で、最後の灯りだけが','震えていた。']},
- {at:8,text:'灯りは、少女の手に飛び込んだ。',rows:['灯りは、少女の手に','飛び込んだ。']},
- {at:11.5,text:'遠い窓を、じっと見つめている。',rows:['遠い窓を、じっと','見つめている。']},
+ {at:8,text:'火の子は、少女の手に飛び込んだ。',rows:['火の子は、少女の手に','飛び込んだ。']},
+ {at:11.5,text:'火の子は、遠い窓を見つめている。',rows:['火の子は、遠い窓を','見つめている。']},
  {at:14,text:'「……あそこに、帰りたいの？」',rows:['「……あそこに、帰りたいの？」']},
  {at:16.5,text:'きえないで。',rows:['きえないで。']}
 ];
@@ -114,6 +114,15 @@ function create(base,{introSeen=false}={}){
   if(k<=0)return;const W=view.W;ctx.save();ctx.globalCompositeOperation='soft-light';
   const g=ctx.createLinearGradient(0,0,0,H*.75);g.addColorStop(0,'rgba(40,50,120,'+(.3*k)+')');g.addColorStop(.7,'rgba(255,170,150,'+(.55*k)+')');g.addColorStop(1,'rgba(255,200,170,'+(.3*k)+')');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();
+ }
+ function nightStage(ctx,light,ci,reply=0){
+  const W=view.W,a=flameAnchor(),shade=(ci===3?.36-.2*reply:.25)+(1-Math.min(1,light))*.12;
+  ctx.save();ctx.fillStyle='rgba(4,9,23,'+shade+')';ctx.fillRect(0,0,W,H);
+  if(light>0){ctx.globalCompositeOperation='screen';const g=ctx.createRadialGradient(a.x,a.y,4,a.x,a.y,92+light*76);g.addColorStop(0,'rgba(255,174,91,'+(.13*light)+')');g.addColorStop(1,'rgba(255,174,91,0)');ctx.fillStyle=g;ctx.fillRect(a.x-180,a.y-180,360,360)}
+  ctx.restore();
+ }
+ function dawnOpen(ctx,k){
+  const W=view.W;ctx.save();ctx.globalCompositeOperation='screen';const g=ctx.createLinearGradient(0,H*.12,0,H);g.addColorStop(0,'rgba(150,170,218,'+(.04*k)+')');g.addColorStop(.42,'rgba(255,200,151,'+(.26*k)+')');g.addColorStop(.7,'rgba(255,216,168,'+(.35*k)+')');g.addColorStop(1,'rgba(255,229,184,'+(.35*k)+')');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();
  }
  // ---------- weather ----------
  const flakes=Array.from({length:144},(_,i)=>({x:(i*97.13)%1,y:(i*57.31)%1,d:i%4,s:.6+((i*13)%7)/7}));
@@ -225,6 +234,7 @@ function create(base,{introSeen=false}={}){
   if(!(st.light>0))return;const b=heroBox(),a=st.at||flameAnchor();
   ctx.save();ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(a.x,H-10,4,a.x,H-10,90+st.light*80);g.addColorStop(0,'rgba(255,184,104,'+(.3*st.light)+')');g.addColorStop(1,'rgba(255,170,90,0)');ctx.fillStyle=g;ctx.fillRect(0,H-170,view.W,170);
+  const hands=ctx.createRadialGradient(a.x,a.y,2,a.x,a.y,42+st.light*62);hands.addColorStop(0,'rgba(255,207,131,'+(.18*st.light)+')');hands.addColorStop(1,'rgba(255,170,90,0)');ctx.fillStyle=hands;ctx.fillRect(a.x-110,a.y-110,220,220);
   // The old full-body rim used the neutral silhouette for every pose, creating a conspicuous
   // human-shaped outline around moving paintings. Local flame spill provides the light instead.
   ctx.restore();
@@ -327,9 +337,9 @@ function create(base,{introSeen=false}={}){
   const reduced=o.reduced,wind=s.wind??.2;
   const cam={p,sway:reduced?0:Math.sin(t*.35)*.6+Math.min(1,wind)*.5};
   const light=Math.max(0,Math.min(1,s.flame/100))*(s.rescue||s.reply>0?1.15:1);
-  // Chapter 4's window is dim through the night and answers in the finale; other lamps stay lit.
+  // Town lamps stay subordinate to the spirit; the far window answers near arrival.
   const reply=s.reply>0?s.reply*(s.replyLevel==='bright'?1:.6):s.rescue?.6:0;
-  const lightAlpha=ci===3?.25+.75*reply:1;
+  const lightAlpha=ci===3?.08+.42*reply:.26;
   const changing=since>=0&&since<2.1&&s.previousChapter!==ci,q=changing?since/2.1:1,m0=Math.max(0,Math.min(1,(q-.28)/.44)),mix=m0*m0*(3-2*m0);
   ctx.canvas.dataset.transition=changing?'blizzard':'';
   if(changing){if(!drawPlate(ctx,s.previousChapter,{...cam,p:1},1-mix,1,['sky','far','mid']))fallbackSky(ctx,s.previousChapter);drawPlate(ctx,ci,{...cam,p:0},mix,lightAlpha,['sky','far','mid'])}
@@ -338,6 +348,7 @@ function create(base,{introSeen=false}={}){
   if(ci===1&&s.routeChoice==='rest'&&t<s.restUntil){const warmth=Math.min(1,(s.restUntil-t)/1.5),g=ctx.createRadialGradient(W*.8,220,8,W*.8,220,190);g.addColorStop(0,'rgba(255,187,105,'+(.2*warmth)+')');g.addColorStop(1,'rgba(255,187,105,0)');ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.fillRect(0,20,W,400);ctx.restore()}
   snow(ctx,t,wind,reduced,s.event?.kind==='eddy'&&t>=s.event.at?Math.sin(t*3):1,'back');
   if(ci===3)dawnGrade(ctx,Math.max(0,(t-finalStart)/20)*.6);
+  nightStage(ctx,light,ci,reply);
   const bob=drawTraveller(ctx,{...s,t,ci,reduced,light,walking:o.playing});
   const a=flameAnchor({...s,t,ci,reduced});
   vignette(ctx,light,{x:a.x,y:a.y});
@@ -372,9 +383,8 @@ function create(base,{introSeen=false}={}){
  function endingFrame(ctx,s,ending,te,o){
   begin(ctx);
   const W=view.W,reduced=o.reduced,ci=ending==='dawn'||ending==='survive'||ending==='wish'?3:s.chapter;
-  const cam={p:ending==='dawn'?1:.8,sway:0};
-  const k=Math.min(1,te/2.4),a=flameAnchor();
-  const lightAlpha=ci===3?(ending==='dawn'?1:ending==='survive'?.5:.3):1;
+  const k=Math.min(1,te/2.4),cam={p:ending==='dawn'?1-.55*k:.8,sway:0},a=flameAnchor();
+  const lightAlpha=ci===3?(ending==='dawn'?.35+.5*k:ending==='survive'?.25:.12):.26;
   if(!drawPlate(ctx,ci,cam,1,lightAlpha,['sky','far','mid']))fallbackSky(ctx,ci);
   snow(ctx,te,ending==='blown'?.9:ending==='smother'?.15:.05,reduced,1,'back');
   const flame=ending==='dawn'?92:ending==='survive'?24+Math.sin(te*6)*4:ending==='smother'?Math.max(0,30*(1-te/1.6)):0;
@@ -382,16 +392,16 @@ function create(base,{introSeen=false}={}){
   // The responding window belongs behind the traveller. Painting this additive glow after her
   // washed out the face and made the ending feel like a generated bloom effect.
   let dawnWindow=null;
-  if(ending==='dawn'){dawnGrade(ctx,.6+.4*k);dawnWindow=windowGlow(ctx,cam,.7+k*.5)}
+  if(ending==='dawn'){dawnGrade(ctx,.6+.4*k);dawnOpen(ctx,k);dawnWindow=windowGlow(ctx,cam,.7+k*.5)}
   const bob=drawTraveller(ctx,{t:te,ci,pose:'end-'+ending,shield:false,wind:ending==='blown'?.9:.1,reduced,light:flame/100,walking:false});
-  if(ending==='dawn'){beam(ctx,dawnWindow,flameAt,k);vignette(ctx,1,flameAt)}
+  if(ending==='dawn'){beam(ctx,dawnWindow,flameAt,k);vignette(ctx,1.2,flameAt)}
   else if(ending==='survive'){dawnGrade(ctx,.45*k);windowGlow(ctx,cam,.25+.12*Math.sin(te*2));vignette(ctx,.45,a)}
   else if(ending==='wish'){windowGlow(ctx,cam,.25);vignette(ctx,.25,a)}
   else{
    // Loss: the world goes cold and dark, but the far lights and the way home remain.
    ctx.save();ctx.globalCompositeOperation='multiply';ctx.fillStyle=ending==='blown'?'rgb(120,140,190)':'rgb(150,140,170)';ctx.fillRect(0,0,W,H);ctx.restore();
    vignette(ctx,0,a);
-   ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.7;const kk=CH[ci];if(ready(kk+'-lights')){const t=plateTransform(ci,cam.p,DEPTH.mid*cam.p);ctx.drawImage(imgs[kk+'-lights'],t.x,t.y,PW*t.z,PH*t.z)}ctx.restore();
+   ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3;const kk=CH[ci];if(ready(kk+'-lights')){const t=plateTransform(ci,cam.p,DEPTH.mid*cam.p);ctx.drawImage(imgs[kk+'-lights'],t.x,t.y,PW*t.z,PH*t.z)}ctx.restore();
   }
   drawFirelight(ctx,{light:flame/100*endingExposure,bob,at:flameAt});
   drawFlame(ctx,{t:te,flame,wind:ending==='blown'?.9:.05,shield:ending==='smother',reduced,expression:ending==='dawn'?'hope':ending==='survive'?'afraid':'calm',hope:ending==='dawn',exposure:endingExposure,scale:ending==='dawn'?.72:1,bob,smoke:ending==='blown'||ending==='smother'?Math.max(0,1-te/4):0,lookAt:ending==='dawn'?1:0},flameAt);

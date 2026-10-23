@@ -85,7 +85,7 @@ function collectionCount(id){
 }
 function top(){return '<header class="top"><a class="logo" href="'+base+'">birdman<span>studio</span><small>EMOTION GAMES</small></a><a class="follow" href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">X / 最新作 ↗</a></header>'}
 if(!game){
- root.innerHTML=top()+'<main class="kienaide-home"><section class="kienaide-home-art" aria-labelledby="home-title"><div class="kienaide-home-copy"><span class="kienaide-home-kicker">A SHORT NIGHT JOURNEY</span><h1 id="home-title" class="kienaide-lettering">きえないで。</h1><p>この灯りを、あの窓まで。</p></div><div class="kienaide-home-bottom"><span>雪の夜を歩く、約90秒の物語</span><a class="kienaide-home-play" href="./kienaide/">旅をはじめる <span aria-hidden="true">↗</span></a></div></section></main><footer class="foot"><a href="./privacy.html">プライバシー</a><span>© birdman studio</span></footer>';
+ root.innerHTML=top()+'<main class="kienaide-home"><section class="kienaide-home-art" aria-labelledby="home-title"><div class="kienaide-home-copy"><span class="kienaide-home-kicker">A SHORT NIGHT JOURNEY</span><h1 id="home-title" class="kienaide-lettering">きえないで。</h1><div class="kienaide-home-promise"><p>この灯りを、あの窓まで。</p><img class="kienaide-home-flame" src="./assets/kienaide-v3/flame-spirit.webp" alt="" aria-hidden="true"></div></div><div class="kienaide-home-bottom"><span>雪の夜を歩く、約90秒の物語</span><a class="kienaide-home-play" href="./kienaide/">旅をはじめる <span aria-hidden="true">↗</span></a></div></section></main><footer class="foot"><a href="./privacy.html">プライバシー</a><span>© birdman studio</span></footer>';
  return;
 }
 const candle=slug==='kienaide';
