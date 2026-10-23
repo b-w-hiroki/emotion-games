@@ -5,7 +5,7 @@ export const STAGES = [
 ];
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, phase: 'ready', message: '鍋を水平に。いい香りがしてきた。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, lastLift: 0, lastLean: 0, phase: 'ready', message: '鍋を上へスワイプ。まっすぐ、ほどよい速さで。' };
 }
 
 export function advance(game, input, dt) {
@@ -32,30 +32,45 @@ export function advance(game, input, dt) {
   return game;
 }
 
-export function toss(game) {
-  if (game.phase !== 'playing' || game.time - game.lastToss < 0.42) return false;
+export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
+  if (game.phase !== 'playing' || game.time - game.lastToss < 0.42) return null;
   game.lastToss = game.time;
   game.tossed++;
-  const safe = Math.abs(game.balance) < 0.48;
+  const lift = Math.max(0, Math.min(2, gesture.lift));
+  const lean = Math.max(-1.5, Math.min(1.5, gesture.lean));
+  game.lastLift = lift;
+  game.lastLean = lean;
+  const quality = Math.max(0, 1 - Math.abs(lift - 0.7) / 0.65 - Math.abs(lean) * 0.65 - Math.abs(game.balance) * 0.55);
+  const safe = lift >= 0.28 && lift <= 1.25 && Math.abs(lean + game.balance * 0.55) < 0.55;
   if (safe) {
     game.combo++;
     game.bestCombo = Math.max(game.bestCombo, game.combo);
-    game.mix = Math.min(1, game.mix + 0.075 + Math.min(game.combo, 8) * 0.004);
-    game.cook = Math.min(1.35, game.cook + 0.008);
-    game.message = game.combo > 1 ? `${game.combo}連続！ 米がふわっと踊った。` : 'いい返し！ 具が混ざった。';
+    game.mix = Math.min(1, game.mix + 0.025 + quality * 0.075);
+    game.cook = Math.min(1.35, game.cook + 0.005 + quality * 0.008);
+    game.message = quality > 0.65 ? 'ふわっ！ 米がきれいに回った。' : '返った！ 次はもう少しまっすぐ。';
   } else {
     game.combo = 0;
-    const loss = Math.min(game.rice, 0.085 + Math.max(0, Math.abs(game.balance) - 0.8) * 0.12);
+    const loss = Math.min(game.rice, 0.025 + Math.max(0, lift - 1.25) * 0.12 + Math.abs(lean + game.balance * 0.55) * 0.08);
     game.rice -= loss;
     game.lost += loss;
-    game.message = 'おっと！ 端からごはんがこぼれた。';
+    game.message = lift < 0.28 ? '弱すぎた。米は鍋の底に残った。' : '斜めか強すぎ！ 米がこぼれた。';
   }
   return safe;
 }
 
+export function addSeasoning(game) {
+  if (game.phase !== 'playing' || game.seasoned) return null;
+  game.seasoned = true;
+  const cookTiming = Math.max(0, 1 - Math.abs(game.cook - 0.56) / 0.5);
+  const mixTiming = Math.min(1, game.mix / 0.45);
+  game.seasoning = Math.round(100 * cookTiming * mixTiming) / 100;
+  game.message = game.seasoning >= 0.7 ? 'ジュワッ！ 香りが立った。' : game.mix < 0.25 ? 'まだ具が混ざる前。味が偏った。' : '調味料を入れた。次は火の通りを見よう。';
+  return game.seasoning;
+}
+
 export function result(game) {
   const doneness = Math.max(0, 1 - Math.abs(game.cook - 0.86) / 0.86);
-  const score = Math.round(100 * (game.mix * 0.38 + doneness * 0.33 + game.rice * 0.29));
+  const score = Math.round(100 * (game.mix * 0.3 + doneness * 0.26 + game.rice * 0.24 + game.seasoning * 0.2));
   const title = game.rice <= 0.25 ? '空っぽの鍋' : score >= 80 ? '伝説のパラパラ' : score >= 60 ? 'うまいチャーハン' : score >= 40 ? 'まだまだ食べられる' : '次はもっとおいしく';
-  return { score, title, doneness };
+  return { score, title, doneness, seasoning: game.seasoning };
 }
