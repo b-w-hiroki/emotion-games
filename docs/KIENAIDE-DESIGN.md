@@ -14,6 +14,7 @@
 | 絵画原本とruntime WebP | `assets/kienaide/paint/src/`、`assets/kienaide/paint/manifest.json`、`scripts/art/kienaide-paint.mjs` | 画像デコード、ノイズ比較、四章・五結末キャプチャ |
 | 静的サイトの組立と配信 | `scripts/build.mjs`、`.github/workflows/pages.yml` | `npm run verify`、公開URL |
 | 004専用の入口と題字 | `assets/app.js`、`assets/style.css`、`assets/kienaide-lettering.webp`、`assets/kienaide/paint/src/title-brush-master.png` | ルートとタイトル画面のモバイル表示、他作品の直通URL維持、共有画像との題字一致 |
+| 入口の作品詳細 | `assets/app.js`、`assets/style.css`、`assets/kienaide-detail/`、`scripts/art/kienaide-detail.mjs` | `scripts/qa-game-detail.mjs` の両画面幅・Chromium／WebKit、調査モードからの開始。画像原本は `scripts/qa-kienaide-visual.mjs` の実ブラウザキャプチャ |
 | 共有サムネイル | `assets/kienaide-thumbnail-bg.webp`、`scripts/art/kienaide-thumbnail.mjs`、`assets/kienaide-thumbnail.png` | 1200×630、題字の判読性、少女と炎の位置、入口と004のOG画像一致 |
 | 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域 | `scripts/qa-research.mjs`、360×640／390×844の回答スクリーンショット |
 
