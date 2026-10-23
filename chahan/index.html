@@ -6,6 +6,7 @@
   <div class="stage" id="swipeZone"><canvas id="scene" width="780" height="900" aria-label="鍋とチャーハンのゲーム画面。上へスワイプして鍋を振る"></canvas><div class="stage-tag" id="stageTag">01 / 03</div><div class="swipe-hint" id="swipeHint">↑ ここを上へスワイプ</div><div class="balance-label">← 左へ傾く <span>鍋のバランス</span> 右へ傾く →</div><div class="balance-track"><i id="balanceNeedle"></i><em></em></div><div class="tip" id="tip">上へスワイプ。強さと方向で米の回り方が変わる。</div></div>
   <section class="meters"><div><span>残ったごはん</span><div class="bar"><i id="riceBar"></i></div></div><div><span>火の通り</span><div class="bar"><i id="cookBar"></i></div></div><div><span>混ざり具合</span><div class="bar"><i id="mixBar"></i></div></div></section>
   <div class="cook-controls"><button id="seasoning">調味料を入れる<small id="seasonHint">一度だけ・中盤が狙い目</small></button><div class="heat-controls"><button id="heatDown">火を弱める</button><span id="heatLabel">火力 48%</span><button id="heatUp">火を強める</button></div></div>
+  <button id="motionButton" class="motion-button" type="button">端末を振って遊ぶ <small id="motionStatus">対応端末のみ・タップで許可</small></button>
   <p class="help">画面を上へスワイプして鍋振り。横へドラッグして傾きを戻す。キーボード：← →／SPACE／↑ ↓、Sで調味料。</p>
   <div class="overlay" id="overlay"><div class="card"><div class="eyebrow">世界を渡る、ひと皿。</div><h1 id="overlayTitle">チャーハン<br><span>大回転</span></h1><p id="overlayText">画面を上へスワイプ！ ほどよい強さで、まっすぐ振ると米が回る。横へドラッグして鍋を水平に。調味料を入れる瞬間も見極めよう。</p><button id="start">調理スタート</button><div class="mini">屋台 → 列車 → 空中キッチン</div></div></div>
   </main><script type="module" src="./game.js"></script></body></html>

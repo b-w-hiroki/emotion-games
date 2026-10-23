@@ -1,7 +1,9 @@
 import { STAGES, createGame, advance, toss, addSeasoning, result } from '../assets/chahan-core.js';
+import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 const $ = id => document.getElementById(id);
 const canvas = $('scene'), ctx = canvas.getContext('2d');
 let game = createGame(), last = 0, animation = 0, soundOn = true, audio, gesture = null, dragSteer = 0;
+let motionEnabled = false, motionSeen = false, neutralGamma = null, tiltSteer = 0, motionTimeout = 0;
 const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -16,7 +18,7 @@ function chirp(freq = 440, duration = .07, type = 'sine') {
     o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + duration);
   } catch { /* Audio is optional. */ }
 }
-function begin() { game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; $('overlay').hidden = true; last = performance.now(); cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); chirp(660, .12); }
+function begin() { game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; $('overlay').hidden = true; last = performance.now(); cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); chirp(660, .12); }
 function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = `混ざり ${Math.round(game.mix * 100)}% ／ 火の通り ${Math.round(r.doneness * 100)}% ／ 味付け ${Math.round(r.seasoning * 100)}% ／ 残ったごはん ${Math.round(game.rice * 100)}%。もう一皿、作ってみる？`; $('start').textContent = 'もう一度つくる'; $('overlay').hidden = false; chirp(r.score >= 70 ? 880 : 270, .35); }
 function press(id, key) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); held.add(key); if (key === 'toss') doToss(); }); for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(event, () => held.delete(key)); }
 press('heatDown', 'down'); press('heatUp', 'up');
@@ -31,6 +33,39 @@ window.addEventListener('blur', () => { held.clear(); gesture = null; dragSteer 
 document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); gesture = null; dragSteer = 0; last = 0; } else last = performance.now(); });
 $('sound').onclick = () => { soundOn = !soundOn; $('sound').textContent = soundOn ? '音 ON' : '音 OFF'; };
 $('start').onclick = begin;
+function stopMotion(status = 'タップで再開') {
+  motionEnabled = false; motionSeen = false; tiltSteer = 0; neutralGamma = null;
+  clearTimeout(motionTimeout);
+  window.removeEventListener('devicemotion', onMotion);
+  window.removeEventListener('deviceorientation', onOrientation);
+  $('motionStatus').textContent = status;
+  $('motionButton').classList.remove('active');
+}
+function onMotion(event) {
+  if (!motionEnabled || document.hidden) return;
+  if ([event.acceleration?.x, event.acceleration?.y, event.acceleration?.z].every(Number.isFinite)) motionSeen = true;
+  const impulse = motionToss(event.acceleration);
+  if (impulse && game.phase === 'playing') doToss(impulse);
+}
+function onOrientation(event) {
+  if (!motionEnabled || document.hidden || !Number.isFinite(event.gamma)) return;
+  if (neutralGamma === null) neutralGamma = event.gamma;
+  tiltSteer = motionSteer(event.gamma, neutralGamma);
+}
+$('motionButton').onclick = async () => {
+  if (motionEnabled) { stopMotion(); return; }
+  if (!window.isSecureContext || typeof window.DeviceMotionEvent === 'undefined') { $('motionStatus').textContent = 'この端末では利用できません・スワイプで操作'; return; }
+  try {
+    // The request must happen inside this click's user activation.
+    const permission = typeof DeviceMotionEvent.requestPermission === 'function' ? await DeviceMotionEvent.requestPermission() : 'granted';
+    if (permission !== 'granted') { $('motionStatus').textContent = '許可されませんでした・スワイプで操作'; return; }
+    motionEnabled = true; motionSeen = false; neutralGamma = null;
+    window.addEventListener('devicemotion', onMotion);
+    window.addEventListener('deviceorientation', onOrientation);
+    $('motionButton').classList.add('active'); $('motionStatus').textContent = '端末を上下に振る・傾けてバランス';
+    motionTimeout = setTimeout(() => { if (!motionSeen) stopMotion('センサー値が届きません・スワイプで操作'); }, 4000);
+  } catch { stopMotion('許可を確認できません・スワイプで操作'); }
+};
 function doToss(input) { if (game.phase !== 'playing') return; const safe = toss(game, input); if (safe === null) return; chirp(safe ? 600 + game.combo * 35 : 185, safe ? .11 : .2, safe ? 'triangle' : 'sawtooth'); updateHud(); }
 function doSeasoning() { const quality = addSeasoning(game); if (quality === null) return; chirp(quality > .6 ? 720 : 330, .22, 'triangle'); updateHud(); }
 $('seasoning').onclick = doSeasoning;
@@ -68,5 +103,5 @@ function draw() {
   ctx.restore();
   ctx.fillStyle = '#fff3d8'; ctx.font = 'bold 31px system-ui'; ctx.textAlign = 'center'; ctx.fillText(stage.name, cx, 92);
 }
-function loop(now) { const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { steer: clamp(Number(held.has('right')) - Number(held.has('left')) + dragSteer, -1, 1), heat: Number(held.has('up')) - Number(held.has('down')) }, dt); draw(); updateHud(); if (game.phase === 'finished') finish(); else animation = requestAnimationFrame(loop); }
+function loop(now) { const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { steer: clamp(Number(held.has('right')) - Number(held.has('left')) + dragSteer + tiltSteer, -1, 1), heat: Number(held.has('up')) - Number(held.has('down')) }, dt); draw(); updateHud(); if (game.phase === 'finished') finish(); else animation = requestAnimationFrame(loop); }
 draw(); updateHud();

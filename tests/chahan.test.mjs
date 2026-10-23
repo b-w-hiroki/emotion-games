@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createGame, advance, toss, addSeasoning, result, STAGES } from '../assets/chahan-core.js';
+import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
   const snapshots = STAGES.map((_, i) => { const g = createGame(); g.phase = 'playing'; g.stage = i; for(let n=0;n<50;n++) advance(g,{steer:0,heat:0},.05); return g.balance; });
@@ -33,4 +34,18 @@ test('heat, stirring and rice all contribute to the final meal', () => {
 test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');
   for(const token of ['pointerdown','pointermove','pointerup','pointercancel','ArrowLeft','ArrowRight','Space','KeyS','visibilitychange']) assert.ok(src.includes(token),token);
+});
+test('physical vertical impulse becomes a toss with strength and lateral direction', () => {
+  assert.equal(motionToss({ x: 0, y: 1, z: 0 }), null, 'hand tremor is ignored');
+  assert.equal(motionToss({ x: 6, y: 3, z: 0 }), null, 'sideways shake is ignored');
+  assert.deepEqual(motionToss({ x: 0, y: 5.6, z: 0 }), { lift: .7, lean: 0 });
+  assert.ok(motionToss({ x: 3, y: 6, z: 0 }).lean > 0);
+  assert.ok(motionToss({ x: 0, y: 18, z: 0 }).lift > 1.25, 'hard shake risks a spill');
+  assert.equal(motionToss({ x: null, y: 8, z: 0 }), null);
+});
+test('tilt steering is calibrated and bounded', () => {
+  assert.equal(motionSteer(12, 12), 0);
+  assert.equal(motionSteer(22, 12), .4);
+  assert.equal(motionSteer(80, 12), 1);
+  assert.equal(motionSteer(null, 12), 0);
 });
