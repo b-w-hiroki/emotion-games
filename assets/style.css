@@ -400,7 +400,7 @@ body.kienaide-title-screen #curtain-title.kienaide-lettering{height:clamp(75px,2
 body.game-detail-open{overflow:hidden}
 .game-detail-modal{position:fixed;inset:0;box-sizing:border-box;width:min(720px,calc(100% - 24px));max-height:calc(100dvh - 32px);margin:auto;padding:0;overflow-y:auto;border:1px solid #a58f79;border-radius:22px;background:#101a2b;color:#f7f2e9;box-shadow:0 24px 70px #000b}
 .game-detail-modal::backdrop{background:#020712d9;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
-.game-detail-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid #526178;background:#101a2bf5}
+.game-detail-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid #526178;background:#101a2b}
 .game-detail-head span{color:#eac493;font-size:11px;font-weight:750;letter-spacing:.1em}
 .game-detail-head button,.game-detail-gallery-nav button{min-width:44px;min-height:44px;border:1px solid #6a7484;border-radius:10px;background:#1b2b42;color:#fff1d9}
 .game-detail-content{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;padding:22px}
@@ -416,7 +416,7 @@ body.game-detail-open{overflow:hidden}
 .game-detail-copy dl{margin:0 0 18px;border-top:1px solid #45556d}
 .game-detail-copy dl div{display:flex;gap:12px;justify-content:space-between;padding:10px 0;border-bottom:1px solid #45556d;font-size:13px}
 .game-detail-copy dt{color:#aebbd0}.game-detail-copy dd{margin:0;text-align:right}
-.game-detail-actions{position:sticky;bottom:0;padding:12px 22px max(12px,env(safe-area-inset-bottom));border-top:1px solid #526178;background:#101a2bf5}
+.game-detail-actions{position:sticky;bottom:0;padding:12px 22px max(12px,env(safe-area-inset-bottom));border-top:1px solid #526178;background:#101a2b}
 .game-detail-play{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid #e5c28b;border-radius:12px;background:#1b304b;color:#fff2da;font-size:17px;font-weight:750}
 .game-detail-play:hover{background:#294466}
 @media(max-width:600px){.game-detail-modal{width:calc(100% - 18px);max-height:calc(100dvh - 18px);border-radius:17px}.game-detail-content{grid-template-columns:1fr;gap:16px;padding:16px}.game-detail-copy{order:-1}.game-detail-frame img{height:min(50dvh,370px)}.game-detail-copy h2{font-size:26px}.game-detail-copy p{font-size:14px}.game-detail-actions{padding-inline:16px}}
