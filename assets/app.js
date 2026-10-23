@@ -190,7 +190,7 @@ if(candle){
 }
 let momentCard=null;
 if(candle){
- const wordmark=new Image();wordmark.src=base+'assets/kienaide-lettering.svg';
+ const wordmark=new Image();wordmark.src=base+'assets/kienaide-lettering.webp';
  const save=$('moment-save'),status=document.createElement('p');status.id='moment-status';status.className='moment-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.hidden=true;save.after(status);
  if(typeof window.KienaideCard?.create==='function'){
  momentCard=window.KienaideCard.create({change:({state:phase,message,ready})=>{save.dataset.state=phase;save.disabled=phase==='idle'||phase==='preparing'||phase==='saving';save.setAttribute('aria-busy',String(phase==='preparing'||phase==='saving'));save.textContent=phase==='preparing'?'カードを準備中…':phase==='saving'?'共有・保存中…':phase==='error'?(ready?'もう一度、保存・共有':'カード作成を再試行'):'結末カードを保存・共有 ↗';status.hidden=!message;status.innerHTML=guidanceMarkup(message);if(phase==='ready'&&!message)mark('moment_card_created',{ending_id:lastEnding,rescue:!!state.rescue})},make:()=>{
