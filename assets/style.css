@@ -310,7 +310,7 @@ body[data-game=kienaide] .curtain h2{font-size:clamp(40px,13vw,64px);line-height
 body[data-game=kienaide] .curtain p{max-width:340px;font-size:15px;line-height:1.75;text-wrap:balance}
 body[data-game=kienaide] .curtain .btn.art-start{width:min(88%,370px)}
 /* The first frame is a storybook cover: town, traveller, title, then the road. */
-body.kienaide-title-screen .curtain.journey-title{overflow:hidden;justify-content:flex-start;gap:0;padding:max(70px,calc(env(safe-area-inset-top) + 58px)) 20px max(8px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#07101d83 0%,#07101d24 25%,#07101d0a 47%,#07101d45 70%,#07101df2 100%),url('./kienaide-v3/snow-town.webp') center 54%/cover no-repeat;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.kienaide-title-screen .curtain.journey-title{overflow:hidden;justify-content:flex-start;gap:0;padding:max(70px,calc(env(safe-area-inset-top) + 58px)) 20px max(8px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#07101dc9 0%,#07101d78 25%,#07101d70 47%,#07101d8c 70%,#07101df2 100%),url('./kienaide-v3/snow-town.webp') center 54%/cover no-repeat;backdrop-filter:none;-webkit-backdrop-filter:none}
 body.kienaide-title-screen .journey-title-hero{position:absolute;z-index:0;bottom:clamp(78px,12vh,122px);left:50%;width:min(78vw,390px);height:min(59vh,620px);object-fit:contain;object-position:center bottom;transform:translateX(-50%);filter:drop-shadow(0 12px 36px #050915aa);pointer-events:none}
 body.kienaide-title-screen #curtain-kicker,body.kienaide-title-screen #curtain-title,body.kienaide-title-screen #curtain-description{position:relative;z-index:1}
 body.kienaide-title-screen #curtain-kicker{margin-top:0;color:#ffe0ad;text-shadow:0 2px 12px #07101d}
@@ -386,11 +386,13 @@ body[data-game=kienaide] .game-heading .kienaide-lettering{height:52px;width:230
 body.kienaide-playing[data-game=kienaide] .game-heading .kienaide-lettering{height:34px;width:160px}
 body.kienaide-title-screen #curtain-title.kienaide-lettering{height:clamp(75px,23vw,120px);width:min(100%,430px);margin:8px auto 5px}
 .kienaide-home{max-width:1140px;margin:auto;padding:8px clamp(14px,4vw,36px) 24px}
-.kienaide-home-art{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:min(730px,calc(100svh - 130px));overflow:hidden;border:1px solid #856c66;border-radius:24px;background:linear-gradient(180deg,#07101dc9 0%,#07101d05 35%,#07101d16 61%,#07101de6 100%),url('./kienaide-v3/snow-town.webp') center 53%/cover no-repeat;box-shadow:0 25px 70px #02050c99}
+.kienaide-home-art{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:min(730px,calc(100svh - 130px));overflow:hidden;border:1px solid #856c66;border-radius:24px;background:linear-gradient(180deg,#07101de0 0%,#07101d7d 35%,#07101d82 61%,#07101def 100%),url('./kienaide-v3/snow-town.webp') center 53%/cover no-repeat;box-shadow:0 25px 70px #02050c99}
 .kienaide-home-copy{text-align:center;padding:clamp(44px,9vh,84px) 20px 0;text-shadow:0 2px 18px #040b18}
 .kienaide-home-kicker{font-size:11px;letter-spacing:.24em;font-weight:700;color:#f7d6a7}
 .kienaide-home-copy .kienaide-lettering{width:min(85%,440px);margin-block:12px 0!important}
 .kienaide-home-copy p{margin:0;font-size:clamp(14px,3.4vw,17px);letter-spacing:.13em;color:#fff0d7}
+.kienaide-home-promise{display:flex;align-items:center;justify-content:center;gap:6px;min-height:58px}
+.kienaide-home-flame{width:44px;height:58px;object-fit:contain;filter:drop-shadow(0 0 10px #ffad60b8);pointer-events:none}
 .kienaide-home-bottom{display:flex;align-items:end;justify-content:space-between;gap:20px;padding:20px clamp(20px,5vw,50px) clamp(24px,5vw,42px)}
 .kienaide-home-bottom>span{font-size:13px;color:#e7decd;text-shadow:0 2px 9px #030814}
 .kienaide-home-play{display:flex;align-items:center;justify-content:space-between;gap:32px;min-width:240px;min-height:62px;margin-left:auto;padding:14px 23px;border:1px solid #e4c18d;border-radius:15px;background:#122039ed;color:#fff1d5;font-size:19px;font-weight:750;box-shadow:0 8px 25px #02071399}
