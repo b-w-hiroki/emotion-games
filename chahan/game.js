@@ -1,9 +1,17 @@
 import { STAGES, createGame, advance, toss, addSeasoning, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
-import { drawScene } from './art.js';
+import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
 const $ = id => document.getElementById(id);
 const canvas = $('scene'), ctx = canvas.getContext('2d');
+const resultCard = $('overlay').querySelector('.card');
+const resultDish = document.createElement('canvas');
+resultDish.id = 'resultDish'; resultDish.className = 'result-dish'; resultDish.width = 640; resultDish.height = 280;
+resultCard.insertBefore(resultDish, $('overlayText'));
+const resultStats = document.createElement('div');
+resultStats.className = 'result-stats';
+resultStats.innerHTML = '<div><small>混ざり</small><strong data-stat="mix"></strong></div><div><small>火の通り</small><strong data-stat="cook"></strong></div><div><small>味付け</small><strong data-stat="seasoning"></strong></div><div><small>残った米</small><strong data-stat="rice"></strong></div>';
+resultCard.insertBefore(resultStats, $('start'));
 let game = createGame(), last = 0, animation = 0, gesture = null, dragSteer = 0, noticeTimer = 0, audioTick = 0;
 const audio = createKitchenAudio();
 let motionEnabled = false, motionSeen = false, neutralGamma = null, tiltSteer = 0, motionTimeout = 0;
@@ -11,8 +19,8 @@ const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = game.stage === 0 ? '最初の舞台' : '次の舞台'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
-function begin() { audio.unlock(); game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', 'まずは、まっすぐ返す。'); }
-function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = `混ざり ${Math.round(game.mix * 100)}% ／ 火の通り ${Math.round(r.doneness * 100)}% ／ 味付け ${Math.round(r.seasoning * 100)}% ／ 残ったごはん ${Math.round(game.rice * 100)}%。もう一皿、作ってみる？`; $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; audio.finish(r.score); }
+function begin() { audio.unlock(); game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', 'まずは、まっすぐ返す。'); }
+function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = r.comment; $('overlay').querySelector('.eyebrow').textContent = '完成した一皿'; for (const [key, value] of Object.entries({ mix: game.mix, cook: r.doneness, seasoning: r.seasoning, rice: game.rice })) resultStats.querySelector(`[data-stat="${key}"]`).textContent = `${Math.round(value * 100)}%`; drawDish(resultDish.getContext('2d'), game); resultCard.classList.add('result'); $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; audio.finish(r.score); }
 function press(id, key) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); held.add(key); if (key === 'toss') doToss(); }); for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(event, () => held.delete(key)); }
 press('heatDown', 'down'); press('heatUp', 'up');
 const zone = $('swipeZone');

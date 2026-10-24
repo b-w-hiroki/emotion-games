@@ -31,6 +31,14 @@ test('heat, stirring and rice all contribute to the final meal', () => {
   assert.ok(result(good).score > result(spilled).score);
   assert.ok(result(good).score > result(unmixed).score);
 });
+test('ending feedback points to the actual cooking shortfall', () => {
+  const good = createGame(); Object.assign(good, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true });
+  assert.match(result(good).comment, /一粒ずつ/);
+  assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
+  assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
+  assert.match(result({ ...good, cook: .15 }).comment, /芯が少し/);
+  assert.match(result({ ...good, seasoning: 0 }).comment, /香りが惜しい/);
+});
 test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');
   for(const token of ['pointerdown','pointermove','pointerup','pointercancel','ArrowLeft','ArrowRight','Space','KeyS','visibilitychange']) assert.ok(src.includes(token),token);

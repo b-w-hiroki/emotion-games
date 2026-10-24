@@ -84,3 +84,50 @@ export function drawScene(ctx, game, reduced = false) {
   burner(ctx,t,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);
   const lip=ctx.createLinearGradient(0,800,0,900);lip.addColorStop(0,'#452a24');lip.addColorStop(1,'#150f16');ctx.fillStyle=lip;ctx.fillRect(0,808,W,92);ctx.fillStyle='#c98754';ctx.fillRect(0,805,W,7);
 }
+
+export function drawDish(ctx, game) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const scoreCook = Math.min(1, game.cook / .86);
+  const rice = Math.max(0, Math.min(1, game.rice));
+  const backdrop = ctx.createRadialGradient(w / 2, h * .4, 12, w / 2, h * .5, w * .55);
+  backdrop.addColorStop(0, '#8c5038'); backdrop.addColorStop(1, '#231e25');
+  ctx.fillStyle = backdrop; ctx.fillRect(0, 0, w, h);
+  glow(ctx, w / 2, h * .5, 220, '#eeb16c');
+  // The finished dish sits on a separate ceramic plate, not in the gameplay wok.
+  ellipse(ctx, w / 2, 219, 263, 40, '#100f17');
+  ellipse(ctx, w / 2, 181, 265, 82, '#d2bfa1');
+  ellipse(ctx, w / 2, 178, 248, 71, '#f4e3c1');
+  ellipse(ctx, w / 2, 179, 220, 58, '#334b51');
+  ellipse(ctx, w / 2, 171, 209, 53, '#f8e8c3');
+  const amount = Math.sqrt(rice), mound = ctx.createRadialGradient(280, 139, 10, 320, 174, 196);
+  mound.addColorStop(0, scoreCook > .75 ? '#ffe0a0' : '#f3d9a1');
+  mound.addColorStop(.68, scoreCook > .75 ? '#e9a657' : '#d7b079');
+  mound.addColorStop(1, game.cook > 1.1 ? '#ad653b' : '#b77b4e');
+  ellipse(ctx, 320, 165, 190 * amount, 59 * amount, mound);
+  ctx.save(); ctx.beginPath(); ctx.ellipse(320, 163, 195 * amount, 63 * amount, 0, 0, Math.PI * 2); ctx.clip();
+  const count = Math.round(300 * rice);
+  for (let i = 0; i < count; i++) {
+    const angle = i * 2.399, radius = Math.sqrt((i + .5) / Math.max(1, count));
+    const x = 320 + Math.cos(angle) * radius * 183 * amount;
+    const y = 162 + Math.sin(angle) * radius * 48 * amount;
+    const color = i % 19 === 0 ? '#77a45c' : i % 17 === 0 ? '#ef7650' : i % 11 === 0 ? '#f9ca5a' : i % 5 === 0 ? '#f2bc74' : '#fff0ba';
+    ellipse(ctx, x, y, 6 + i % 3, 2.2 + i % 2, color, angle * .22);
+  }
+  for (let i = 0; i < 24 * rice; i++) {
+    const angle = i * 2.399, radius = Math.sqrt((i + .5) / 24);
+    const x = 320 + Math.cos(angle) * radius * 160 * amount, y = 158 + Math.sin(angle) * radius * 36 * amount;
+    ellipse(ctx, x, y, i % 3 ? 8 : 10, i % 3 ? 3 : 5, i % 3 === 0 ? '#75a856' : i % 3 === 1 ? '#f1bf54' : '#e8754a', angle);
+  }
+  if (game.seasoned) for (let i = 0; i < 6; i++) {
+    ctx.strokeStyle = rgba('#754025', .22 + game.seasoning * .3); ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(206 + i * 42, 162, 16, .2, 2.3); ctx.stroke();
+  }
+  ctx.restore();
+  if (rice > .3 && scoreCook > .55) {
+    ctx.save(); ctx.globalAlpha = .2 + Math.min(1, game.heat) * .18; ctx.lineWidth = 6; ctx.strokeStyle = '#fff0d7'; ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) { const x = 222 + i * 67; ctx.beginPath(); ctx.moveTo(x, 105); ctx.bezierCurveTo(x - 16, 77, x + 20, 54, x, 25); ctx.stroke(); }
+    ctx.restore();
+  }
+  ctx.strokeStyle = '#fff2ce'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(320, 178, 247, 71, 0, .1, 2.6); ctx.stroke();
+}

@@ -72,5 +72,11 @@ export function result(game) {
   const doneness = Math.max(0, 1 - Math.abs(game.cook - 0.86) / 0.86);
   const score = Math.round(100 * (game.mix * 0.3 + doneness * 0.26 + game.rice * 0.24 + game.seasoning * 0.2));
   const title = game.rice <= 0.25 ? '空っぽの鍋' : score >= 80 ? '伝説のパラパラ' : score >= 60 ? 'うまいチャーハン' : score >= 40 ? 'まだまだ食べられる' : '次はもっとおいしく';
-  return { score, title, doneness, seasoning: game.seasoning };
+  const comment = game.rice <= 0.25 ? '米が鍋から飛んでいった。次は少しやさしく、まっすぐ返そう。'
+    : game.mix < 0.35 ? '具と米がまだ別々。鍋を小さく、何度か返してみよう。'
+    : doneness < 0.45 ? '芯が少し残った。火力を見ながら、もうひと炒め。'
+    : game.seasoning < 0.35 ? '香りが惜しい。具が混ざり、火が通った瞬間を狙おう。'
+    : score >= 80 ? '一粒ずつ香ばしく、ふわりとほどける。今日の会心のひと皿。'
+    : '香ばしく仕上がった。次はもっと軽やかに返せそうだ。';
+  return { score, title, doneness, seasoning: game.seasoning, comment };
 }

@@ -50,6 +50,22 @@ try {
         assert.deepEqual(errors, [], `${name} ${width}: audio-off/reduced-motion has no runtime errors`);
         await page.close();
         console.log(`PASS chahan ${name} ${width}x${height}: pull gesture and layout`);
+        if (width === 360) {
+          const resultPage = await browser.newPage({ viewport: { width, height } });
+          const resultErrors = []; resultPage.on('pageerror', error => resultErrors.push(error.message));
+          await resultPage.clock.install();
+          await resultPage.goto(url);
+          await resultPage.locator('#start').click();
+          await resultPage.clock.runFor(55_000);
+          assert.equal(await resultPage.locator('.card.result').isVisible(), true, 'the completed dish has a dedicated result view');
+          assert.equal(await resultPage.locator('#resultDish').isVisible(), true, 'finished rice illustration is visible');
+          assert.deepEqual(resultErrors, [], 'result view has no runtime errors');
+          await resultPage.screenshot({ path: path.join(output, `result-${name}-360.png`) });
+          await resultPage.locator('#start').click();
+          assert.equal(await resultPage.locator('#overlay').isVisible(), false, `${name}: retry returns to play`);
+          assert.equal(await resultPage.locator('.card.result').count(), 0, `${name}: result layout resets on retry`);
+          await resultPage.close();
+        }
       }
     } finally { await browser.close(); }
   }
