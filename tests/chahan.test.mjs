@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createGame, advance, toss, addSeasoning, result, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addSeasoning, seasoningReadiness, result, STAGES } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
@@ -29,6 +29,23 @@ test('seasoning has one chance and scores timing plus mixing', () => {
   const early = createGame(); early.phase = 'playing'; early.cook = .12; early.mix = .1;
   assert.ok(addSeasoning(early) < .1);
   assert.ok(result(ideal).score > result(early).score);
+  assert.equal(ideal.seasonedAt, 0);
+  assert.deepEqual(seasoningReadiness(ideal), { quality: 1, cue: '今が入れどき！', ready: true });
+  assert.equal(seasoningReadiness(early).cue, 'まず米と具を混ぜる');
+  assert.equal(seasoningReadiness({ ...ideal, seasoned: false, cook: .15 }).cue, 'まだ早い・火を通す');
+  assert.equal(seasoningReadiness({ ...ideal, seasoned: false, cook: .9 }).cue, '遅くなる前に入れる');
+});
+
+test('selected heat stays lit and can cook a meal during the full route', () => {
+  const g = createGame(); g.phase = 'playing';
+  for (let i = 0; i < 1080; i++) advance(g, { steer: 0, heat: 0 }, .05);
+  assert.equal(g.phase, 'finished');
+  assert.equal(g.heat, .48, 'the selected fire must not quietly burn out');
+  assert.ok(g.cook > .7 && g.cook < .9, 'default heat should cook the rice by the end');
+  const hot = createGame(); hot.phase = 'playing'; hot.heat = 1;
+  for (let i = 0; i < 1080; i++) advance(hot, { steer: 0, heat: 0 }, .05);
+  assert.ok(hot.cook > 1.35, 'maximum heat can overcook the meal');
+  assert.ok(result(g).doneness > result(hot).doneness);
 });
 test('heat, stirring and rice all contribute to the final meal', () => {
   const good = createGame(); good.mix = 1; good.cook = .86;
