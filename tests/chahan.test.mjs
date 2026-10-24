@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import sharp from 'sharp';
 import { createGame, advance, toss, addSeasoning, seasoningReadiness, result, STAGES } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
@@ -22,6 +23,15 @@ test('swipe strength and direction determine a good toss', () => {
   g.time += .5; assert.equal(toss(g, { lift: .1, lean: 0 }), false, 'weak swipe does not flip rice');
   assert.equal(g.tossOutcome, 'weak'); assert.equal(g.tossSpill, 0);
   assert.equal(g.rice, riceAfterSpill, 'a weak pull leaves rice in the wok');
+});
+
+test('airborne rice layer keeps transparent space around edible detail', async () => {
+  const { data, info } = await sharp('chahan/art/flight-v3.webp').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  assert.equal(info.width, 780); assert.equal(info.height, 260);
+  let clear = 0, food = 0;
+  for (let i = 3; i < data.length; i += 4) { if (data[i] < 12) clear++; if (data[i] > 220) food++; }
+  assert.ok(clear > info.width * info.height * .25, 'the sprite must not cover the scene with an opaque box');
+  assert.ok(food > info.width * info.height * .15, 'the sprite must contain visible rice');
 });
 test('seasoning has one chance and scores timing plus mixing', () => {
   const ideal = createGame(); ideal.phase = 'playing'; ideal.cook = .56; ideal.mix = .5;

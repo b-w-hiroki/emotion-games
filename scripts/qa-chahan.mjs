@@ -25,16 +25,18 @@ try {
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         await page.addInitScript(() => { if (window.DeviceMotionEvent) Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: () => Promise.resolve('granted') }); });
         await page.goto(url);
-        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2'].map(name => new Promise(resolve => {
-          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name === 'rice-v2' ? 260 : name.endsWith('-v2') ? 520 : 900));
+        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','flight-v3'].map(name => new Promise(resolve => {
+          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name === 'rice-v2' || name === 'flight-v3' ? 260 : name.endsWith('-v2') ? 520 : 900));
           image.onerror = () => resolve(false); image.src = `./art/${name}.webp`;
         }))));
-        assert.deepEqual(painted, [true,true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
+        assert.deepEqual(painted, [true,true,true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
         assert.equal(await page.locator('.cook-controls button').count(), 1, `${name} ${width}: only seasoning remains a cooking button`);
         assert.equal(await page.locator('#motionButton').isVisible(), false, `${name} ${width}: sensor setup stays in settings`);
         await page.screenshot({ path: path.join(output, `title-${name}-${width}.png`) });
         await page.locator('#start').click();
         assert.equal(await page.locator('#stageNotice').isVisible(), true, `${name} ${width}: opening location cue appears`);
+        await page.waitForTimeout(2350);
+        assert.equal(await page.locator('#stageNotice').isVisible(), false, `${name} ${width}: opening cue clears before gameplay capture`);
         const box = await page.locator('#swipeZone').boundingBox();
         const x = box.x + box.width * .48, y = box.y + box.height * .35;
         await page.mouse.move(x, y + 115); await page.mouse.down(); await page.mouse.move(x, y, { steps: 8 }); await page.mouse.up();

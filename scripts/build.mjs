@@ -13,7 +13,7 @@ fs.copyFileSync(path.join(root,'assets','chahan-motion.js'),path.join(dist,'asse
 fs.mkdirSync(path.join(dist,'chahan'),{recursive:true});
 for(const file of ['index.html','style.css','game.js','art.js','audio.js'])fs.copyFileSync(path.join(root,'chahan',file),path.join(dist,'chahan',file));
   fs.mkdirSync(path.join(dist,'chahan','art'),{recursive:true});
-  for(const file of ['street.webp','train.webp','sky.webp','wok-v2.webp','toss-v2.webp','rice-v2.webp'])fs.copyFileSync(path.join(root,'chahan','art',file),path.join(dist,'chahan','art',file));
+  for(const file of ['street.webp','train.webp','sky.webp','wok-v2.webp','toss-v2.webp','rice-v2.webp','flight-v3.webp'])fs.copyFileSync(path.join(root,'chahan','art',file),path.join(dist,'chahan','art',file));
 fs.mkdirSync(path.join(dist,'fishing-battle'),{recursive:true});
 for(const file of ['index.html','style.css','game.js','core.js','audio.js'])fs.copyFileSync(path.join(root,'fishing-battle',file),path.join(dist,'fishing-battle',file));
 fs.mkdirSync(path.join(dist,'fishing-battle','assets'),{recursive:true});
