@@ -6,7 +6,8 @@ import { resolve, join, extname } from 'node:path';
 const root = resolve('dist/fishing-battle');
 const server = createServer(async (req, res) => {
   const name = req.url === '/' ? 'index.html' : req.url.slice(1);
-  if (!['index.html', 'style.css', 'game.js', 'core.js'].includes(name) && !/^assets\/[a-z0-9_-]+\.(png|svg)$/.test(name)) { res.writeHead(404).end(); return; }
+  if (name === 'assets/analytics.js') { res.setHeader('Content-Type', 'text/javascript'); res.end(await readFile(resolve('dist/assets/analytics.js'))); return; }
+  if (!['index.html', 'style.css', 'game.js', 'core.js', 'audio.js'].includes(name) && !/^assets\/[a-z0-9_-]+\.(png|svg)$/.test(name)) { res.writeHead(404).end(); return; }
   res.setHeader('Content-Type', ({ '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml' })[extname(name)]);
   res.end(await readFile(join(root, name)));
 });
@@ -86,6 +87,34 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   if (!await quiet.locator('#cue').isVisible()) throw new Error(`${name}: opening lost with reduced motion and sound off`);
   await quiet.screenshot({ path: `${out}/${name}-quiet-opening.png` });
   await quiet.close();
+  const audio = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await audio.addInitScript(() => {
+    window.__battleAudio = { contexts: 0, resumes: 0, notes: 0 };
+    class ProbeContext {
+      constructor() { window.__battleAudio.contexts++; this.currentTime = 0; this.destination = {}; }
+      resume() { window.__battleAudio.resumes++; return Promise.resolve(); }
+      createOscillator() {
+        window.__battleAudio.notes++;
+        return { frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect(target) { return target; }, start() {}, stop() {} };
+      }
+      createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+    }
+    window.AudioContext = ProbeContext;
+    window.webkitAudioContext = ProbeContext;
+  });
+  await audio.goto(url);
+  await audio.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
+  if (await audio.evaluate(() => window.__battleAudio.contexts) !== 0) throw new Error(`${name}: audio context was created before a gesture`);
+  await audio.locator('#reel').click();
+  const played = await audio.evaluate(() => ({ ...window.__battleAudio }));
+  if (played.contexts !== 1 || played.notes < 1 || played.resumes < 1) throw new Error(`${name}: first reel did not unlock audio`);
+  await audio.locator('#mute').click();
+  await audio.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
+  if (await audio.evaluate(() => window.__battleAudio.notes) !== played.notes) throw new Error(`${name}: muted phase cue made sound`);
+  await audio.locator('#mute').click();
+  await audio.locator('#reel').click();
+  if (await audio.evaluate(() => window.__battleAudio.notes) <= played.notes) throw new Error(`${name}: unmuted reel stayed silent`);
+  await audio.close();
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await page.goto(url);
   for (let i = 0; i < 55 && await page.locator('#result').isHidden(); i++) {

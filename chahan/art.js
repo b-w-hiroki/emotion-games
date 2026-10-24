@@ -117,19 +117,36 @@ function wok(ctx, game, reduced) {
   ctx.strokeStyle='#e9a86a';ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(382,62);ctx.lineTo(395,117);ctx.stroke();
   }
   ctx.restore();
-  if(age>=0&&age<1.05&&game.tossOutcome!=='none'){
+  if(age>=0&&age<1.05&&game.tossOutcome!=='none'&&(!game.seasoned||game.time-game.seasonedAt>=1.35)){
     const label=game.tossOutcome==='caught'?'ふわっ！':game.tossOutcome==='weak'?'弱すぎた':'こぼれた！';
     ctx.save();ctx.textAlign='center';ctx.font='bold 35px sans-serif';ctx.lineWidth=7;ctx.strokeStyle='#322022';ctx.fillStyle=game.tossOutcome==='caught'?'#fff0bd':'#fff9e9';
     const lift=reduced?0:Math.min(age, .5)*42;
     ctx.strokeText(label,390,348-lift);ctx.fillText(label,390,348-lift);ctx.restore();
   }
 }
+function seasoningEffect(ctx, game, reduced) {
+  const age=game.time-game.seasonedAt;
+  if(!game.seasoned||age<0||age>1.35)return;
+  const good=game.seasoning>=.7, progress=reduced?0:Math.min(1,age/.85);
+  ctx.save();
+  glow(ctx,390,510,good?185:95,good?'#ffc875':'#c77a4d');
+  if(!reduced) for(let i=0;i<28;i++){
+    const fraction=(i*.618)%1, x=600+(270+fraction*60-600)*progress+(i%5-2)*18*progress;
+    const y=245+(530+fraction*45-245)*progress-90*Math.sin(Math.PI*progress);
+    ellipse(ctx,x,y,4+i%3,3+i%2,i%6===0?'#fff4c5':good?'#e7a047':'#9d613c',i*.37);
+  }
+  ctx.textAlign='center';ctx.font='bold 34px sans-serif';ctx.lineWidth=7;ctx.strokeStyle='#322022';ctx.fillStyle=good?'#fff0ba':'#ffe0b5';
+  const label=good?'ジュワッ！ いい香り':'味付けが偏った';
+  const rise=reduced?0:Math.min(age,.6)*35;
+  ctx.strokeText(label,390,348-rise);ctx.fillText(label,390,348-rise);
+  ctx.restore();
+}
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;
   const painted = paintedScenes[stage];
   ctx.drawImage(painted.complete && painted.naturalWidth ? painted : background(stage),0,0,W,H);
   const vignette=ctx.createRadialGradient(390,420,170,390,420,610);vignette.addColorStop(0,'#0000');vignette.addColorStop(1,'#090a16a8');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
-  burner(ctx,t,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);
+  burner(ctx,t,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);seasoningEffect(ctx,game,reduced);
 }
 
 export function drawDish(ctx, game) {

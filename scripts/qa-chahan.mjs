@@ -17,10 +17,10 @@ const server = http.createServer((req, res) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${server.address().port}/chahan/`;
 try {
-  for (const [engine, name] of [[chromium, 'chromium'], [webkit, 'webkit']]) {
+  for (const [engine, name] of [[chromium, 'chromium'], [webkit, 'webkit']].filter(([, name]) => !process.argv[2] || process.argv[2] === name)) {
     const browser = await engine.launch({ headless: true });
     try {
-      for (const [width, height] of [[390, 844], [360, 640]]) {
+      for (const [width, height] of [[390, 844], [360, 640]].filter(([width]) => !process.argv[3] || Number(process.argv[3]) === width)) {
         const page = await browser.newPage({ viewport: { width, height }, hasTouch: true });
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         await page.addInitScript(() => { if (window.DeviceMotionEvent) Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: () => Promise.resolve('granted') }); });
@@ -71,6 +71,19 @@ try {
           assert.ok(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)) < riceBeforeWeak, `${name}: diagonal pull visibly costs rice`);
           await page.waitForTimeout(160);
           await page.screenshot({ path: path.join(output, `spilled-${name}-${width}.png`) });
+          assert.match(await page.locator('#seasonHint').textContent(), /米と具|火を通す/, `${name}: seasoning gives an actionable timing cue`);
+          await page.locator('#seasoning').click();
+          assert.match(await page.locator('#seasonHint').textContent(), /味付け \d+%/, `${name}: seasoning reveals the achieved quality`);
+          await page.screenshot({ path: path.join(output, `seasoning-early-${name}-${width}.png`) });
+          const seasonedScene = await page.evaluate(async () => {
+            const [{ createGame, addSeasoning }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            const demo = createGame(); Object.assign(demo, { phase: 'playing', time: 20, stage: 1, cook: .56, mix: .5, heat: .7 });
+            addSeasoning(demo); demo.time += .25;
+            const canvas = document.createElement('canvas'); canvas.width = 780; canvas.height = 900;
+            drawScene(canvas.getContext('2d'), demo);
+            return canvas.toDataURL('image/png').split(',')[1];
+          });
+          fs.writeFileSync(path.join(output, `seasoning-good-${name}-${width}.png`), Buffer.from(seasonedScene, 'base64'));
         }
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${name} ${width}: no horizontal overflow`);
         assert.deepEqual(errors, [], `${name} ${width}: no runtime errors`);
@@ -85,6 +98,24 @@ try {
         assert.deepEqual(errors, [], `${name} ${width}: audio-off/reduced-motion has no runtime errors`);
         await page.close();
         console.log(`PASS chahan ${name} ${width}x${height}: pull gesture and layout`);
+        if (width === 390) {
+          const timingPage = await browser.newPage({ viewport: { width, height } });
+          await timingPage.clock.install();
+          await timingPage.goto(url);
+          await timingPage.locator('#start').click();
+          await timingPage.clock.runFor(100);
+          assert.match(await timingPage.locator('#seasonHint').textContent(), /まず米と具を混ぜる/, `${name}: seasoning starts with a mixing cue`);
+          await timingPage.locator('#heatControl').evaluate(el => { el.value = '80'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+          for (let i = 0; i < 6; i++) { await timingPage.keyboard.press('Space'); await timingPage.clock.runFor(500); }
+          await timingPage.clock.runFor(13_000);
+          assert.equal(await timingPage.locator('#seasoning').evaluate(el => el.classList.contains('ready')), true, `${name}: well mixed, hot rice exposes seasoning window`);
+          assert.equal(await timingPage.locator('#seasonHint').textContent(), '今が入れどき！');
+          await timingPage.locator('#seasoning').click();
+          assert.ok(Number((await timingPage.locator('#seasonHint').textContent()).match(/\d+/)[0]) >= 70, `${name}: timing cue leads to a good seasoning score`);
+          await timingPage.clock.runFor(250);
+          await timingPage.screenshot({ path: path.join(output, `seasoning-timed-${name}-${width}.png`) });
+          await timingPage.close();
+        }
         if (width === 360) {
           const resultPage = await browser.newPage({ viewport: { width, height } });
           const resultErrors = []; resultPage.on('pageerror', error => resultErrors.push(error.message));

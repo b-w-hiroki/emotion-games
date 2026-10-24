@@ -1,4 +1,4 @@
-import { STAGES, createGame, advance, toss, addSeasoning, result } from '../assets/chahan-core.js';
+import { STAGES, createGame, advance, toss, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
@@ -77,7 +77,11 @@ function updateHud() {
   $('balanceNeedle').style.left = `${50 + clamp(game.balance, -1, 1) * 45}%`;
   $('riceBar').style.width = `${game.rice * 100}%`; $('cookBar').style.width = `${clamp(game.cook, 0, 1) * 100}%`; $('mixBar').style.width = `${game.mix * 100}%`;
   $('heatLabel').textContent = `火力 ${Math.round(game.heat * 100)}%`; $('heatControl').value = Math.round(game.heat * 100); $('heatControl').style.setProperty('--heat', `${Math.round(game.heat * 100)}%`); $('tip').textContent = game.message;
-  $('seasoning').disabled = game.seasoned || game.phase !== 'playing'; $('seasonHint').textContent = game.seasoned ? `味付け ${Math.round(game.seasoning * 100)}%` : '一度だけ・中盤が狙い目';
+  const seasoning = seasoningReadiness(game), seasonButton = $('seasoning'), seasonHint = $('seasonHint');
+  seasonButton.disabled = game.seasoned || game.phase !== 'playing';
+  seasonButton.classList.toggle('ready', !game.seasoned && game.phase === 'playing' && seasoning.ready);
+  const hint = game.seasoned ? `味付け ${Math.round(game.seasoning * 100)}%` : game.phase === 'playing' ? seasoning.cue : '一度だけ・中盤が狙い目';
+  if (seasonHint.textContent !== hint) seasonHint.textContent = hint;
 }
 function draw() { drawScene(ctx, game, reduceMotion); }
 function loop(now) { const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; const oldStage = game.stage; advance(game, { steer: clamp(Number(held.has('right')) - Number(held.has('left')) + dragSteer + tiltSteer, -1, 1), heat: Number(held.has('up')) - Number(held.has('down')) }, dt); if (game.stage !== oldStage && game.phase === 'playing') { const stage = STAGES[game.stage]; showNotice(stage.name, game.stage === 1 ? '揺れる車内で、鍋を水平に。' : '空の上。最後のひと振り。'); audio.transition(); } if (now - audioTick > 130) { audio.update({ stage: game.stage, heat: game.heat, playing: game.phase === 'playing' }); audioTick = now; } draw(); updateHud(); if (game.phase === 'finished') finish(); else animation = requestAnimationFrame(loop); }

@@ -5,7 +5,7 @@ export const STAGES = [
 ];
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '鍋を手前へ引くように下へ。まっすぐ、ほどよい速さで。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '鍋を手前へ引くように下へ。まっすぐ、ほどよい速さで。' };
 }
 
 export function advance(game, input, dt) {
@@ -20,8 +20,8 @@ export function advance(game, input, dt) {
   const spill = Math.max(0, Math.abs(game.balance) - 0.78) * dt * (game.tossed ? 0.08 : 0.045);
   game.rice = Math.max(0, game.rice - spill);
   game.lost += spill;
-  game.heat = Math.max(0, Math.min(1, game.heat + input.heat * dt * 0.75 - dt * 0.09));
-  game.cook += dt * game.heat * stage.heat * 0.018;
+  game.heat = Math.max(0, Math.min(1, game.heat + input.heat * dt * 0.75));
+  game.cook += dt * game.heat * stage.heat * 0.03;
   if (game.stageTime >= stage.seconds) {
     game.stageTime -= stage.seconds;
     game.stage++;
@@ -61,12 +61,23 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
   return safe;
 }
 
+export function seasoningReadiness(game) {
+  const cookTiming = Math.max(0, 1 - Math.abs(game.cook - 0.56) / 0.5);
+  const mixTiming = Math.min(1, game.mix / 0.45);
+  const quality = Math.round(100 * cookTiming * mixTiming) / 100;
+  const cue = game.mix < 0.25 ? 'まず米と具を混ぜる'
+    : game.cook < 0.36 ? 'まだ早い・火を通す'
+    : game.cook > 0.76 ? '遅くなる前に入れる'
+    : quality >= 0.7 ? '今が入れどき！'
+    : game.mix < 0.35 ? 'もう少し米を返す' : 'もう少し火を通す';
+  return { quality, cue, ready: quality >= 0.7 };
+}
+
 export function addSeasoning(game) {
   if (game.phase !== 'playing' || game.seasoned) return null;
   game.seasoned = true;
-  const cookTiming = Math.max(0, 1 - Math.abs(game.cook - 0.56) / 0.5);
-  const mixTiming = Math.min(1, game.mix / 0.45);
-  game.seasoning = Math.round(100 * cookTiming * mixTiming) / 100;
+  game.seasonedAt = game.time;
+  game.seasoning = seasoningReadiness(game).quality;
   game.message = game.seasoning >= 0.7 ? 'ジュワッ！ 香りが立った。' : game.mix < 0.25 ? 'まだ具が混ざる前。味が偏った。' : '調味料を入れた。次は火の通りを見よう。';
   return game.seasoning;
 }
