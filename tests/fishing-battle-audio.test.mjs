@@ -86,3 +86,13 @@ test('held-line sound follows tension and stops on release, mute and retry', () 
   r.audio.setTension(.5, 400); r.audio.reset();
   assert.equal(r.voices[2].stopCalls, 1);
 });
+
+test('the final opening cue respects gesture unlock and mute', () => {
+  const r = rig();
+  assert.equal(r.audio.play('openingLate'), false);
+  r.audio.unlock();
+  assert.equal(r.audio.play('openingLate'), true);
+  assert.equal(r.voices.length, 1);
+  r.audio.setMuted(true);
+  assert.equal(r.audio.play('openingLate'), false);
+});

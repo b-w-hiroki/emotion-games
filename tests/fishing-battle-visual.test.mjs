@@ -1,7 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battlePose, interactionFeedback, outcomePose } from '../fishing-battle/visual.js';
+import { battlePose, interactionFeedback, outcomePose, timingWindow } from '../fishing-battle/visual.js';
+
+test('warning fills and the real opening window drains on the battle clock', () => {
+  const state = createBattle('aji');
+  state.phaseUntil = 2;
+  state.time = 1.35;
+  assert.ok(timingWindow(state, 'warning').fraction < .001);
+  state.time = 1.675;
+  assert.ok(Math.abs(timingWindow(state, 'warning').fraction - .5) < .001);
+  state.openingUntil = 3.5;
+  state.time = 2;
+  assert.equal(timingWindow(state, 'opening').fraction, 1);
+  state.time = 3.125;
+  assert.equal(timingWindow(state, 'opening').fraction, .25);
+  state.outcome = 'caught';
+  assert.equal(timingWindow(state, 'opening'), null);
+});
 
 test('the held input shares one tension curve across line, control and sound', () => {
   const state = createBattle('aji');

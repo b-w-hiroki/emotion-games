@@ -5,3 +5,4 @@
 @media(min-height:701px){.controls p{margin:8px 0 4px}#reel{width:min(34vw,136px);height:min(34vw,136px)}}@media(max-height:700px){.controls.is-pulling #reel{transform:translateY(-4px) scale(.94)}}
 .cue.finale-caught{background:#075f65f0;border-color:#c9ffe8;box-shadow:0 0 22px #86ffe77a}.cue.finale-escaped{background:#713738ef;border-color:#ffc7b4}
 .controls.is-pulling #reel{box-shadow:0 0 0 6px #06486c,0 0 0 9px #d9ab64,0 0 var(--glow-size,18px) 15px var(--pull-glow,#8de7ff),inset 0 7px 16px #c1ebff70}.controls.is-pulling #hint{color:var(--pull-glow,#bcfff2)}
+.cue{overflow:hidden;padding-bottom:11px}.cue #timingFill{position:absolute;left:0;bottom:0;height:5px;background:#a9fff1;box-shadow:0 0 10px #75f9e9}.cue.warning #timingFill{background:#ffd18a;box-shadow:0 0 10px #ffd18a}.cue #timingFill[hidden]{display:none}

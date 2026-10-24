@@ -45,11 +45,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await page.screenshot({ path: `${out}/${name}-reel-impact.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
       if (!await page.locator('#hint').textContent().then(t => t.includes('指を止めよう'))) throw new Error(`${name}: warning guidance missing`);
+      if (await page.locator('#timingFill').getAttribute('hidden') !== null || !await page.locator('#cueText').textContent().then(t => t.includes('もうすぐ走る'))) throw new Error(`${name}: warning timer and guidance are disconnected`);
       await page.screenshot({ path: `${out}/${name}-warning.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
       if (!await page.locator('#hint').textContent().then(t => t.includes('スワイプ'))) throw new Error(`${name}: opening guidance missing`);
+      if (await page.locator('#timingFill').getAttribute('hidden') !== null) throw new Error(`${name}: opening window has no visible timer`);
       await page.screenshot({ path: `${out}/${name}-opening.png` });
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening') && parseFloat(document.querySelector('#timingFill')?.style.width) <= 35);
+      await page.screenshot({ path: `${out}/${name}-opening-late.png` });
       for (const id of ['aji', 'tai', 'bass', 'buri', 'saba', 'isaki', 'hirame', 'kanpachi', 'kue']) {
         await page.locator('#fish').selectOption(id);
         if (!await page.locator('#fishName').textContent()) throw new Error(`${name}: ${id} has no name`);
