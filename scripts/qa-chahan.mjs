@@ -25,11 +25,11 @@ try {
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         await page.addInitScript(() => { if (window.DeviceMotionEvent) Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: () => Promise.resolve('granted') }); });
         await page.goto(url);
-        const painted = await page.evaluate(async () => Promise.all(['street','train','sky'].map(name => new Promise(resolve => {
-          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === 900);
+        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2'].map(name => new Promise(resolve => {
+          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name.endsWith('-v2') ? 520 : 900));
           image.onerror = () => resolve(false); image.src = `./art/${name}.webp`;
         }))));
-        assert.deepEqual(painted, [true,true,true], `${name} ${width}: painted scene assets decode`);
+        assert.deepEqual(painted, [true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
         await page.screenshot({ path: path.join(output, `title-${name}-${width}.png`) });
         await page.locator('#start').click();
         assert.equal(await page.locator('#stageNotice').isVisible(), true, `${name} ${width}: opening location cue appears`);
@@ -45,6 +45,7 @@ try {
         assert.equal(await page.locator('#combo').textContent(), '2', `${name} ${width}: sensor pull toward the player tosses rice`);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${name} ${width}: no horizontal overflow`);
         assert.deepEqual(errors, [], `${name} ${width}: no runtime errors`);
+        await page.waitForTimeout(2400);
         await page.screenshot({ path: path.join(output, `game-${name}-${width}.png`) });
         await page.locator('#sound').click();
         await page.reload();
@@ -61,11 +62,11 @@ try {
           await resultPage.clock.install();
           await resultPage.goto(url);
           await resultPage.locator('#start').click();
-          await resultPage.clock.runFor(19_000);
+          await resultPage.clock.runFor(20_500);
           await resultPage.screenshot({ path: path.join(output, `train-${name}-360.png`) });
           await resultPage.clock.runFor(18_000);
           await resultPage.screenshot({ path: path.join(output, `sky-${name}-360.png`) });
-          await resultPage.clock.runFor(18_000);
+          await resultPage.clock.runFor(16_500);
           assert.equal(await resultPage.locator('.card.result').isVisible(), true, 'the completed dish has a dedicated result view');
           assert.equal(await resultPage.locator('#resultDish').isVisible(), true, 'finished rice illustration is visible');
           assert.deepEqual(resultErrors, [], 'result view has no runtime errors');
