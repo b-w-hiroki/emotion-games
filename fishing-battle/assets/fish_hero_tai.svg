@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+<defs>
+  <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb6a8"/><stop offset=".42" stop-color="#e85a4f"/><stop offset=".78" stop-color="#f6d9c9"/><stop offset="1" stop-color="#fff5ea"/></linearGradient>
+  <linearGradient id="fin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff7969"/><stop offset="1" stop-color="#b62f38"/></linearGradient>
+  <radialGradient id="shine"><stop stop-color="#ffffff" stop-opacity=".92"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#04243a" flood-opacity=".35"/></filter>
+  <pattern id="scales" width="18" height="14" patternUnits="userSpaceOnUse"><path d="M0 7 Q9 0 18 7 Q9 14 0 7" fill="none" stroke="#ffd7cf" stroke-opacity=".38" stroke-width="1.4"/></pattern>
+</defs>
+<g filter="url(#shadow)" transform="translate(16 8)">
+  <path d="M68 194 C92 103 205 54 360 70 C449 79 512 124 552 177 C512 231 444 274 350 286 C211 304 101 263 68 194Z" fill="url(#body)" stroke="#8d2d35" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M142 104 C183 42 236 22 285 32 L260 89 L222 53 L212 96 L176 65 L176 112Z" fill="url(#fin)" stroke="#8d2d35" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M524 170 L612 89 L600 179 L622 260 L528 218Z" fill="url(#fin)" stroke="#8d2d35" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M278 259 L358 328 L368 271Z" fill="url(#fin)" stroke="#8d2d35" stroke-width="6"/>
+  <path d="M330 118 L430 92 L385 158Z" fill="#f59b89" stroke="#9c3f48" stroke-width="5"/>
+  <path d="M96 194 C122 137 177 102 241 89 C192 139 183 230 230 276 C161 266 112 238 96 194Z" fill="#fff3e9" fill-opacity=".62"/>
+  <path d="M122 157 C195 102 322 82 446 115 C363 103 259 127 178 192 C149 215 124 226 101 222" fill="none" stroke="#ffffff" stroke-opacity=".58" stroke-width="9" stroke-linecap="round"/>
+  <path d="M116 125 H454 V270 H116Z" fill="url(#scales)" opacity=".95"/>
+  <ellipse cx="129" cy="181" rx="29" ry="32" fill="#fff2d2" stroke="#74323a" stroke-width="6"/>
+  <circle cx="132" cy="181" r="15" fill="#d99b22"/><circle cx="136" cy="180" r="8" fill="#081825"/><circle cx="140" cy="174" r="3" fill="#fff"/>
+  <path d="M66 197 Q101 171 132 198 Q100 226 65 213" fill="#f7c5bb" stroke="#7b3138" stroke-width="6"/>
+  <path d="M68 209 Q99 196 124 209" fill="none" stroke="#7b3138" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="206" cy="126" rx="70" ry="34" fill="url(#shine)" transform="rotate(-18 206 126)"/>
+  <path d="M228 175 Q280 147 340 160" fill="none" stroke="#9e3f45" stroke-width="5" stroke-opacity=".55"/>
+</g></svg>

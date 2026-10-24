@@ -4,7 +4,7 @@
 
 照合元: AINANの `docs/PRODUCT_SPEC.md`、`docs/TECHNICAL_DESIGN.md`、`docs/VERTICAL_SLICE_QA.md`、`fishing-game/js/game/battle.js`、`fishing-game/js/game/installVerticalSliceBattleContinuity.js`、`fishing-game/js/scenes/components/BattleUI.js`、`fishing-game/js/scenes/GameScene.js` のローカル作業コピー（2026-10-24）。AINAN側の未コミット変更には触れていない。
 
-現試作: [`/fishing-battle/`](../fishing-battle/index.html)。ルールは `fishing-battle/core.js`、画面と入力は `fishing-battle/game.js`。本書の受入条件は今後の作り込みを含み、現試作の完成宣言ではない。
+現試作: [`/fishing-battle/`](../fishing-battle/index.html)。ルールは `fishing-battle/core.js`、画面と入力は `fishing-battle/game.js`。2026-10-24にAINAN現行の9魚種Battle値、200ms tick、巻き／逃走の増減、港の背景・人物・魚素材、上部HUDと下部ダイヤルへ合わせた。単独入口のためHIT・Result・保存との接続は対象外。本書の受入条件は今後の作り込みを含み、現試作の完成宣言ではない。
 
 ## 目的と感情仮説
 
@@ -18,11 +18,11 @@
 | --- | --- | --- |
 | 入口と出口 | HIT成功でBattle、`reel >= 100`で釣獲、`escape >= 100`で逃走 | HITの魚と位置関係を引き継ぎ、結果確定を画・音・操作停止で明確にする |
 | ルール | 平静時はスワイプ／ダイヤルのタップで巻く。暴れ中に巻くと逃走値が増える。暴れが収まった直後に一度だけ巻きのボーナスがある | 魚の予兆、暴れ、収まり、巻きどきを一貫して読み取れるようにする |
-| 時間 | 200ms tick。魚種別の暴れ間隔・長さ、逃走速度・抵抗がある。縦切り層は最初の暴れを早めに発生させる | 切替に予兆と反応の余地を作り、待つ／巻く判断が偶然に見えないようにする |
+| 時間 | 200ms tick。魚種別の暴れ間隔・長さ、逃走速度・抵抗がある。縦切り層は最初の暴れを1.8秒以内に発生させる | 現試作は同じ時間・数値で動かし、今後の予兆追加はAINANとの差分として扱う |
 | 見た目 | 魚、海、竿、糸を連続表示する層とBattle専用魚演出・HUDがある | 実画面でowner重複、魚の二重表示、糸の断絶、ゲージとの意味の食い違いを解消する |
 | 入力 | タップと下スワイプ、入力クールダウン。暴れ中も入力を判定する | 1動作を1判断として扱い、連打・長いスワイプ・端での操作・画面復帰を検証する |
 
-現行実装は `Math.random()` で暴れ時間と逃走値を変動させる。回帰テストでは乱数と時刻を制御する。実測なしに難易度数値を変更しない。
+AINAN現行実装は `Math.random()` で暴れ時間と逃走値を変動させる。現試作は同じ範囲と増減をseed付き乱数で再現し、回帰テストで時刻と入力を制御する。実測なしに難易度数値を変更しない。
 
 ## 最初の10秒とコアループ
 
@@ -48,7 +48,7 @@
 
 ## 画・音・入力の制作境界
 
-- Battle中もRetrieveと同じ水面、掛かった魚、釣り人、竿、糸の連続性を保つ。魚の拡大演出と水中魚影が二重に主役にならないよう描画ownerを確認する。竿先と糸の接点、手元へ寄る変化を画面キャプチャで追えること。
+- Battle中もRetrieveと同じ水面、掛かった魚、釣り人、竿、糸の連続性を保つ。現試作の港水面、人物、魚はAINANローカル作業コピーの `fishing-game/assets/approved-mock/harbor-clean-water-390x844.png`、`characters/animation-v1/fight-mid.png`、`generated/hero/fish_hero_*.svg` を `fishing-battle/assets/` に複製した。魚の拡大演出と水中魚影が二重に主役にならないよう描画ownerを確認する。
 - 平静、暴れの予兆、暴れ、収まり、危険、釣獲、逃走に視聴覚の手掛かりを設ける。危険は色だけに頼らない。音・振動は受理した操作と状態変化に同期し、ミュートでも判断可能にする。
 - タップと下スワイプは同じルールとクールダウンに入る。タッチキャンセル、複数指、連打、画面外リリースで一動作を二重に数えない。入力位置とボタン位置を一致させる。
 - `prefers-reduced-motion` では強い揺れを抑え、予兆・危険・巻きどきの情報は残す。390×844を基準に、320×568・375×667でも魚、危険、巻き操作、Resultへの導線を実表示で確認する。
