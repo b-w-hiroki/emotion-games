@@ -6,9 +6,9 @@ function rig() {
   const voices = [], timers = new Map();
   let nextTimer = 1, created = 0, resumed = 0, suspended = 0;
   const context = {
-    currentTime: 0, destination: {},
-    resume() { resumed++; return Promise.resolve(); },
-    suspend() { suspended++; return Promise.resolve(); },
+    currentTime: 0, destination: {}, state: 'suspended',
+    resume() { resumed++; this.state = 'running'; return Promise.resolve(); },
+    suspend() { suspended++; this.state = 'suspended'; return Promise.resolve(); },
     createOscillator() {
       const voice = {
         frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
@@ -32,6 +32,8 @@ test('no audio context or cue is created before a player gesture', () => {
   assert.equal(r.created, 1);
   assert.equal(r.resumed, 1);
   assert.equal(r.audio.play('goodReel'), true);
+  r.audio.unlock();
+  assert.equal(r.resumed, 1);
   assert.equal(r.voices.length, 1);
   assert.equal(r.voices[0].started, true);
 });

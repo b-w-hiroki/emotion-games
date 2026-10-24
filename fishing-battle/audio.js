@@ -17,8 +17,10 @@ export class BattleAudio {
     if (this.muted || this.hidden) return false;
     try {
       this.context ??= this.makeContext();
-      const resumed = this.context.resume?.();
-      resumed?.catch?.(() => {});
+      if (this.context.state !== 'running') {
+        const resumed = this.context.resume?.();
+        resumed?.catch?.(() => {});
+      }
       this.unlocked = true;
       return true;
     } catch { return false; }
@@ -32,7 +34,7 @@ export class BattleAudio {
   setHidden(hidden) {
     this.hidden = hidden;
     if (hidden) { this.silence(); this.suspend(); }
-    else if (this.unlocked && !this.muted) {
+    else if (this.unlocked && !this.muted && this.context?.state !== 'running') {
       try { const resumed = this.context?.resume?.(); resumed?.catch?.(() => {}); } catch {}
     }
   }
