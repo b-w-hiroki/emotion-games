@@ -1,6 +1,6 @@
 # 004「きえないで。」現行設計
 
-最終照合: 2026-10-23。プレイヤー向けの振る舞いは [仕様書](./KIENAIDE-SPEC.md) を正本とする。本書は変更箇所とテストを判断するための責務・データ・不変条件を記す。
+最終照合: 2026-10-24。プレイヤー向けの振る舞いは [仕様書](./KIENAIDE-SPEC.md) を正本とする。本書は変更箇所とテストを判断するための責務・データ・不変条件を記す。
 
 ## 構成と依存方向
 
@@ -17,6 +17,7 @@
 | 入口の作品詳細 | `assets/app.js`、`assets/style.css`、`assets/kienaide-detail/`、`scripts/art/kienaide-detail.mjs` | `scripts/qa-game-detail.mjs` の両画面幅・Chromium／WebKit、調査モードからの開始。画像原本は `scripts/qa-kienaide-visual.mjs` の実ブラウザキャプチャ |
 | 共有サムネイル | `assets/kienaide-thumbnail-bg.webp`、`scripts/art/kienaide-thumbnail.mjs`、`assets/kienaide-thumbnail.png` | 1200×630、題字の判読性、少女と炎の位置、入口と004のOG画像一致 |
 | 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域 | `scripts/qa-research.mjs`、360×640／390×844の回答スクリーンショット |
+| 任意の作品別KPI | `assets/app.js` の既存イベント → `assets/analytics.js`、`docs/ANALYTICS.md` | 同意前・拒否後の無通信、許可後の共通／004固有イベント、検証モード除外を `scripts/qa-analytics.mjs` で確認 |
 
 `kienaide-core.js` はDOM・音・保存を知らない決定論的なルール層。`app.js` が入力をcoreへ渡し、返されたイベントをview/audio/DOM/計測へ配る。表示やサウンドを変更しても、結末判定の正本を別に作らない。
 
