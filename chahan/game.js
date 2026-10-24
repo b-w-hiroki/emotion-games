@@ -21,8 +21,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = game.stage === 0 ? '最初の舞台' : '次の舞台'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
 function begin() { audio.unlock(); game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', 'まずは、まっすぐ返す。'); }
 function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = r.comment; $('overlay').querySelector('.eyebrow').textContent = '完成した一皿'; for (const [key, value] of Object.entries({ mix: game.mix, cook: r.doneness, seasoning: r.seasoning, rice: game.rice })) resultStats.querySelector(`[data-stat="${key}"]`).textContent = `${Math.round(value * 100)}%`; drawDish(resultDish.getContext('2d'), game); resultCard.classList.add('result'); $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; audio.finish(r.score); }
-function press(id, key) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); held.add(key); if (key === 'toss') doToss(); }); for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(event, () => held.delete(key)); }
-press('heatDown', 'down'); press('heatUp', 'up');
+$('heatControl').addEventListener('input', event => { if (game.phase === 'playing') game.heat = clamp(Number(event.target.value) / 100, 0, 1); });
 const zone = $('swipeZone');
 zone.addEventListener('pointerdown', e => { if (game.phase !== 'playing' || gesture) return; e.preventDefault(); zone.setPointerCapture(e.pointerId); gesture = { id: e.pointerId, x: e.clientX, y: e.clientY, at: performance.now(), currentX: e.clientX, currentY: e.clientY }; });
 zone.addEventListener('pointermove', e => { if (!gesture || e.pointerId !== gesture.id) return; gesture.currentX = e.clientX; gesture.currentY = e.clientY; dragSteer = clamp((e.clientX - gesture.x) / 80, -1, 1); });
@@ -77,7 +76,7 @@ function updateHud() {
   $('stageTag').textContent = `${Math.min(game.stage + 1, 3).toString().padStart(2, '0')} / 03`;
   $('balanceNeedle').style.left = `${50 + clamp(game.balance, -1, 1) * 45}%`;
   $('riceBar').style.width = `${game.rice * 100}%`; $('cookBar').style.width = `${clamp(game.cook, 0, 1) * 100}%`; $('mixBar').style.width = `${game.mix * 100}%`;
-  $('heatLabel').textContent = `火力 ${Math.round(game.heat * 100)}%`; $('tip').textContent = game.message;
+  $('heatLabel').textContent = `火力 ${Math.round(game.heat * 100)}%`; $('heatControl').value = Math.round(game.heat * 100); $('heatControl').style.setProperty('--heat', `${Math.round(game.heat * 100)}%`); $('tip').textContent = game.message;
   $('seasoning').disabled = game.seasoned || game.phase !== 'playing'; $('seasonHint').textContent = game.seasoned ? `味付け ${Math.round(game.seasoning * 100)}%` : '一度だけ・中盤が狙い目';
 }
 function draw() { drawScene(ctx, game, reduceMotion); }
