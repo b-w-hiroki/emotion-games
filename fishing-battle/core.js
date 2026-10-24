@@ -93,5 +93,6 @@ export function reelBattle(state) {
 export function battleCue(state) {
   if (state.phase === 'rage') return 'rage';
   if (state.time < state.openingUntil && !state.openingUsed) return 'opening';
+  if (state.phaseUntil - state.time <= .65) return 'warning';
   return 'calm';
 }

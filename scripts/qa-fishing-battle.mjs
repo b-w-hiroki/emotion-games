@@ -30,7 +30,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await reel.click();
     const progress = await page.locator('#progressFill').evaluate(el => parseFloat(el.style.width));
     if (progress !== 53) throw new Error(`${name} ${width}: reel input expected AINAN 48→53, got ${progress}`);
+    if (!await page.locator('#action').textContent().then(t => t.includes('近づいた'))) throw new Error(`${name} ${width}: reel feedback missing`);
     if (width === 390) {
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
+      if (!await page.locator('#hint').textContent().then(t => t.includes('指を止めよう'))) throw new Error(`${name}: warning guidance missing`);
+      await page.screenshot({ path: `${out}/${name}-warning.png` });
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
+      if (!await page.locator('#hint').textContent().then(t => t.includes('スワイプ'))) throw new Error(`${name}: opening guidance missing`);
+      await page.screenshot({ path: `${out}/${name}-opening.png` });
       for (const id of ['aji', 'tai', 'bass', 'buri', 'saba', 'isaki', 'hirame', 'kanpachi', 'kue']) {
         await page.locator('#fish').selectOption(id);
         if (!await page.locator('#fishName').textContent()) throw new Error(`${name}: ${id} has no name`);
@@ -51,6 +59,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForTimeout(240);
   }
   if (!await page.locator('#result').isVisible() || !await page.locator('#resultTitle').textContent().then(t => t.includes('釣り上げた'))) throw new Error(`${name}: natural catch path failed`);
+  if (!await page.locator('#resultFish').isVisible()) throw new Error(`${name}: caught fish not shown`);
   await page.screenshot({ path: `${out}/${name}-caught.png` });
   await page.locator('#retry').click();
   await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
@@ -66,6 +75,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForTimeout(240);
   }
   if (!await page.locator('#result').isVisible() || !await page.locator('#resultTitle').textContent().then(t => t.includes('逃げた'))) throw new Error(`${name}: natural escape path failed`);
+  if (await page.locator('#resultFish').isVisible()) throw new Error(`${name}: escaped fish still shown`);
   await page.screenshot({ path: `${out}/${name}-escaped.png` });
   console.log(`${name}: natural catch and escape paths passed`);
   await page.close();

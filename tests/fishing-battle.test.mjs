@@ -14,8 +14,20 @@ test('all nine AINAN fish have Battle profiles and AINAN opening values', () => 
 
 test('first rage starts within 1.8 seconds and waiting yields an opening', () => {
   const state = createBattle('aji', 7);
+  advance(state, 1.1); assert.equal(battleCue(state), 'calm');
+  advance(state, .1); assert.equal(battleCue(state), 'warning');
   advance(state, 1.85); assert.equal(battleCue(state), 'rage');
   advance(state, 3.1); assert.equal(battleCue(state), 'opening');
+});
+
+test('warning changes guidance only; AINAN reel and escape values stay intact', () => {
+  const state = createBattle('aji', 7);
+  advance(state, 1.2);
+  assert.equal(battleCue(state), 'warning');
+  const reel = state.reel, escape = state.escape;
+  assert.equal(reelBattle(state), true);
+  assert.equal(state.reel - reel, 5);
+  assert.equal(state.escape, Math.max(0, escape - 1.5));
 });
 
 test('AINAN swipe values: 5 reel calm, 20 escape raging, 3 opening bonus once', () => {
