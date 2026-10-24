@@ -13,7 +13,7 @@ for(const file of ['index.html','style.css','game.js','art.js','audio.js'])fs.co
   fs.mkdirSync(path.join(dist,'chahan','art'),{recursive:true});
   for(const file of ['street.webp','train.webp','sky.webp','wok-v2.webp','toss-v2.webp','rice-v2.webp'])fs.copyFileSync(path.join(root,'chahan','art',file),path.join(dist,'chahan','art',file));
 fs.mkdirSync(path.join(dist,'fishing-battle'),{recursive:true});
-for(const file of ['index.html','style.css','game.js','core.js'])fs.copyFileSync(path.join(root,'fishing-battle',file),path.join(dist,'fishing-battle',file));
+for(const file of ['index.html','style.css','game.js','core.js','audio.js'])fs.copyFileSync(path.join(root,'fishing-battle',file),path.join(dist,'fishing-battle',file));
 fs.mkdirSync(path.join(dist,'fishing-battle','assets'),{recursive:true});
 for(const file of fs.readdirSync(path.join(root,'fishing-battle','assets')))fs.copyFileSync(path.join(root,'fishing-battle','assets',file),path.join(dist,'fishing-battle','assets',file));
 for(const part of ['snow-street','wind-tunnel','frozen-bridge','dawn-village'])fs.copyFileSync(path.join(root,'assets','kienaide-'+part+'.svg'),path.join(dist,'assets','kienaide-'+part+'.svg'));
