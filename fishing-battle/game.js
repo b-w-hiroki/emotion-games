@@ -1,4 +1,5 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
+import { BattleAudio } from './audio.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -9,32 +10,16 @@ for (const name of ['fight-mid', ...Object.keys(FISH).map(id => `fish_hero_${id}
   image.src = `./assets/${name}.${name === 'fight-mid' ? 'png' : 'svg'}`;
   art[name] = image;
 }
-let state = createBattle(), last = 0, flash = 0, impact = '', audio;
+let state = createBattle(), last = 0, flash = 0, impact = '';
 let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
 let previousCue = 'calm';
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
+const sound = new BattleAudio(() => new (window.AudioContext || window.webkitAudioContext)());
+sound.setMuted(muted);
 
-function tone(frequency, duration, type = 'sine', gain = .04) {
-  if (muted) return;
-  try {
-    audio ??= new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === 'suspended') audio.resume();
-    const osc = audio.createOscillator(), volume = audio.createGain();
-    osc.type = type; osc.frequency.setValueAtTime(frequency, audio.currentTime);
-    volume.gain.setValueAtTime(gain, audio.currentTime);
-    volume.gain.exponentialRampToValueAtTime(.001, audio.currentTime + duration);
-    osc.connect(volume).connect(audio.destination); osc.start(); osc.stop(audio.currentTime + duration);
-  } catch {}
-}
 function feedback(events) {
   for (const event of events) {
-    if (event === 'warning') tone(260, .16, 'triangle', .025);
-    if (event === 'rage') tone(145, .3, 'sawtooth');
-    if (event === 'opening') tone(560, .2);
-    if (event === 'goodReel' || event === 'goodOpening') tone(event === 'goodOpening' ? 650 : 450, .1);
-    if (event === 'badReel') tone(100, .25, 'sawtooth', .06);
-    if (event === 'caught') { tone(660, .5); setTimeout(() => tone(880, .4), 100); }
-    if (event === 'escaped') tone(105, .5, 'triangle');
+    sound.play(event);
     if (['goodReel', 'goodOpening', 'badReel'].includes(event)) {
       flash = .35; impact = event;
       if (event === 'goodOpening') actions.openingHits++;
@@ -78,6 +63,7 @@ function syncUI() {
 }
 function reel() {
   if (!reelBattle(state)) return;
+  sound.unlock();
   feedback(state.events); state.events = []; syncUI();
 }
 let pointerStart = null;
@@ -99,11 +85,11 @@ document.addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.repeat || !$('result').hidden || ['SELECT', 'BUTTON'].includes(document.activeElement?.tagName)) return;
   e.preventDefault(); reel();
 });
-function restart() { state = createBattle($('fish').value, Date.now()); actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); state = createBattle($('fish').value, Date.now()); actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 function syncMute() { $('mute').textContent = muted ? '音 OFF' : '音 ON'; $('mute').setAttribute('aria-pressed', String(muted)); }
-$('mute').addEventListener('click', () => { muted = !muted; try { localStorage.setItem('fishing-battle-muted', muted ? '1' : '0'); } catch {} syncMute(); });
+$('mute').addEventListener('click', () => { muted = !muted; sound.setMuted(muted); if (!muted) sound.unlock(); try { localStorage.setItem('fishing-battle-muted', muted ? '1' : '0'); } catch {} syncMute(); });
 syncMute();
 
 function drawImage(name, x, y, w, h) {
@@ -151,5 +137,6 @@ function draw(now) {
   last = now;
   requestAnimationFrame(draw);
 }
-document.addEventListener('visibilitychange', () => { last = 0; });
+document.addEventListener('visibilitychange', () => { last = 0; sound.setHidden(document.hidden); });
+window.addEventListener('pagehide', () => sound.reset());
 syncUI(); requestAnimationFrame(draw);
