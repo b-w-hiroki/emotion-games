@@ -12,10 +12,16 @@ test('three locations alter the balance disturbance', () => {
 test('swipe strength and direction determine a good toss', () => {
   const g = createGame(); g.phase = 'playing'; g.time = 1;
   assert.equal(toss(g, { lift: .7, lean: 0 }), true); assert.ok(g.mix > 0); assert.equal(g.rice, 1);
+  assert.equal(g.tossOutcome, 'caught'); assert.equal(g.tossSpill, 0);
   assert.equal(toss(g, { lift: .7, lean: 0 }), null, 'cooldown prevents button mashing');
   g.time += .5; assert.equal(toss(g, { lift: 1.9, lean: 0 }), false); assert.ok(g.rice < 1); assert.equal(g.combo, 0);
+  assert.equal(g.tossOutcome, 'spilled'); assert.ok(g.tossSpill > 0);
   g.time += .5; assert.equal(toss(g, { lift: .7, lean: 1 }), false, 'diagonal swipe spills');
+  assert.equal(g.tossOutcome, 'spilled');
+  const riceAfterSpill = g.rice;
   g.time += .5; assert.equal(toss(g, { lift: .1, lean: 0 }), false, 'weak swipe does not flip rice');
+  assert.equal(g.tossOutcome, 'weak'); assert.equal(g.tossSpill, 0);
+  assert.equal(g.rice, riceAfterSpill, 'a weak pull leaves rice in the wok');
 });
 test('seasoning has one chance and scores timing plus mixing', () => {
   const ideal = createGame(); ideal.phase = 'playing'; ideal.cook = .56; ideal.mix = .5;

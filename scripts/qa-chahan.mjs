@@ -41,6 +41,10 @@ try {
         assert.equal(await page.locator('#combo').textContent(), '0', `${name} ${width}: upward swipe must not toss`);
         await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 115, { steps: 8 }); await page.mouse.up();
         assert.equal(await page.locator('#combo').textContent(), '1', `${name} ${width}: pulling toward the player tosses rice`);
+        if (width === 390) {
+          await page.waitForTimeout(180);
+          await page.screenshot({ path: path.join(output, `caught-${name}-${width}.png`) });
+        }
         await page.waitForTimeout(2400);
         await page.screenshot({ path: path.join(output, `game-${name}-${width}.png`) });
         await page.locator('.settings summary').click();
@@ -55,6 +59,19 @@ try {
         assert.ok(Number((await page.locator('#heatLabel').textContent()).match(/\d+/)[0]) > 80, `${name} ${width}: heat slider changes fire`);
         await page.waitForTimeout(160);
         if (width === 390) await page.screenshot({ path: path.join(output, `toss-${name}-${width}.png`) });
+        if (width === 390) {
+          const riceBeforeWeak = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
+          await page.waitForTimeout(500);
+          await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 30, { steps: 3 }); await page.mouse.up();
+          assert.equal(await page.locator('#combo').textContent(), '0', `${name}: weak pull breaks combo`);
+          assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)), riceBeforeWeak, `${name}: weak pull retains rice`);
+          await page.screenshot({ path: path.join(output, `weak-${name}-${width}.png`) });
+          await page.waitForTimeout(500);
+          await page.mouse.move(x - 65, y); await page.mouse.down(); await page.mouse.move(x + 65, y + 110, { steps: 8 }); await page.mouse.up();
+          assert.ok(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)) < riceBeforeWeak, `${name}: diagonal pull visibly costs rice`);
+          await page.waitForTimeout(160);
+          await page.screenshot({ path: path.join(output, `spilled-${name}-${width}.png`) });
+        }
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${name} ${width}: no horizontal overflow`);
         assert.deepEqual(errors, [], `${name} ${width}: no runtime errors`);
         await page.locator('.settings summary').click();

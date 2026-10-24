@@ -70,7 +70,10 @@ function steam(ctx, t, heat, reduced) {
 }
 function wok(ctx, game, reduced) {
   const t=game.time,age=t-game.lastToss;
-  const fly=reduced||age<0||age>.72?0:Math.sin(Math.PI*age/.72)*Math.min(1.35,game.lastLift);
+  const arc=reduced||age<0||age>.72?0:Math.sin(Math.PI*age/.72);
+  const fly=game.tossOutcome==='weak'?0:arc*Math.min(1.35,game.lastLift);
+  const escaping=game.tossOutcome==='spilled'&&age>=0&&age<.9&&!reduced;
+  const escapeSide=Math.sign(game.lastLean+game.balance*.55)||1;
   ctx.save();ctx.translate(310,548+fly*19);ctx.scale(1+fly*.04,1+fly*.04);ctx.rotate(game.balance*.28);
   const hasPaintedWok = paintedWok.complete && paintedWok.naturalWidth;
   if (!hasPaintedWok) ellipse(ctx,0,145,295,82,'#0c1218');
@@ -83,7 +86,7 @@ function wok(ctx, game, reduced) {
   if (paintedRice.complete && paintedRice.naturalWidth) {
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
     ctx.save();
-    ctx.translate(game.lastLean*fly*44,-fly*155);
+    ctx.translate(game.lastLean*fly*44+(escaping?escapeSide*fly*65:0),-fly*155);
     ctx.rotate(-game.lastLean*fly*.14);
     ctx.drawImage(paintedRice,-198*amount,-46*amount,396*amount,132*amount);
     ctx.restore();
@@ -96,6 +99,14 @@ function wok(ctx, game, reduced) {
   for(let i=0;i<28*game.rice;i++){const a=i*2.39,r=Math.sqrt((i+.5)/28)*184*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.26+16-fly*(55+i%4*14);if(i%3===0)ellipse(ctx,x,y,10,5,'#f9c94d',a);else if(i%3===1)ellipse(ctx,x,y,7,4,'#e96d4d',a);else{ellipse(ctx,x,y,9,4,'#6eaa5e',a);ellipse(ctx,x+3,y-1,4,2,'#c9df78',a);}}
   }
   if(fly>.03) for(let i=0;i<56*game.rice;i++){const a=i*2.399,x=Math.cos(a)*178*amount+game.lastLean*fly*65,y=Math.sin(a)*34*amount+12-fly*(135+i%8*15);ellipse(ctx,x,y,5+i%3,2+i%2,i%7===0?'#89bd68':i%5===0?'#f6c15d':'#fff0bb',a*.4);}
+  if(escaping) {
+    const progress=Math.min(1,age/.9), count=Math.max(8,Math.round(game.tossSpill*180));
+    for(let i=0;i<count;i++){
+      const spread=(i%7-3)*18, x=escapeSide*(160+progress*(150+i%5*19))+spread;
+      const y=-70-progress*(95+i%6*17)+progress*progress*(190+i%4*25);
+      ellipse(ctx,x,y,5+i%3,2+i%2,i%9===0?'#8bb667':i%7===0?'#e67d4c':'#fff0bb',i*.43);
+    }
+  }
   if(game.seasoned){ctx.strokeStyle=rgba('#834623',.25+game.seasoning*.2);ctx.lineWidth=8;for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(-75+i*47,16,24,.2,2.3);ctx.stroke();}}
   if (!hasPaintedWok) {
   ctx.strokeStyle='#cad1c5';ctx.lineWidth=16;ctx.beginPath();ctx.ellipse(0,28,283,103,0,0,7);ctx.stroke();ctx.strokeStyle='#f9e5ba';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,24,272,96,0,Math.PI*1.04,Math.PI*1.93);ctx.stroke();
@@ -106,6 +117,12 @@ function wok(ctx, game, reduced) {
   ctx.strokeStyle='#e9a86a';ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(382,62);ctx.lineTo(395,117);ctx.stroke();
   }
   ctx.restore();
+  if(age>=0&&age<1.05&&game.tossOutcome!=='none'){
+    const label=game.tossOutcome==='caught'?'ふわっ！':game.tossOutcome==='weak'?'弱すぎた':'こぼれた！';
+    ctx.save();ctx.textAlign='center';ctx.font='bold 35px sans-serif';ctx.lineWidth=7;ctx.strokeStyle='#322022';ctx.fillStyle=game.tossOutcome==='caught'?'#fff0bd':'#fff9e9';
+    const lift=reduced?0:Math.min(age, .5)*42;
+    ctx.strokeText(label,390,348-lift);ctx.fillText(label,390,348-lift);ctx.restore();
+  }
 }
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;

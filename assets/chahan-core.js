@@ -5,7 +5,7 @@ export const STAGES = [
 ];
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, lastLift: 0, lastLean: 0, phase: 'ready', message: '鍋を手前へ引くように下へ。まっすぐ、ほどよい速さで。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '鍋を手前へ引くように下へ。まっすぐ、ほどよい速さで。' };
 }
 
 export function advance(game, input, dt) {
@@ -42,6 +42,8 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
   game.lastLean = lean;
   const quality = Math.max(0, 1 - Math.abs(lift - 0.7) / 0.65 - Math.abs(lean) * 0.65 - Math.abs(game.balance) * 0.55);
   const safe = lift >= 0.28 && lift <= 1.25 && Math.abs(lean + game.balance * 0.55) < 0.55;
+  game.tossOutcome = safe ? 'caught' : lift < 0.28 ? 'weak' : 'spilled';
+  game.tossSpill = 0;
   if (safe) {
     game.combo++;
     game.bestCombo = Math.max(game.bestCombo, game.combo);
@@ -50,9 +52,10 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
     game.message = quality > 0.65 ? 'ふわっ！ 米がきれいに回った。' : '返った！ 次はもう少しまっすぐ。';
   } else {
     game.combo = 0;
-    const loss = Math.min(game.rice, 0.025 + Math.max(0, lift - 1.25) * 0.12 + Math.abs(lean + game.balance * 0.55) * 0.08);
+    const loss = game.tossOutcome === 'weak' ? 0 : Math.min(game.rice, 0.025 + Math.max(0, lift - 1.25) * 0.12 + Math.abs(lean + game.balance * 0.55) * 0.08);
     game.rice -= loss;
     game.lost += loss;
+    game.tossSpill = loss;
     game.message = lift < 0.28 ? '弱すぎた。米は鍋の底に残った。' : '斜めか強すぎ！ 米がこぼれた。';
   }
   return safe;
