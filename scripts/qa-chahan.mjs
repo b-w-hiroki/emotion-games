@@ -62,7 +62,7 @@ try {
         if (width === 390) {
           const riceBeforeWeak = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
           await page.waitForTimeout(500);
-          await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 30, { steps: 3 }); await page.mouse.up();
+          await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 26, { steps: 3 }); await page.mouse.up();
           assert.equal(await page.locator('#combo').textContent(), '0', `${name}: weak pull breaks combo`);
           assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)), riceBeforeWeak, `${name}: weak pull retains rice`);
           await page.screenshot({ path: path.join(output, `weak-${name}-${width}.png`) });
