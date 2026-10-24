@@ -1,7 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battlePose, outcomePose } from '../fishing-battle/visual.js';
+import { battlePose, interactionFeedback, outcomePose } from '../fishing-battle/visual.js';
+
+test('the held input shares one tension curve across line, control and sound', () => {
+  const state = createBattle('aji');
+  const idle = interactionFeedback(state, 0);
+  const light = interactionFeedback(state, 35);
+  const strong = interactionFeedback(state, 90);
+  assert.equal(idle.tension, 0);
+  assert.ok(light.tension > idle.tension && strong.tension > light.tension);
+  assert.ok(strong.pitch > light.pitch);
+  assert.ok(battlePose(state, 'calm', 0, { pull: 90 }).ringWidth > battlePose(state, 'calm', 0).ringWidth);
+  const compactPose = battlePose(state, 'calm', 0, { pull: 110, tension: strong.tension });
+  assert.equal(compactPose.tension, strong.tension);
+  state.phase = 'rage';
+  const dangerous = interactionFeedback(state, 90);
+  assert.ok(dangerous.tension > strong.tension && dangerous.pitch < strong.pitch);
+  state.phase = 'calm'; state.escape = 90;
+  assert.ok(interactionFeedback(state, 90).tension > strong.tension);
+});
 
 test('pull preview and accepted reel recoil move the hooked fish toward the player', () => {
   const state = createBattle('aji');

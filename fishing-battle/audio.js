@@ -11,6 +11,8 @@ export class BattleAudio {
     this.hidden = false;
     this.voices = new Set();
     this.timers = new Set();
+    this.tensionVoice = null;
+    this.tensionGain = null;
   }
 
   unlock() {
@@ -50,9 +52,41 @@ export class BattleAudio {
       try { voice.stop(); } catch {}
     }
     this.voices.clear();
+    this.tensionVoice = null;
+    this.tensionGain = null;
   }
 
   reset() { this.silence(); }
+
+  setTension(level, pitch = 320) {
+    if (!this.unlocked || this.muted || this.hidden || !this.context) return false;
+    if (level <= 0) {
+      if (this.tensionVoice) {
+        try { this.tensionVoice.stop(); } catch {}
+        this.voices.delete(this.tensionVoice);
+        this.tensionVoice = null;
+        this.tensionGain = null;
+      }
+      return false;
+    }
+    try {
+      const time = this.context.currentTime;
+      if (!this.tensionVoice) {
+        const voice = this.context.createOscillator(), gain = this.context.createGain();
+        voice.type = 'triangle';
+        gain.gain.setValueAtTime(.001, time);
+        voice.connect(gain).connect(this.context.destination);
+        voice.start(time);
+        this.tensionVoice = voice;
+        this.tensionGain = gain;
+        this.voices.add(voice);
+        voice.onended = () => this.voices.delete(voice);
+      }
+      this.tensionVoice.frequency.setValueAtTime(pitch, time);
+      this.tensionGain.gain.exponentialRampToValueAtTime(.003 + Math.min(level, 1) * .018, time + .04);
+      return true;
+    } catch { return false; }
+  }
 
   note(start, end, duration, type = 'sine', peak = .035) {
     if (!this.unlocked || this.muted || this.hidden || !this.context) return false;

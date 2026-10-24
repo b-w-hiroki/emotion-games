@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battlePose, outcomePose } from './visual.js';
+import { battlePose, interactionFeedback, outcomePose } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -23,7 +23,11 @@ sound.setMuted(muted);
 
 function feedback(events) {
   for (const event of events) {
-    if ((event === 'caught' || event === 'escaped') && outcomeAt === null) outcomeAt = performance.now();
+    if ((event === 'caught' || event === 'escaped') && outcomeAt === null) {
+      outcomeAt = performance.now();
+      pointerStart = null;
+      setPull(0);
+    }
     sound.play(event);
     if (['goodReel', 'goodOpening', 'badReel'].includes(event)) {
       flash = .35; impact = event;
@@ -78,17 +82,23 @@ let pointerStart = null;
 const controls = document.querySelector('.controls');
 function setPull(value) {
   pointerPull = Math.max(0, Math.min(110, value));
+  const response = interactionFeedback(state, pointerPull);
   controls.style.setProperty('--pull', `${Math.min(7, pointerPull * .06)}px`);
-  controls.classList.toggle('is-pulling', pointerPull > 8 && state.phase !== 'rage');
+  controls.style.setProperty('--tension', response.tension.toFixed(3));
+  controls.style.setProperty('--glow-size', `${Math.round(18 + response.tension * 14)}px`);
+  controls.style.setProperty('--pull-glow', response.danger ? '#ff976c' : '#8de7ff');
+  controls.classList.toggle('is-pulling', pointerPull > 8);
+  sound.setTension(pointerPull > 8 ? response.tension : 0, response.pitch);
 }
 board.addEventListener('pointerdown', e => {
   if (state.outcome || e.target.closest('.settings,.result') || (e.pointerType === 'mouse' && e.button !== 0)) return;
   if (pointerStart) return;
+  sound.unlock();
   pointerStart = { id: e.pointerId, x: e.clientX, y: e.clientY, onDial: Boolean(e.target.closest('#reel')) };
   board.setPointerCapture(e.pointerId);
 });
 board.addEventListener('pointermove', e => {
-  if (pointerStart?.id === e.pointerId) setPull(e.clientY - pointerStart.y);
+  if (pointerStart?.id === e.pointerId) { setPull(e.clientY - pointerStart.y); syncUI(); }
 });
 board.addEventListener('pointerup', e => {
   if (pointerStart?.id !== e.pointerId) return;
@@ -97,8 +107,9 @@ board.addEventListener('pointerup', e => {
   pointerStart = null;
   setPull(0);
   if (tapDial || dy >= 34) reel();
+  else syncUI();
 });
-function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); } }
+function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); syncUI(); } }
 board.addEventListener('pointercancel', cancelPointer);
 board.addEventListener('lostpointercapture', cancelPointer);
 document.addEventListener('keydown', e => {
@@ -126,20 +137,20 @@ function draw(now) {
   ctx.clearRect(0, 0, 390, 844);
   const dt = last ? Math.min((now - last) / 1000, .05) : 0;
   const t = now / 1000, cue = battleCue(state), rage = cue === 'rage';
-  const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, impact, flash });
+  const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash });
   const finaleProgress = state.outcome && outcomeAt !== null ? Math.min(1, Math.max(0, (now - outcomeAt) / (state.outcome === 'caught' ? 650 : 500))) : 0;
   const fish = outcomePose(pose, state.outcome, finaleProgress);
   const { fishX, fishY } = pose;
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
-  ctx.strokeStyle = rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
-  ctx.lineWidth = rage || cue === 'warning' ? 2.3 : 1.5 + pose.pull * .055;
+  ctx.strokeStyle = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
+  ctx.lineWidth = (rage || cue === 'warning' ? 2.3 : 1.5 + pose.pull * .055) + pose.tension * 2;
   ctx.globalAlpha = fish.alpha;
   ctx.beginPath(); ctx.moveTo(146, 490); ctx.quadraticCurveTo(pose.lineControlX, pose.lineControlY, fish.fishX + 20, fish.fishY + 45); ctx.stroke();
   ctx.globalAlpha = waterAlpha;
   ctx.fillStyle = '#00385466';
   ctx.beginPath(); ctx.ellipse(fishX + 66, fishY + 61, 75, 19, -.1, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = cue === 'opening' ? '#b6fff3' : '#e4faff'; ctx.lineWidth = cue === 'opening' ? 5 : rage ? 5 : 4;
+  ctx.strokeStyle = pointerPull > 8 ? rage ? '#ffb28c' : '#b6fff3' : cue === 'opening' ? '#b6fff3' : '#e4faff'; ctx.lineWidth = (cue === 'opening' ? 5 : rage ? 5 : 4) + pose.tension * 2;
   ctx.globalAlpha = waterAlpha * (rage || cue === 'opening' ? .93 : .72);
   ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth, pose.ringHeight, -.1, 0, Math.PI * 2); ctx.stroke();
   if (cue === 'opening') {
@@ -171,9 +182,11 @@ function draw(now) {
   flash = Math.max(0, flash - dt);
   if (!flash) impact = '';
   if (last && !document.hidden) {
+    const previousEscape = state.escape;
     stepBattle(state, dt);
     if (state.events.length) { feedback(state.events); state.events = []; }
     const nextCue = battleCue(state);
+    if (pointerPull > 8 && (nextCue !== previousCue || state.escape !== previousEscape)) setPull(pointerPull);
     if (nextCue === 'warning' && previousCue !== 'warning') feedback(['warning']);
     previousCue = nextCue;
     syncUI();

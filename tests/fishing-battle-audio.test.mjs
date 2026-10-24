@@ -65,3 +65,24 @@ test('backgrounding silences battle cues until the page returns', () => {
   assert.equal(r.created, 1);
   assert.ok(r.resumed >= 2);
 });
+
+test('held-line sound follows tension and stops on release, mute and retry', () => {
+  const r = rig();
+  assert.equal(r.audio.setTension(.5, 380), false);
+  assert.equal(r.created, 0);
+  r.audio.unlock();
+  assert.equal(r.audio.setTension(.3, 350), true);
+  assert.equal(r.voices.length, 1);
+  assert.equal(r.voices[0].started, true);
+  assert.equal(r.audio.setTension(.8, 480), true);
+  assert.equal(r.voices.length, 1);
+  r.audio.setTension(0);
+  assert.equal(r.voices[0].stopCalls, 1);
+  r.audio.setTension(.6, 170);
+  r.audio.setMuted(true);
+  assert.equal(r.voices[1].stopCalls, 1);
+  assert.equal(r.audio.setTension(.8, 480), false);
+  r.audio.setMuted(false); r.audio.unlock();
+  r.audio.setTension(.5, 400); r.audio.reset();
+  assert.equal(r.voices[2].stopCalls, 1);
+});
