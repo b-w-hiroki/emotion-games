@@ -30,6 +30,20 @@ try {
           image.onerror = () => resolve(false); image.src = `./art/${name}.webp`;
         }))));
         assert.deepEqual(painted, [true,true,true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
+        if (width === 390) {
+          const dishes = await page.evaluate(async () => {
+            const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
+            const base = createGame(); Object.assign(base, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true });
+            return Object.fromEntries(Object.entries({ ideal: base, unmixed: { ...base, mix: 0, seasoning: 0, seasoned: false }, raw: { ...base, cook: .12 }, burnt: { ...base, cook: 1.5 }, spilled: { ...base, rice: .2 } }).map(([label, game]) => {
+              const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 280;
+              drawDish(canvas.getContext('2d'), game);
+              return [label, canvas.toDataURL('image/png').split(',')[1]];
+            }));
+          });
+          assert.equal(new Set(Object.values(dishes)).size, 5, `${name}: each cooking outcome has a distinct plated image`);
+          for (const [label, png] of Object.entries(dishes)) fs.writeFileSync(path.join(output, `dish-${label}-${name}.png`), Buffer.from(png, 'base64'));
+        }
         assert.equal(await page.locator('.cook-controls button').count(), 1, `${name} ${width}: only seasoning remains a cooking button`);
         assert.equal(await page.locator('#motionButton').isVisible(), false, `${name} ${width}: sensor setup stays in settings`);
         await page.screenshot({ path: path.join(output, `title-${name}-${width}.png`) });

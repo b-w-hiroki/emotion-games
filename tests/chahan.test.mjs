@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addSeasoning, seasoningReadiness, result, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
@@ -71,6 +71,20 @@ test('ending feedback points to the actual cooking shortfall', () => {
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
   assert.match(result({ ...good, cook: .15 }).comment, /芯が少し/);
   assert.match(result({ ...good, seasoning: 0 }).comment, /香りが惜しい/);
+});
+test('the plated dish reflects mixing, seasoning, doneness and remaining rice', () => {
+  const good = { ...createGame(), rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true };
+  const finished = dishAppearance(good);
+  assert.equal(finished.portion, 1);
+  assert.equal(finished.scatteredIngredients, 0);
+  assert.ok(finished.mixedIngredients > 20 && finished.glaze === 1 && finished.steam > .9);
+  const unmixed = dishAppearance({ ...good, mix: 0, seasoned: false, seasoning: 0 });
+  assert.ok(unmixed.scatteredIngredients > 0 && unmixed.mixedIngredients === 0 && unmixed.glaze === 0);
+  const raw = dishAppearance({ ...good, cook: .12 });
+  const burnt = dishAppearance({ ...good, cook: 1.5 });
+  assert.ok(raw.pale > .7 && raw.steam === 0);
+  assert.ok(burnt.char > .8 && burnt.steam < finished.steam);
+  assert.ok(dishAppearance({ ...good, rice: .2 }).portion < .5);
 });
 test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');

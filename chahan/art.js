@@ -1,3 +1,5 @@
+import { dishAppearance } from '../assets/chahan-core.js';
+
 const W = 780, H = 900;
 const backgrounds = new Map();
 const paintedScenes = ['street', 'train', 'sky'].map(name => {
@@ -208,8 +210,7 @@ export function drawScene(ctx, game, reduced = false) {
 export function drawDish(ctx, game) {
   const w = ctx.canvas.width, h = ctx.canvas.height;
   ctx.clearRect(0, 0, w, h);
-  const scoreCook = Math.min(1, game.cook / .86);
-  const rice = Math.max(0, Math.min(1, game.rice));
+  const look = dishAppearance(game);
   const backdrop = ctx.createRadialGradient(w / 2, h * .4, 12, w / 2, h * .5, w * .55);
   backdrop.addColorStop(0, '#8c5038'); backdrop.addColorStop(1, '#231e25');
   ctx.fillStyle = backdrop; ctx.fillRect(0, 0, w, h);
@@ -220,20 +221,20 @@ export function drawDish(ctx, game) {
   ellipse(ctx, w / 2, 178, 248, 71, '#f4e3c1');
   ellipse(ctx, w / 2, 179, 220, 58, '#334b51');
   ellipse(ctx, w / 2, 171, 209, 53, '#f8e8c3');
-  const amount = Math.sqrt(rice);
+  const amount = look.portion;
   if (paintedRice.complete && paintedRice.naturalWidth) {
     ctx.save();
-    ctx.filter = scoreCook < .5 ? 'saturate(.7) brightness(1.1)' : game.cook > 1.1 ? 'sepia(.25) brightness(.84)' : 'none';
+    ctx.filter = look.pale > .2 ? `saturate(${1 - look.pale * .36}) brightness(${1 + look.pale * .13})` : look.char > .1 ? `sepia(${look.char * .36}) brightness(${1 - look.char * .2})` : 'none';
     ctx.drawImage(paintedRice, 320 - 197 * amount, 103, 394 * amount, 132 * amount);
     ctx.restore();
   } else {
   const mound = ctx.createRadialGradient(280, 139, 10, 320, 174, 196);
-  mound.addColorStop(0, scoreCook > .75 ? '#ffe0a0' : '#f3d9a1');
-  mound.addColorStop(.68, scoreCook > .75 ? '#e9a657' : '#d7b079');
+  mound.addColorStop(0, look.pale < .25 ? '#ffe0a0' : '#f3d9a1');
+  mound.addColorStop(.68, look.pale < .25 ? '#e9a657' : '#d7b079');
   mound.addColorStop(1, game.cook > 1.1 ? '#ad653b' : '#b77b4e');
   ellipse(ctx, 320, 165, 190 * amount, 59 * amount, mound);
   ctx.save(); ctx.beginPath(); ctx.ellipse(320, 163, 195 * amount, 63 * amount, 0, 0, Math.PI * 2); ctx.clip();
-  const count = Math.round(300 * rice);
+  const count = Math.round(300 * amount * amount);
   for (let i = 0; i < count; i++) {
     const angle = i * 2.399, radius = Math.sqrt((i + .5) / Math.max(1, count));
     const x = 320 + Math.cos(angle) * radius * 183 * amount;
@@ -241,19 +242,42 @@ export function drawDish(ctx, game) {
     const color = i % 19 === 0 ? '#77a45c' : i % 17 === 0 ? '#ef7650' : i % 11 === 0 ? '#f9ca5a' : i % 5 === 0 ? '#f2bc74' : '#fff0ba';
     ellipse(ctx, x, y, 6 + i % 3, 2.2 + i % 2, color, angle * .22);
   }
-  for (let i = 0; i < 24 * rice; i++) {
+  for (let i = 0; i < 24 * amount * amount; i++) {
     const angle = i * 2.399, radius = Math.sqrt((i + .5) / 24);
     const x = 320 + Math.cos(angle) * radius * 160 * amount, y = 158 + Math.sin(angle) * radius * 36 * amount;
     ellipse(ctx, x, y, i % 3 ? 8 : 10, i % 3 ? 3 : 5, i % 3 === 0 ? '#75a856' : i % 3 === 1 ? '#f1bf54' : '#e8754a', angle);
   }
-  if (game.seasoned) for (let i = 0; i < 6; i++) {
-    ctx.strokeStyle = rgba('#754025', .22 + game.seasoning * .3); ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.arc(206 + i * 42, 162, 16, .2, 2.3); ctx.stroke();
-  }
   ctx.restore();
   }
-  if (rice > .3 && scoreCook > .55) {
-    ctx.save(); ctx.globalAlpha = .2 + Math.min(1, game.heat) * .18; ctx.lineWidth = 6; ctx.strokeStyle = '#fff0d7'; ctx.lineCap = 'round';
+  // All finishing details sit above either the painted image or the procedural fallback.
+  ctx.save(); ctx.beginPath(); ctx.ellipse(320, 165, 190 * amount, 58 * amount, 0, 0, Math.PI * 2); ctx.clip();
+  if (look.pale > 0) { ctx.fillStyle = rgba('#fff0ca', look.pale * .25); ctx.fillRect(118, 100, 404, 130); }
+  if (look.glaze > 0) {
+    ctx.globalAlpha = look.glaze * .5;
+    for (let i = 0; i < 8; i++) {
+      const x = 184 + i * 38, y = 141 + (i % 3) * 19;
+      ellipse(ctx, x, y, 24, 5, '#b95e29', -.14 + i % 3 * .17);
+      ellipse(ctx, x - 3, y - 4, 18, 2, '#ffe19a', -.14 + i % 3 * .17);
+    }
+    ctx.globalAlpha = 1;
+  }
+  for (let i = 0; i < look.mixedIngredients; i++) {
+    const x = 320 + Math.cos(i * 2.399) * Math.sqrt((i + .5) / 25) * 165 * amount;
+    const y = 160 + Math.sin(i * 2.399) * Math.sqrt((i + .5) / 25) * 39 * amount;
+    ellipse(ctx, x, y, i % 3 ? 7 : 10, i % 3 ? 3 : 4, i % 3 === 0 ? '#75aa58' : i % 3 === 1 ? '#ffca62' : '#e88356', i * .53);
+  }
+  for (let i = 0; i < look.scatteredIngredients; i++) {
+    const x = 346 + (i % 5) * 23 * amount, y = 145 + Math.floor(i / 5) * 12 * amount;
+    ellipse(ctx, x, y, i % 3 ? 10 : 13, i % 3 ? 4 : 6, i % 3 === 0 ? '#75a754' : i % 3 === 1 ? '#f4bf48' : '#dd7347', i * .37);
+  }
+  for (let i = 0; i < Math.round(look.char * 23 * amount); i++) {
+    const x = 320 + Math.cos(i * 2.399) * 170 * amount * Math.sqrt((i + .5) / 23);
+    const y = 165 + Math.sin(i * 2.399) * 43 * amount * Math.sqrt((i + .5) / 23);
+    ellipse(ctx, x, y, 8, 2.5, rgba('#59352a', .35 + look.char * .55), i * .4);
+  }
+  ctx.restore();
+  if (look.steam > 0) {
+    ctx.save(); ctx.globalAlpha = look.steam * (.2 + Math.min(1, game.heat) * .18); ctx.lineWidth = 6; ctx.strokeStyle = '#fff0d7'; ctx.lineCap = 'round';
     for (let i = 0; i < 4; i++) { const x = 222 + i * 67; ctx.beginPath(); ctx.moveTo(x, 105); ctx.bezierCurveTo(x - 16, 77, x + 20, 54, x, 25); ctx.stroke(); }
     ctx.restore();
   }
