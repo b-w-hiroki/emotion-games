@@ -27,6 +27,7 @@ try {
         await page.goto(url);
         await page.screenshot({ path: path.join(output, `title-${name}-${width}.png`) });
         await page.locator('#start').click();
+        assert.equal(await page.locator('#stageNotice').isVisible(), true, `${name} ${width}: opening location cue appears`);
         const box = await page.locator('#swipeZone').boundingBox();
         const x = box.x + box.width * .48, y = box.y + box.height * .35;
         await page.mouse.move(x, y + 115); await page.mouse.down(); await page.mouse.move(x, y, { steps: 8 }); await page.mouse.up();
@@ -40,6 +41,13 @@ try {
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${name} ${width}: no horizontal overflow`);
         assert.deepEqual(errors, [], `${name} ${width}: no runtime errors`);
         await page.screenshot({ path: path.join(output, `game-${name}-${width}.png`) });
+        await page.locator('#sound').click();
+        await page.reload();
+        assert.equal(await page.locator('#sound').textContent(), '音 OFF', `${name} ${width}: mute survives reload`);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.locator('#start').click();
+        assert.equal(await page.locator('#stageNotice').evaluate(el => getComputedStyle(el).animationName), 'none', `${name} ${width}: reduced motion stops stage animation`);
+        assert.deepEqual(errors, [], `${name} ${width}: audio-off/reduced-motion has no runtime errors`);
         await page.close();
         console.log(`PASS chahan ${name} ${width}x${height}: pull gesture and layout`);
       }
