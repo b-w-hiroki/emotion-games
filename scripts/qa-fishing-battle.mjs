@@ -78,6 +78,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await input.goto(url);
   await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 300, { steps: 4 });
   if (!await input.locator('.controls').evaluate(el => el.classList.contains('is-pulling')) || !await input.locator('#hint').textContent().then(t => t.includes('離して巻く'))) throw new Error(`${name}: drag preview did not follow the finger`);
+  const pullFeedback = await input.locator('.controls').evaluate(el => ({ tension: Number(el.style.getPropertyValue('--tension')), glow: el.style.getPropertyValue('--pull-glow') }));
+  if (pullFeedback.tension <= 0 || pullFeedback.glow !== '#8de7ff') throw new Error(`${name}: line tension and control glow did not follow the pull`);
   const pulled = await input.locator('#reel').boundingBox(), settings = await input.locator('.settings label').boundingBox();
   if (pulled.x < settings.x + settings.width && pulled.x + pulled.width > settings.x && pulled.y < settings.y + settings.height && pulled.y + pulled.height > settings.y) throw new Error(`${name}: pulled reel overlaps fish selector on 390x844`);
   await input.screenshot({ path: `${out}/${name}-pull.png` });
@@ -112,13 +114,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await quiet.close();
   const audio = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await audio.addInitScript(() => {
-    window.__battleAudio = { contexts: 0, resumes: 0, notes: 0 };
+    window.__battleAudio = { contexts: 0, resumes: 0, notes: 0, stops: 0, pitches: [] };
     class ProbeContext {
       constructor() { window.__battleAudio.contexts++; this.currentTime = 0; this.destination = {}; }
       resume() { window.__battleAudio.resumes++; return Promise.resolve(); }
       createOscillator() {
         window.__battleAudio.notes++;
-        return { frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect(target) { return target; }, start() {}, stop() {} };
+        return { frequency: { setValueAtTime(value) { window.__battleAudio.pitches.push(value); }, exponentialRampToValueAtTime() {} }, connect(target) { return target; }, start() {}, stop() { window.__battleAudio.stops++; } };
       }
       createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
     }
@@ -128,9 +130,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await audio.goto(url);
   await audio.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
   if (await audio.evaluate(() => window.__battleAudio.contexts) !== 0) throw new Error(`${name}: audio context was created before a gesture`);
+  await audio.reload();
+  await audio.mouse.move(190, 210); await audio.mouse.down();
+  await audio.mouse.move(190, 245); await audio.mouse.move(190, 300);
+  const held = await audio.evaluate(() => ({ ...window.__battleAudio }));
+  if (held.contexts !== 1 || held.notes !== 1 || held.pitches.at(-1) <= held.pitches.at(-2)) throw new Error(`${name}: held-line sound did not rise with the pull`);
+  await audio.locator('.board').dispatchEvent('pointercancel', { pointerId: 1 });
+  await audio.mouse.up();
+  if (await audio.evaluate(() => window.__battleAudio.stops) !== 1) throw new Error(`${name}: held-line sound continued after cancellation`);
   await audio.locator('#reel').click();
   const played = await audio.evaluate(() => ({ ...window.__battleAudio }));
-  if (played.contexts !== 1 || played.notes < 1 || played.resumes < 1) throw new Error(`${name}: first reel did not unlock audio`);
+  if (played.contexts !== 1 || played.notes <= held.notes || played.resumes < 1) throw new Error(`${name}: reel cue did not share the unlocked audio context`);
   await audio.locator('#mute').click();
   await audio.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
   if (await audio.evaluate(() => window.__battleAudio.notes) !== played.notes) throw new Error(`${name}: muted phase cue made sound`);
@@ -171,7 +181,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const rageBounds = await page.locator('#rageLabel').boundingBox();
   if (!rageBounds || rageBounds.y + rageBounds.height > boardBounds.y + boardBounds.height - 30) throw new Error(`${name}: rage guidance clipped by lower controls`);
   await page.screenshot({ path: `${out}/${name}-rage.png` });
-  let sawCritical = false, sawEscapeTransition = false;
+  let sawCritical = false, sawEscapeTransition = false, sawRagePull = false;
   for (let i = 0; i < 80 && await page.locator('#result').isHidden(); i++) {
     const phase = await page.locator('#cue').getAttribute('class');
     if (!sawEscapeTransition && phase?.includes('finale-escaped')) {
@@ -180,7 +190,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await page.screenshot({ path: `${out}/${name}-escape-transition.png` });
     }
     if (phase?.includes('rage')) {
-      await page.mouse.move(210, 250); await page.mouse.down(); await page.mouse.move(210, 310, { steps: 3 }); await page.mouse.up();
+      await page.mouse.move(210, 250); await page.mouse.down(); await page.mouse.move(210, 310, { steps: 3 });
+      if (!sawRagePull) {
+        const rageFeedback = await page.locator('.controls').evaluate(el => ({ tension: Number(el.style.getPropertyValue('--tension')), glow: el.style.getPropertyValue('--pull-glow') }));
+        if (rageFeedback.tension <= pullFeedback.tension || rageFeedback.glow !== '#ff976c') throw new Error(`${name}: dangerous pull did not change line tension and control color`);
+        await page.screenshot({ path: `${out}/${name}-rage-pull.png` });
+        sawRagePull = true;
+      }
+      await page.mouse.up();
     }
     if (!sawCritical && await page.locator('#danger').getAttribute('aria-valuenow').then(Number) >= 70) {
       sawCritical = true;
@@ -190,6 +207,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForTimeout(240);
   }
   if (!sawCritical) throw new Error(`${name}: critical danger state was not reached`);
+  if (!sawRagePull) throw new Error(`${name}: rage pull was not exercised`);
   if (!sawEscapeTransition && !await page.evaluate(() => window.__finales.some(c => c.includes('finale-escaped')))) throw new Error(`${name}: escape transition was not shown`);
   if (!await page.locator('#result').isVisible() || !await page.locator('#resultTitle').textContent().then(t => t.includes('逃げた'))) throw new Error(`${name}: natural escape path failed`);
   if (await page.locator('#resultFish').isVisible()) throw new Error(`${name}: escaped fish still shown`);
