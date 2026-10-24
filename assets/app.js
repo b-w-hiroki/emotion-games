@@ -90,7 +90,7 @@ if(!game){
  root.insertAdjacentHTML('beforeend',`<dialog class="game-detail-modal" id="game-detail" aria-labelledby="game-detail-title" aria-describedby="game-detail-intro">
   <div class="game-detail-head"><span>EMOTION 04 / 切なさ</span><button type="button" id="game-detail-close" aria-label="作品詳細を閉じる">閉じる ✕</button></div>
   <div class="game-detail-content"><div class="game-detail-gallery"><div class="game-detail-frame"><img id="game-detail-image" src="./assets/kienaide-detail/title.webp" alt="雪の町で少女と炎の精が旅立つタイトル画面" width="390" height="844"></div><div class="game-detail-gallery-nav"><button type="button" id="game-detail-prev" aria-label="前の画面">←</button><span id="game-detail-position" aria-live="polite">1 / 3</span><button type="button" id="game-detail-next" aria-label="次の画面">→</button></div><p id="game-detail-caption" aria-live="polite">灯りを抱えて、雪の町へ。</p></div>
-  <div class="game-detail-copy"><h2 id="game-detail-title">きえないで。</h2><p id="game-detail-intro">消えかけた炎の精を、雪の町の家まで届ける短編ゲーム。風が強まったらかばい、凪いだら手を離して息を戻そう。</p><dl><div><dt>プレイ時間</dt><dd>約90秒</dd></div><div><dt>操作</dt><dd>長押しと、手を離す判断</dd></div></dl><p>道中の選択や記憶によって、たどり着く結末が変わります。</p></div></div>
+  <div class="game-detail-copy"><h2 id="game-detail-title">きえないで。</h2><p id="game-detail-intro">消えかけた炎の精を、雪の町の家まで届ける短編ゲーム。風が強まったらかばい、凪いだら手を離して息を戻そう。</p><button class="game-detail-more" id="game-detail-more" type="button" aria-expanded="false" aria-controls="game-detail-extra">遊び方・物語をもっと見る</button><div class="game-detail-extra" id="game-detail-extra"><dl><div><dt>プレイ時間</dt><dd>約90秒</dd></div><div><dt>操作</dt><dd>長押しと、手を離す判断</dd></div></dl><p>道中の選択や記憶によって、たどり着く結末が変わります。</p></div></div></div>
   <div class="game-detail-actions"><a class="game-detail-play" href="./kienaide/">旅をはじめる ↗</a></div></dialog>`);
  const detail=document.getElementById('game-detail');
  const slides=[
@@ -109,7 +109,9 @@ if(!game){
   document.getElementById('game-detail-next').disabled=slide===slides.length-1;
  }
  const opener=document.getElementById('home-details-open');
- opener.addEventListener('click',()=>{showSlide(0);detail.showModal();document.body.classList.add('game-detail-open');document.getElementById('game-detail-close').focus()});
+ const more=document.getElementById('game-detail-more');
+ more.addEventListener('click',()=>{const expanded=more.getAttribute('aria-expanded')!=='true';more.setAttribute('aria-expanded',String(expanded));more.textContent=expanded?'遊び方・物語を閉じる':'遊び方・物語をもっと見る';detail.classList.toggle('detail-expanded',expanded)});
+ opener.addEventListener('click',()=>{showSlide(0);detail.classList.remove('detail-expanded');more.setAttribute('aria-expanded','false');more.textContent='遊び方・物語をもっと見る';detail.showModal();document.body.classList.add('game-detail-open');document.getElementById('game-detail-close').focus()});
  document.getElementById('game-detail-close').addEventListener('click',()=>detail.close());
  detail.addEventListener('close',()=>{document.body.classList.remove('game-detail-open');opener.focus()});
  document.getElementById('game-detail-prev').addEventListener('click',()=>showSlide(slide-1));

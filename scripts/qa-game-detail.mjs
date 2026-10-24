@@ -27,6 +27,10 @@ try{
   assert.ok(await page.locator('.kienaide-home-play').isVisible());
   assert.ok(await page.locator('#home-details-open').isVisible());
   assert.ok(await page.locator('.kienaide-home-bottom').evaluate(element=>element.scrollWidth<=element.clientWidth+1),'home actions must fit viewport');
+  if(size.width<600){
+   const home=await page.evaluate(()=>({height:document.documentElement.scrollHeight,viewport:innerHeight,footer:document.querySelector('.foot').getBoundingClientRect().bottom}));
+   assert.ok(home.height<=home.viewport+1&&home.footer<=home.viewport,`mobile home including art and footer must fit one screen: ${JSON.stringify(home)}`);
+  }
   await page.screenshot({path:path.join(out,`detail-home-${engine}-${size.width}.png`)});
   assert.equal(new URL(await page.locator('.kienaide-home-play').getAttribute('href'),base).pathname,'/emotion-games/kienaide/');
   await page.locator('#home-details-open').click();
@@ -35,6 +39,20 @@ try{
   assert.ok(await page.locator('#game-detail-prev').isDisabled());
   await page.waitForFunction(()=>{const image=document.getElementById('game-detail-image');return image.complete&&image.naturalWidth>0});
   await page.screenshot({path:path.join(out,`detail-${engine}-${size.width}.png`)});
+  if(size.width<600){
+   const layout=await page.evaluate(()=>{
+    const modal=document.getElementById('game-detail');
+    const selectors=['#game-detail-title','#game-detail-intro','#game-detail-more','#game-detail-image','.game-detail-gallery-nav','#game-detail-caption','.game-detail-play'];
+    return {scrollHeight:modal.scrollHeight,clientHeight:modal.clientHeight,viewport:innerHeight,items:selectors.map(selector=>{const box=document.querySelector(selector).getBoundingClientRect();return {selector,top:box.top,bottom:box.bottom}})};
+   });
+   assert.ok(layout.scrollHeight<=layout.clientHeight+1,`mobile detail must fit without scrolling: ${JSON.stringify(layout)}`);
+   for(const item of layout.items)assert.ok(item.top>=0&&item.bottom<=layout.viewport,`${item.selector} must fit in ${size.width}×${size.height}: ${JSON.stringify(item)}`);
+   await page.locator('#game-detail-more').click();
+   assert.equal(await page.locator('#game-detail-more').getAttribute('aria-expanded'),'true');
+   assert.ok(await page.locator('#game-detail-extra').isVisible(),'full story and controls remain available on demand');
+   await page.locator('#game-detail-more').click();
+   assert.equal(await page.locator('#game-detail-more').getAttribute('aria-expanded'),'false');
+  }
   await page.locator('#game-detail-next').click();
   assert.equal(await page.locator('#game-detail-position').innerText(),'2 / 3');
   await page.locator('.game-detail-gallery').evaluate(element=>{
