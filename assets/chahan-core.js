@@ -103,6 +103,7 @@ export function dishAppearance(game) {
     portion: Math.sqrt(rice),
     scatteredIngredients: Math.round((1 - mix) * rice * 20),
     mixedIngredients: Math.round(mix * rice * 25),
+    unmixed: 1 - mix,
     glaze: game.seasoned ? seasoning : 0,
     pale: clamp((.55 - cook) / .55),
     char: clamp((cook - 1.05) / .5),

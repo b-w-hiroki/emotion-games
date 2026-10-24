@@ -80,6 +80,7 @@ test('the plated dish reflects mixing, seasoning, doneness and remaining rice', 
   assert.ok(finished.mixedIngredients > 20 && finished.glaze === 1 && finished.steam > .9);
   const unmixed = dishAppearance({ ...good, mix: 0, seasoned: false, seasoning: 0 });
   assert.ok(unmixed.scatteredIngredients > 0 && unmixed.mixedIngredients === 0 && unmixed.glaze === 0);
+  assert.equal(unmixed.unmixed, 1);
   const raw = dishAppearance({ ...good, cook: .12 });
   const burnt = dishAppearance({ ...good, cook: 1.5 });
   assert.ok(raw.pale > .7 && raw.steam === 0);

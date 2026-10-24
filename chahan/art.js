@@ -224,7 +224,7 @@ export function drawDish(ctx, game) {
   const amount = look.portion;
   if (paintedRice.complete && paintedRice.naturalWidth) {
     ctx.save();
-    ctx.filter = look.pale > .2 ? `saturate(${1 - look.pale * .36}) brightness(${1 + look.pale * .13})` : look.char > .1 ? `sepia(${look.char * .36}) brightness(${1 - look.char * .2})` : 'none';
+    ctx.filter = `saturate(${Math.max(.2, 1 - look.unmixed * .65 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
     ctx.drawImage(paintedRice, 320 - 197 * amount, 103, 394 * amount, 132 * amount);
     ctx.restore();
   } else {
