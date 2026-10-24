@@ -3,9 +3,9 @@
 <body><main class="game"><section class="board" aria-label="釣りバトル">
   <canvas id="sea" aria-hidden="true"></canvas>
   <div class="top"><span class="fish-name" id="fishName">アジ</span><strong>BATTLE</strong><div class="track danger" aria-label="魚の逃走危険度"><i id="dangerFill"></i></div></div>
-  <div class="progress" aria-label="巻き進捗">巻き進捗 <b id="progressValue">48%</b><div class="track"><i id="progressFill"></i></div></div>
+  <div class="progress" aria-label="巻き進捗">巻き進捗 <b id="progressValue">48%</b><div class="track"><i id="progressFill"></i></div><span id="action" aria-live="polite"></span></div>
   <div class="cue" id="cue" role="status" aria-live="polite">魚の動きを見よう</div>
-  <div class="result" id="result" hidden><h1 id="resultTitle"></h1><p id="resultText"></p><button id="retry">もう一度</button></div>
+  <div class="result" id="result" hidden><img id="resultFish" alt="" hidden><h1 id="resultTitle"></h1><p id="resultText"></p><button id="retry">もう一度</button></div>
   <div class="controls"><p id="hint">タイミングよく下へスワイプ</p><button id="reel" type="button" aria-label="巻く。タップまたは下へスワイプ"><span aria-hidden="true">⌄<br>⌄</span></button><div id="rageLabel" hidden>魚が暴れてる！ 今は待つ</div></div>
   <div class="settings"><label>魚 <select id="fish"><option value="aji">アジ</option><option value="tai">マダイ</option><option value="bass">ブラックバス</option><option value="buri">ブリ</option><option value="saba">サバ</option><option value="isaki">イサキ</option><option value="hirame">ヒラメ</option><option value="kanpachi">カンパチ</option><option value="kue">クエ</option></select></label><button id="mute" type="button" aria-pressed="false">音 ON</button></div>
 </section></main><script type="module" src="./game.js"></script></body></html>
