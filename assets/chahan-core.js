@@ -5,7 +5,7 @@ export const STAGES = [
 ];
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, lastLift: 0, lastLean: 0, phase: 'ready', message: '鍋を上へスワイプ。まっすぐ、ほどよい速さで。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 1, cook: 0, mix: 0, heat: 0.48, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, lastLift: 0, lastLean: 0, phase: 'ready', message: '鍋を手前へ引くように下へ。まっすぐ、ほどよい速さで。' };
 }
 
 export function advance(game, input, dt) {
