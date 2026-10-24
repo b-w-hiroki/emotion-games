@@ -98,7 +98,7 @@ board.addEventListener('pointerdown', e => {
   board.setPointerCapture(e.pointerId);
 });
 board.addEventListener('pointermove', e => {
-  if (pointerStart?.id === e.pointerId) setPull(e.clientY - pointerStart.y);
+  if (pointerStart?.id === e.pointerId) { setPull(e.clientY - pointerStart.y); syncUI(); }
 });
 board.addEventListener('pointerup', e => {
   if (pointerStart?.id !== e.pointerId) return;
@@ -107,8 +107,9 @@ board.addEventListener('pointerup', e => {
   pointerStart = null;
   setPull(0);
   if (tapDial || dy >= 34) reel();
+  else syncUI();
 });
-function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); } }
+function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); syncUI(); } }
 board.addEventListener('pointercancel', cancelPointer);
 board.addEventListener('lostpointercapture', cancelPointer);
 document.addEventListener('keydown', e => {
