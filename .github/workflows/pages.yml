@@ -50,6 +50,7 @@ jobs:
       - run: npm run build
         env:
           PUBLIC_ORIGIN: https://play.birdman-studio.com
+          GA4_MEASUREMENT_ID: ${{ vars.GA4_MEASUREMENT_ID }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
