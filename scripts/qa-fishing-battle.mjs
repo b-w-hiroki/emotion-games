@@ -14,11 +14,14 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${server.address().port}/`;
 const out = resolve('artifacts/fishing-battle');
 await mkdir(out, { recursive: true });
+const requested = process.argv[2] ?? 'all';
+if (!['all', 'chromium', 'webkit'].includes(requested)) throw new Error(`Unknown browser: ${requested}`);
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
+  if (requested !== 'all' && requested !== name) continue;
   let browser;
   try { browser = await engine.launch({ headless: true }); }
-  catch (error) { console.log(`${name}: unavailable (${error.message.split('\n')[0]})`); continue; }
-  for (const [width, height] of [[390, 844], [360, 640]]) {
+  catch (error) { if (requested !== 'all') throw error; console.log(`${name}: unavailable (${error.message.split('\n')[0]})`); continue; }
+  for (const [width, height] of [[390, 844], [360, 640], [375, 667], [320, 568]]) {
     const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -26,7 +29,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.goto(url);
     await page.waitForTimeout(150);
     await page.screenshot({ path: `${out}/${name}-${width}x${height}.png`, fullPage: true });
+    if (!await page.locator('#dangerLabel').textContent().then(t => t === '逃走危険')) throw new Error(`${name} ${width}: danger meter has no visible meaning`);
+    if (!await page.locator('#danger').getAttribute('aria-valuenow')) throw new Error(`${name} ${width}: danger meter has no accessible value`);
     const reel = page.locator('#reel');
+    if (width === 320) {
+      const dial = await reel.boundingBox(), settings = await page.locator('.settings label').boundingBox();
+      if (dial.x < settings.x + settings.width && dial.x + dial.width > settings.x && dial.y < settings.y + settings.height && dial.y + dial.height > settings.y) throw new Error(`${name}: fish selector overlaps reel on 320x568`);
+    }
     await reel.click();
     const progress = await page.locator('#progressFill').evaluate(el => parseFloat(el.style.width));
     if (progress !== 53) throw new Error(`${name} ${width}: reel input expected AINAN 48→53, got ${progress}`);
@@ -47,10 +56,36 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await page.reload();
       if (await page.locator('#mute').getAttribute('aria-pressed') !== 'true') throw new Error(`${name}: mute did not persist`);
     }
+    if (width === 320) {
+      await page.locator('#fish').selectOption('bass');
+      const fishName = await page.locator('#fishName').boundingBox(), danger = await page.locator('#danger').boundingBox();
+      if (fishName.x + fishName.width >= danger.x || danger.width < 30) throw new Error(`${name}: long fish name crowds out the danger meter on 320x568`);
+    }
     if (errors.length) throw new Error(`${name} ${width}: ${errors.join('; ')}`);
     console.log(`${name} ${width}x${height}: reel ${progress}%, no page errors`);
     await page.close();
   }
+  const input = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await input.goto(url);
+  await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 900, { steps: 4 }); await input.mouse.up();
+  if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 53) throw new Error(`${name}: off-board swipe release was lost`);
+  await input.reload();
+  await input.mouse.move(190, 210); await input.mouse.down();
+  await input.locator('.board').dispatchEvent('pointercancel', { pointerId: 1 });
+  await input.mouse.move(190, 300); await input.mouse.up();
+  if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 48) throw new Error(`${name}: cancelled swipe still reeled`);
+  await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 300); await input.mouse.up();
+  if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 53) throw new Error(`${name}: input stayed blocked after cancellation`);
+  await input.close();
+  const quiet = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await quiet.goto(url);
+  await quiet.locator('#mute').click();
+  await quiet.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
+  if (!await quiet.locator('#cue').isVisible() || await quiet.locator('#mute').getAttribute('aria-pressed') !== 'true') throw new Error(`${name}: warning lost with reduced motion and sound off`);
+  await quiet.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
+  if (!await quiet.locator('#cue').isVisible()) throw new Error(`${name}: opening lost with reduced motion and sound off`);
+  await quiet.screenshot({ path: `${out}/${name}-quiet-opening.png` });
+  await quiet.close();
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await page.goto(url);
   for (let i = 0; i < 55 && await page.locator('#result').isHidden(); i++) {
@@ -62,18 +97,27 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   if (!await page.locator('#resultFish').isVisible()) throw new Error(`${name}: caught fish not shown`);
   await page.screenshot({ path: `${out}/${name}-caught.png` });
   await page.locator('#retry').click();
+  if (!await page.locator('#result').isHidden() || await page.locator('#progressValue').textContent() !== '48%') throw new Error(`${name}: retry did not reset the fight`);
+  await page.reload(); // Use the fixed initial seed for the escape path.
   await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
   const boardBounds = await page.locator('.board').boundingBox();
   const rageBounds = await page.locator('#rageLabel').boundingBox();
   if (!rageBounds || rageBounds.y + rageBounds.height > boardBounds.y + boardBounds.height - 30) throw new Error(`${name}: rage guidance clipped by lower controls`);
   await page.screenshot({ path: `${out}/${name}-rage.png` });
+  let sawCritical = false;
   for (let i = 0; i < 80 && await page.locator('#result').isHidden(); i++) {
     const phase = await page.locator('#cue').getAttribute('class');
     if (phase?.includes('rage')) {
       await page.mouse.move(210, 250); await page.mouse.down(); await page.mouse.move(210, 310, { steps: 3 }); await page.mouse.up();
     }
+    if (!sawCritical && await page.locator('#danger').getAttribute('aria-valuenow').then(Number) >= 70) {
+      sawCritical = true;
+      if (!await page.locator('#dangerLabel').textContent().then(t => t === '逃走寸前')) throw new Error(`${name}: critical danger is not explained`);
+      await page.screenshot({ path: `${out}/${name}-critical.png` });
+    }
     await page.waitForTimeout(240);
   }
+  if (!sawCritical) throw new Error(`${name}: critical danger state was not reached`);
   if (!await page.locator('#result').isVisible() || !await page.locator('#resultTitle').textContent().then(t => t.includes('逃げた'))) throw new Error(`${name}: natural escape path failed`);
   if (await page.locator('#resultFish').isVisible()) throw new Error(`${name}: escaped fish still shown`);
   await page.screenshot({ path: `${out}/${name}-escaped.png` });
