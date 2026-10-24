@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battlePose, interactionFeedback, outcomePose } from './visual.js';
+import { battlePose, interactionFeedback, outcomePose, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -17,12 +17,14 @@ let outcomeAt = null;
 let started = false;
 let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
 let previousCue = 'calm';
+let openingLatePlayed = false;
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
 const sound = new BattleAudio(() => new (window.AudioContext || window.webkitAudioContext)());
 sound.setMuted(muted);
 
 function feedback(events) {
   for (const event of events) {
+    if (event === 'opening') openingLatePlayed = false;
     if ((event === 'caught' || event === 'escaped') && outcomeAt === null) {
       outcomeAt = performance.now();
       pointerStart = null;
@@ -41,6 +43,7 @@ function feedback(events) {
 }
 function syncUI() {
   const cue = battleCue(state), fish = FISH[state.fishId];
+  const timing = timingWindow(state, cue);
   const finishing = state.outcome && !reduced.matches && outcomeAt !== null && performance.now() - outcomeAt < (state.outcome === 'caught' ? 650 : 500);
   const critical = state.escape >= 70;
   if ($('fishName').textContent !== fish.name) $('fishName').textContent = fish.name;
@@ -52,7 +55,9 @@ function syncUI() {
   $('progressValue').textContent = `${Math.round(state.reel)}%`;
   $('cue').className = `cue ${finishing ? `finale-${state.outcome}` : cue}`;
   const cueText = finishing ? state.outcome === 'caught' ? '引き寄せた！' : '離れていく…' : cue === 'rage' ? critical ? '逃げそう！ 手を止めて' : '魚が走った！ 手を止めて' : cue === 'opening' ? '糸がゆるんだ！ いま巻く' : cue === 'warning' ? '糸が張る… もうすぐ走る' : critical ? '逃げそう！ いま巻く' : '魚の動きを見よう';
-  if ($('cue').textContent !== cueText) $('cue').textContent = cueText;
+  if ($('cueText').textContent !== cueText) $('cueText').textContent = cueText;
+  $('timingFill').hidden = !timing || Boolean(finishing);
+  if (timing) $('timingFill').style.width = `${Math.round(timing.fraction * 100)}%`;
   document.querySelector('.controls').classList.toggle('is-raging', !finishing && cue === 'rage');
   $('rageLabel').hidden = finishing || cue !== 'rage';
   const hint = finishing ? state.outcome === 'caught' ? '水面へ！' : '届かなかった…' : cue === 'rage' ? '暴れが収まるまで待とう' : cue === 'warning' ? '走りそう。指を止めよう' : pointerPull >= 34 ? '離して巻く！' : pointerPull > 8 ? '下へ引いて、離す' : cue === 'opening' ? 'いま、下へスワイプ！' : '下へスワイプして巻く';
@@ -116,7 +121,7 @@ document.addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.repeat || !$('result').hidden || ['SELECT', 'BUTTON'].includes(document.activeElement?.tagName)) return;
   e.preventDefault(); reel();
 });
-function restart() { sound.reset(); setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -157,6 +162,15 @@ function draw(now) {
     ctx.globalAlpha = waterAlpha * .52; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth - 15, pose.ringHeight - 8, -.1, 0, Math.PI * 2); ctx.stroke();
   }
+  const timing = timingWindow(state, cue);
+  if (timing && timing.fraction > 0) {
+    ctx.globalAlpha = waterAlpha * .95;
+    ctx.strokeStyle = timing.kind === 'warning' ? '#ffc17e' : '#a9fff1';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 11, pose.ringHeight + 9, -.1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * timing.fraction);
+    ctx.stroke();
+  }
   ctx.globalAlpha = 1;
   ctx.save(); ctx.globalAlpha = fish.alpha; ctx.translate(fish.fishX + 70, fish.fishY + 40); ctx.rotate(fish.angle); ctx.scale(fish.scale, fish.scale);
   drawImage(`fish_hero_${state.fishId}`, -70, -40, 140, 80); ctx.restore();
@@ -186,6 +200,11 @@ function draw(now) {
     stepBattle(state, dt);
     if (state.events.length) { feedback(state.events); state.events = []; }
     const nextCue = battleCue(state);
+    const nextTiming = timingWindow(state, nextCue);
+    if (nextTiming?.kind === 'opening' && nextTiming.fraction <= .35 && !openingLatePlayed) {
+      openingLatePlayed = true;
+      feedback(['openingLate']);
+    }
     if (pointerPull > 8 && (nextCue !== previousCue || state.escape !== previousEscape)) setPull(pointerPull);
     if (nextCue === 'warning' && previousCue !== 'warning') feedback(['warning']);
     previousCue = nextCue;

@@ -16,6 +16,13 @@ export function interactionFeedback(state, pull) {
   };
 }
 
+export function timingWindow(state, cue) {
+  if (state.outcome) return null;
+  if (cue === 'warning') return { kind: 'warning', fraction: clamp(1 - (state.phaseUntil - state.time) / .65, 0, 1) };
+  if (cue === 'opening') return { kind: 'opening', fraction: clamp((state.openingUntil - state.time) / FISH[state.fishId].opening, 0, 1) };
+  return null;
+}
+
 // Canvas-space pose. Visual pull and recoil never change the battle state.
 export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0 } = {}) {
   const fish = FISH[state.fishId];
