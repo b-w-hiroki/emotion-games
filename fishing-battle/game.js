@@ -47,12 +47,16 @@ function feedback(events) {
 }
 function syncUI() {
   const cue = battleCue(state), fish = FISH[state.fishId];
+  const critical = state.escape >= 70;
   if ($('fishName').textContent !== fish.name) $('fishName').textContent = fish.name;
   $('dangerFill').style.width = `${state.escape}%`;
+  $('danger').setAttribute('aria-valuenow', String(Math.round(state.escape)));
+  $('dangerLabel').textContent = critical ? '逃走寸前' : '逃走危険';
+  document.querySelector('.top').classList.toggle('critical', critical);
   $('progressFill').style.width = `${state.reel}%`;
   $('progressValue').textContent = `${Math.round(state.reel)}%`;
   $('cue').className = `cue ${cue}`;
-  const cueText = cue === 'rage' ? '魚が走った！ 手を止めて' : cue === 'opening' ? '糸がゆるんだ！ いま巻く' : cue === 'warning' ? '糸が張る… もうすぐ走る' : '魚の動きを見よう';
+  const cueText = cue === 'rage' ? critical ? '逃げそう！ 手を止めて' : '魚が走った！ 手を止めて' : cue === 'opening' ? '糸がゆるんだ！ いま巻く' : cue === 'warning' ? '糸が張る… もうすぐ走る' : critical ? '逃げそう！ いま巻く' : '魚の動きを見よう';
   if ($('cue').textContent !== cueText) $('cue').textContent = cueText;
   document.querySelector('.controls').classList.toggle('is-raging', cue === 'rage');
   $('rageLabel').hidden = cue !== 'rage';
