@@ -10,3 +10,11 @@ for (const scene of ['street', 'train', 'sky']) {
     .webp({ quality: 83, effort: 6 })
     .toFile(path.join(root, `${scene}.webp`));
 }
+await sharp(path.join(root, 'src', 'wok-v2.png'))
+  .resize({ width: 780 })
+  .webp({ quality: 85, effort: 6, alphaQuality: 90 })
+  .toFile(path.join(root, 'wok-v2.webp'));
+await sharp(path.join(root, 'src', 'toss-v2.png'))
+  .resize({ width: 780 })
+  .webp({ quality: 84, effort: 6, alphaQuality: 90 })
+  .toFile(path.join(root, 'toss-v2.webp'));
