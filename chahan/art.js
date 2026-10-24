@@ -1,5 +1,10 @@
 const W = 780, H = 900;
 const backgrounds = new Map();
+const paintedScenes = ['street', 'train', 'sky'].map(name => {
+  const image = new Image();
+  image.src = new URL(`./art/${name}.webp`, import.meta.url).href;
+  return image;
+});
 const rgba = (hex, alpha) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${alpha})`; };
 function ellipse(ctx, x, y, rx, ry, color, rotation = 0) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rotation, 0, Math.PI * 2); ctx.fill(); }
 function line(ctx, points, color, width = 2) { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(...points[0]); for (const point of points.slice(1)) ctx.lineTo(...point); ctx.stroke(); }
@@ -79,7 +84,8 @@ function wok(ctx, game, reduced) {
 }
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;
-  ctx.drawImage(background(stage),0,0);
+  const painted = paintedScenes[stage];
+  ctx.drawImage(painted.complete && painted.naturalWidth ? painted : background(stage),0,0,W,H);
   const vignette=ctx.createRadialGradient(390,420,170,390,420,610);vignette.addColorStop(0,'#0000');vignette.addColorStop(1,'#090a16a8');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   burner(ctx,t,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);
   const lip=ctx.createLinearGradient(0,800,0,900);lip.addColorStop(0,'#452a24');lip.addColorStop(1,'#150f16');ctx.fillStyle=lip;ctx.fillRect(0,808,W,92);ctx.fillStyle='#c98754';ctx.fillRect(0,805,W,7);
