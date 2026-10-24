@@ -25,11 +25,13 @@ try {
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         await page.addInitScript(() => { if (window.DeviceMotionEvent) Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: () => Promise.resolve('granted') }); });
         await page.goto(url);
-        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2'].map(name => new Promise(resolve => {
-          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name.endsWith('-v2') ? 520 : 900));
+        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2'].map(name => new Promise(resolve => {
+          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name === 'rice-v2' ? 260 : name.endsWith('-v2') ? 520 : 900));
           image.onerror = () => resolve(false); image.src = `./art/${name}.webp`;
         }))));
-        assert.deepEqual(painted, [true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
+        assert.deepEqual(painted, [true,true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
+        assert.equal(await page.locator('.cook-controls button').count(), 1, `${name} ${width}: only seasoning remains a cooking button`);
+        assert.equal(await page.locator('#motionButton').isVisible(), false, `${name} ${width}: sensor setup stays in settings`);
         await page.screenshot({ path: path.join(output, `title-${name}-${width}.png`) });
         await page.locator('#start').click();
         assert.equal(await page.locator('#stageNotice').isVisible(), true, `${name} ${width}: opening location cue appears`);
@@ -39,18 +41,28 @@ try {
         assert.equal(await page.locator('#combo').textContent(), '0', `${name} ${width}: upward swipe must not toss`);
         await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 115, { steps: 8 }); await page.mouse.up();
         assert.equal(await page.locator('#combo').textContent(), '1', `${name} ${width}: pulling toward the player tosses rice`);
+        await page.waitForTimeout(2400);
+        await page.screenshot({ path: path.join(output, `game-${name}-${width}.png`) });
+        await page.locator('.settings summary').click();
         await page.locator('#motionButton').click();
         await page.waitForTimeout(450);
         await page.evaluate(() => { const event = new Event('devicemotion'); Object.defineProperty(event, 'acceleration', { value: { x: 0, y: 0, z: 5.6 } }); window.dispatchEvent(event); });
         assert.equal(await page.locator('#combo').textContent(), '2', `${name} ${width}: sensor pull toward the player tosses rice`);
+        await page.locator('.settings summary').click();
+        const heatTrack = await page.locator('#heatControl').boundingBox();
+        await page.mouse.click(heatTrack.x + heatTrack.width * .85, heatTrack.y + heatTrack.height / 2);
+        await page.waitForTimeout(100);
+        assert.ok(Number((await page.locator('#heatLabel').textContent()).match(/\d+/)[0]) > 80, `${name} ${width}: heat slider changes fire`);
+        await page.waitForTimeout(160);
+        if (width === 390) await page.screenshot({ path: path.join(output, `toss-${name}-${width}.png`) });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${name} ${width}: no horizontal overflow`);
         assert.deepEqual(errors, [], `${name} ${width}: no runtime errors`);
-        await page.waitForTimeout(2400);
-        await page.screenshot({ path: path.join(output, `game-${name}-${width}.png`) });
+        await page.locator('.settings summary').click();
         await page.locator('#sound').click();
         await page.reload();
         assert.equal(await page.locator('#sound').textContent(), '音 OFF', `${name} ${width}: mute survives reload`);
         await page.emulateMedia({ reducedMotion: 'reduce' });
+        assert.equal(await page.locator('.hero-art img').evaluate(el => getComputedStyle(el).animationName), 'none', `${name} ${width}: reduced motion stops rice arc`);
         await page.locator('#start').click();
         assert.equal(await page.locator('#stageNotice').evaluate(el => getComputedStyle(el).animationName), 'none', `${name} ${width}: reduced motion stops stage animation`);
         assert.deepEqual(errors, [], `${name} ${width}: audio-off/reduced-motion has no runtime errors`);

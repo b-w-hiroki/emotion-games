@@ -18,3 +18,7 @@ await sharp(path.join(root, 'src', 'toss-v2.png'))
   .resize({ width: 780 })
   .webp({ quality: 84, effort: 6, alphaQuality: 90 })
   .toFile(path.join(root, 'toss-v2.webp'));
+await sharp(path.join(root, 'src', 'rice-v2.png'))
+  .resize({ width: 780 })
+  .webp({ quality: 85, effort: 6, alphaQuality: 90 })
+  .toFile(path.join(root, 'rice-v2.webp'));
