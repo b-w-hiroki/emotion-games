@@ -94,3 +94,19 @@ export function result(game) {
     : '香ばしく仕上がった。次はもっと軽やかに返せそうだ。';
   return { score, title, doneness, seasoning: game.seasoning, comment };
 }
+
+export function dishAppearance(game) {
+  const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
+  const rice = clamp(game.rice), mix = clamp(game.mix), seasoning = clamp(game.seasoning);
+  const cook = Math.max(0, Number(game.cook) || 0);
+  return {
+    portion: Math.sqrt(rice),
+    scatteredIngredients: Math.round((1 - mix) * rice * 20),
+    mixedIngredients: Math.round(mix * rice * 25),
+    unmixed: 1 - mix,
+    glaze: game.seasoned ? seasoning : 0,
+    pale: clamp((.55 - cook) / .55),
+    char: clamp((cook - 1.05) / .5),
+    steam: rice > .3 && cook > .48 ? clamp((cook - .48) / .38) * (1 - clamp((cook - 1.25) / .6)) : 0,
+  };
+}

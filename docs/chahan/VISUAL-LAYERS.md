@@ -8,3 +8,5 @@
 4. **手前の湯気と味付け** — 鍋の前に薄い湯気を通し、調味料を入れた瞬間だけ飛沫と反応を重ねる。
 
 新しい飛翔素材の原画は `chahan/art/src/flight-v3.png` に保存。`node scripts/art/build-chahan-scenes.mjs` で配信用 WebP に変換する。アニメーションの確認には `node scripts/capture-chahan-toss.mjs`、画面と操作の確認には `node scripts/qa-chahan.mjs` を使う。動きを減らす設定では光や粒の位置を固定する。
+
+完成皿は別の `drawDish` で描く。米の量で盛り付けを縮め、混ぜ具合で具の分布を変え、味付けで照り、火の通りで色と湯気を変える。比較用のブラウザー画像は [会心の一皿](dish-ideal.png)、[具が偏った一皿](dish-unmixed.png)、[焦げた一皿](dish-burnt.png)。
