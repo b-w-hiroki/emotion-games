@@ -35,6 +35,10 @@ test('kitchen audio starts after unlock, mixes each stage and persists mute', ()
   assert.equal(createKitchenAudio({ Context: FakeContext, storage }).enabled, false, 'mute survives reload');
   audio.setEnabled(true); audio.unlock();
   assert.equal(contexts.length, 1, 'unmute reuses the context');
+  audio.transition();
+  assert.equal(contexts[0].oscillators.length, 4, 'a location change has its own cue');
   audio.update({ playing: false });
   assert.equal(contexts[0].gains[0].gain.targets.at(-1), 0, 'ambient sound stops after play');
+  audio.pause();
+  assert.equal(contexts[0].state, 'suspended', 'backgrounding suspends audio');
 });
