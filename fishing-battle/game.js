@@ -11,6 +11,7 @@ for (const name of ['fight-mid', ...Object.keys(FISH).map(id => `fish_hero_${id}
   art[name] = image;
 }
 let state = createBattle(), last = 0, flash = 0, impact = '';
+let started = false;
 let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
 let previousCue = 'calm';
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
@@ -58,10 +59,11 @@ function syncUI() {
     $('resultText').textContent = state.outcome === 'caught'
       ? actions.openingHits ? `走りを見送り、糸がゆるんだ瞬間を${actions.openingHits}回つかんだ。` : '少しずつ糸を巻き、水面まで引き寄せた。'
       : actions.badReels ? `走る魚に${actions.badReels}回巻いて、糸が張りつめた。次は走りを見送ろう。` : '水の向こうへ消えていった。次は糸がゆるんだ瞬間に巻こう。';
-    if (newlyEnded) $('retry').focus();
+    if (newlyEnded) { if (started) window.emotionTrack?.('game_complete',{game_id:'fishing-battle',fish_id:state.fishId,outcome:state.outcome,opening_hits:actions.openingHits,bad_reels:actions.badReels}); $('retry').focus(); }
   }
 }
 function reel() {
+  if (!started) { started = true; window.emotionTrack?.('game_start',{game_id:'fishing-battle'}); }
   if (!reelBattle(state)) return;
   sound.unlock();
   feedback(state.events); state.events = []; syncUI();
@@ -85,7 +87,7 @@ document.addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.repeat || !$('result').hidden || ['SELECT', 'BUTTON'].includes(document.activeElement?.tagName)) return;
   e.preventDefault(); reel();
 });
-function restart() { sound.reset(); state = createBattle($('fish').value, Date.now()); actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); state = createBattle($('fish').value, Date.now()); started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 function syncMute() { $('mute').textContent = muted ? '音 OFF' : '音 ON'; $('mute').setAttribute('aria-pressed', String(muted)); }

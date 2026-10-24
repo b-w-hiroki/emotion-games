@@ -6,6 +6,7 @@ import { resolve, join, extname } from 'node:path';
 const root = resolve('dist/fishing-battle');
 const server = createServer(async (req, res) => {
   const name = req.url === '/' ? 'index.html' : req.url.slice(1);
+  if (name === 'assets/analytics.js') { res.setHeader('Content-Type', 'text/javascript'); res.end(await readFile(resolve('dist/assets/analytics.js'))); return; }
   if (!['index.html', 'style.css', 'game.js', 'core.js', 'audio.js'].includes(name) && !/^assets\/[a-z0-9_-]+\.(png|svg)$/.test(name)) { res.writeHead(404).end(); return; }
   res.setHeader('Content-Type', ({ '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml' })[extname(name)]);
   res.end(await readFile(join(root, name)));
