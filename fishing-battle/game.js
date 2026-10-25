@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -19,12 +19,13 @@ let started = false;
 let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
 let previousCue = 'calm';
 let openingLatePlayed = false;
+let lastReadout = null, readoutAt = 0;
 const camera = { x: 0, y: 0, zoom: 1 };
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
 const sound = new BattleAudio(() => new (window.AudioContext || window.webkitAudioContext)());
 sound.setMuted(muted);
 
-function feedback(events) {
+function feedback(events, beforeReel = null) {
   for (const event of events) {
     if (event === 'opening') openingLatePlayed = false;
     if ((event === 'caught' || event === 'escaped') && outcomeAt === null) {
@@ -36,9 +37,11 @@ function feedback(events) {
     sound.play(event, reelEvent ? impactStrength : 1);
     if (reelEvent) {
       flash = .35; impact = event;
+      lastReadout = reelReadout(event, beforeReel, state);
+      readoutAt = performance.now();
       if (event === 'goodOpening') actions.openingHits++;
       if (event === 'badReel') actions.badReels++;
-      $('action').textContent = event === 'goodOpening' ? 'ゆるんだ糸を引き寄せた！' : event === 'badReel' ? '糸が強く張った！' : '少し近づいた';
+      $('action').textContent = lastReadout.message;
       $('action').className = event === 'badReel' ? 'danger-action' : 'good-action';
       actionUntil = state.time + 1.1;
     }
@@ -88,10 +91,11 @@ function syncUI() {
 }
 function reel(strength = 1) {
   if (!started) { started = true; window.emotionTrack?.('game_start',{game_id:'fishing-battle'}); }
+  const before = { reel: state.reel, escape: state.escape };
   if (!reelBattle(state)) return;
   impactStrength = strength;
   sound.unlock();
-  feedback(state.events); state.events = []; syncUI();
+  feedback(state.events, before); state.events = []; syncUI();
 }
 let pointerStart = null;
 const controls = document.querySelector('.controls');
@@ -146,7 +150,7 @@ document.addEventListener('keyup', e => {
 });
 function cancelKeyboardPull() { if (keyboardPull) { keyboardPull = false; setPull(0); syncUI(); } }
 window.addEventListener('blur', cancelKeyboardPull);
-function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -274,6 +278,19 @@ function draw(now) {
       const x = fishX + 65 + Math.cos(a) * (pose.ringWidth - 2), y = fishY + 48 + Math.sin(a) * (pose.ringHeight + 8);
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * 12, y + Math.sin(a) * 12); ctx.stroke();
     }
+  }
+  const readoutAge = (now - readoutAt) / 1000;
+  if (lastReadout && readoutAge < .9) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (1 - readoutAge / .9) * 2.4);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `900 ${lastReadout.danger ? 19 : 25}px system-ui`;
+    ctx.lineJoin = 'round'; ctx.lineWidth = 6;
+    const x = fish.fishX + 70, y = fish.fishY - 23 - (reduced.matches ? 0 : readoutAge * 25);
+    ctx.strokeStyle = '#092638'; ctx.strokeText(lastReadout.label, x, y);
+    ctx.fillStyle = lastReadout.danger ? '#ffd09a' : '#b5ffdc';
+    ctx.fillText(lastReadout.label, x, y);
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
   flash = Math.max(0, flash - dt);
