@@ -69,6 +69,26 @@ test('egg readiness follows actual heat and freezes when rice is added', () => {
   addIngredient(burnt, 'veg');
   assert.match(result(burnt).comment, /卵を炒めすぎた/);
 });
+test('filling choice rewards different timing and stays in the finished meal', () => {
+  const prepare = (filling, cook, heat) => {
+    const g = createGame(); g.phase = 'playing'; g.heat = heat;
+    addIngredient(g, 'egg'); addIngredient(g, 'rice'); g.mix = .3; g.cook = cook;
+    assert.equal(addIngredient(g, 'veg', filling), true);
+    assert.equal(addIngredient(g, 'veg', filling), false);
+    return g;
+  };
+  const lateScallion = prepare('scallion', .52, .5);
+  const earlyScallion = prepare('scallion', .05, .5);
+  const earlyPork = prepare('pork', .24, .9);
+  const latePork = prepare('pork', .8, .9);
+  assert.ok(lateScallion.fillingQuality > earlyScallion.fillingQuality + .7);
+  assert.ok(earlyPork.fillingQuality > latePork.fillingQuality + .7);
+  assert.equal(lateScallion.filling, 'scallion'); assert.equal(earlyPork.filling, 'pork');
+  for (const g of [lateScallion, earlyScallion, earlyPork, latePork]) Object.assign(g, { cook: .86, seasoning: 1, mix: 1, prep: 1 });
+  assert.ok(result(lateScallion).score > result(earlyScallion).score);
+  assert.ok(result(earlyPork).score > result(latePork).score);
+  assert.equal(addIngredient(createGame(), 'veg', 'invalid'), false);
+});
 
 test('airborne rice layer keeps transparent space around edible detail', async () => {
   const { data, info } = await sharp('chahan/art/flight-v3.webp').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
