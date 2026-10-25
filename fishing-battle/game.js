@@ -103,11 +103,15 @@ const controls = document.querySelector('.controls');
 function setPull(value) {
   pointerPull = Math.max(0, Math.min(110, value));
   const response = interactionFeedback(state, pointerPull);
+  const ready = pointerPull >= 34;
   controls.style.setProperty('--pull', `${Math.min(7, pointerPull * .06)}px`);
+  controls.style.setProperty('--charge-angle', `${Math.round(Math.min(1, pointerPull / 34) * 360)}deg`);
+  controls.style.setProperty('--charge-color', ready ? '#b6fff0' : '#75d5ff');
   controls.style.setProperty('--tension', response.tension.toFixed(3));
   controls.style.setProperty('--glow-size', `${Math.round(18 + response.tension * 14)}px`);
   controls.style.setProperty('--pull-glow', response.danger ? '#ff976c' : '#8de7ff');
   controls.classList.toggle('is-pulling', pointerPull > 8);
+  controls.classList.toggle('is-ready', ready);
   sound.setTension(pointerPull > 8 ? response.tension : 0, response.pitch);
 }
 board.addEventListener('pointerdown', e => {
@@ -127,7 +131,14 @@ board.addEventListener('pointerup', e => {
   pointerStart = null;
   setPull(0);
   if (tapDial || dy >= 34) reel(tapDial ? 1 : reelImpulse(dy));
-  else syncUI();
+  else {
+    if (dy >= 10 && dx < 36) {
+      $('action').textContent = 'もう少し下へ引こう';
+      $('action').className = 'short-action';
+      actionUntil = state.time + .9;
+    }
+    syncUI();
+  }
 });
 function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); syncUI(); } }
 board.addEventListener('pointercancel', cancelPointer);
