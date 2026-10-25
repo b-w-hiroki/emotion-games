@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -52,6 +52,7 @@ function syncUI() {
   const timing = timingWindow(state, cue);
   const finishing = state.outcome && !reduced.matches && outcomeAt !== null && performance.now() - outcomeAt < (state.outcome === 'caught' ? 650 : 500);
   const critical = state.escape >= 70;
+  board.style.setProperty('--escape-pressure', escapePressure(state).toFixed(3));
   if ($('fishName').textContent !== fish.name) $('fishName').textContent = fish.name;
   $('dangerFill').style.width = `${state.escape}%`;
   $('danger').setAttribute('aria-valuenow', String(Math.round(state.escape)));
@@ -195,9 +196,10 @@ function draw(now) {
   const fisher = fisherPose(cue, { pull: pointerPull, impact, flash, strength: impactStrength, reduced: reduced.matches });
   const line = lineShape(fish, cue, pointerPull, { x: fisher.handX, y: fisher.handY });
   const surface = surfaceResponse(pose, cue, { impact, flash, strength: impactStrength, reduced: reduced.matches });
+  const pressure = escapePressure(state);
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
-  const lineColor = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
+  const lineColor = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' || pressure >= .34 ? '#ffba69' : '#e8f8ff';
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = (rage || cue === 'warning' ? 2.3 : 1.5 + pose.pull * .055) + pose.tension * 2;
   ctx.globalAlpha = fish.alpha;
@@ -211,6 +213,10 @@ function draw(now) {
     ctx.globalAlpha = fish.alpha;
   }
   ctx.beginPath(); ctx.moveTo(line.startX, line.startY); ctx.bezierCurveTo(line.c1x, line.c1y, line.c2x, line.c2y, line.endX, line.endY); ctx.stroke();
+  if (pressure > 0) {
+    ctx.strokeStyle = '#ff976c'; ctx.lineWidth = 5 + pressure * 5; ctx.globalAlpha = fish.alpha * pressure * .35;
+    ctx.beginPath(); ctx.moveTo(line.startX, line.startY); ctx.bezierCurveTo(line.c1x, line.c1y, line.c2x, line.c2y, line.endX, line.endY); ctx.stroke();
+  }
   ctx.globalAlpha = waterAlpha;
   ctx.fillStyle = '#00385466';
   ctx.beginPath(); ctx.ellipse(fishX + 66, fishY + 61, 75, 19, -.1, 0, Math.PI * 2); ctx.fill();

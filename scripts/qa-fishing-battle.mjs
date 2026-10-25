@@ -267,6 +267,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     if (!sawCritical && await page.locator('#danger').getAttribute('aria-valuenow').then(Number) >= 70) {
       sawCritical = true;
       if (!await page.locator('#dangerLabel').textContent().then(t => t === '逃走寸前')) throw new Error(`${name}: critical danger is not explained`);
+      const pressure = await page.locator('.board').evaluate(el => Number(el.style.getPropertyValue('--escape-pressure')));
+      if (pressure <= 0) throw new Error(`${name}: critical danger did not reach the water and line`);
       await page.screenshot({ path: `${out}/${name}-critical.png` });
     }
     await page.waitForTimeout(240);

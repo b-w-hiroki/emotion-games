@@ -1,7 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, reelBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+
+test('escape pressure remains visible between runs and releases as risk falls', () => {
+  const state = createBattle('aji');
+  assert.equal(escapePressure(state), 0);
+  state.escape = 80;
+  const urgent = escapePressure(state);
+  assert.ok(urgent > 0);
+  const pose = battlePose(state, 'calm', 0, { reduced: true });
+  const distant = battleCamera(state, 'calm', pose);
+  state.escape = 60;
+  assert.ok(escapePressure(state) < urgent);
+  const recovering = battleCamera(state, 'calm', pose);
+  assert.ok(distant.zoom < recovering.zoom && distant.x < recovering.x);
+  state.escape = 55;
+  assert.equal(escapePressure(state), 0);
+  state.outcome = 'escaped';
+  state.escape = 100;
+  assert.equal(escapePressure(state), 0);
+});
 
 test('reel readout reports actual progress and danger, including caps', () => {
   const state = createBattle('aji');
