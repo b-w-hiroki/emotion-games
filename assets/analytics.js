@@ -7,10 +7,12 @@ const query=new URL(location.href).searchParams;
 if(query.has('qa')||query.get('study')==='1')return;
 const KEY='emotion-analytics-consent-v1';
 const fields={
- game_start:[],game_complete:['ending_id','outcome','score','found_count','memories','miracle','lowest_flame','route','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','fish_id','opening_hits','bad_reels'],
+ game_start:[],game_complete:['ending_id','outcome','score','found_count','memories','miracle','lowest_flame','route','chapter','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','fish_id','opening_hits','bad_reels'],
  ending_discovered:['ending_id','found_count'],game_retry:[],share_tap:['ending_id'],
- route_selected:['route'],memory_collected:['count'],finale_window:['level','gust_shield','silence_release']
+ route_selected:['route'],memory_collected:['count'],finale_window:['level','gust_shield','silence_release'],
+ chapter_reached:['chapter'],finale_warning:[],finale_gust:[],finale_silence:[],journey_exit:['destination']
 };
+const kienaideOnly=new Set(['chapter_reached','finale_warning','finale_gust','finale_silence','journey_exit']);
 const numeric=new Set(['score','found_count','memories','lowest_flame','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','opening_hits','bad_reels','count']);
 let consent='';try{consent=localStorage.getItem(KEY)||''}catch(_){}
 let active=false;
@@ -29,13 +31,23 @@ function track(name,payload){
  if(typeof prior==='function')prior(name,payload);
  if(!Object.hasOwn(fields,name)||!payload||typeof payload.game_id!=='string'||!(/^[a-z][a-z0-9-]{0,39}$/).test(payload.game_id))return;
  const game=payload.game_id;
+ if(kienaideOnly.has(name)&&game!=='kienaide')return;
+ if(name==='chapter_reached'&&(!Number.isInteger(payload.chapter)||payload.chapter<2||payload.chapter>4))return;
+ if(name==='journey_exit'&&!['home','title'].includes(payload.destination))return;
  if(!active)return;
  if(name==='game_start')starts.set(game,performance.now());
- if(['game_complete','ending_discovered','route_selected','memory_collected','finale_window'].includes(name)&&!starts.has(game))return;
+ if(['game_complete','ending_discovered','route_selected','memory_collected','finale_window'].includes(name)||kienaideOnly.has(name)){
+  if(!starts.has(game))return;
+ }
  const params={game_id:game};
  for(const key of fields[name]){
   const value=payload[key];
-  if(numeric.has(key)){if(typeof value==='number'&&Number.isFinite(value))params[key]=value}
+  if(key==='chapter'){
+   // The core stores a zero-based chapter; chapter_reached already passes a one-based label.
+   const chapter=name==='game_complete'?(game==='kienaide'?value+1:NaN):value;
+   if(Number.isInteger(chapter)&&chapter>=1&&chapter<=4)params[key]=String(chapter);
+  }
+  else if(numeric.has(key)){if(typeof value==='number'&&Number.isFinite(value))params[key]=value}
   else if(key==='miracle'){if(typeof value==='boolean')params[key]=value?'yes':'no'}
   else if(typeof value==='string'&&/^[a-z][a-z0-9-]{0,39}$/.test(value))params[key]=value;
  }

@@ -56,3 +56,27 @@ test('Kienaide finale sends shield and release seconds on reply and result witho
  assert.deepEqual({...events[1][2]},{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8});
  assert.deepEqual({...events[2][2]},{game_id:'kienaide',ending_id:'dawn',gust_shield:2.7,silence_release:0.8,duration_ms:0});
 });
+test('Kienaide journey funnel uses one-based chapters and excludes unstarted or other-game stages',()=>{
+ const {window}=boot();
+ const send=(name,payload)=>window.emotionTrack(name,{game_id:'kienaide',...payload});
+ send('chapter_reached',{chapter:2});
+ send('finale_warning',{});
+ window.emotionTrack('chapter_reached',{game_id:'chahan',chapter:2});
+ send('game_start',{});
+ send('chapter_reached',{chapter:2,email:'private@example.com'});
+ send('chapter_reached',{chapter:8});
+ send('finale_warning',{});
+ send('finale_gust',{});
+ send('finale_silence',{flame:12,oxygen:2});
+ send('journey_exit',{destination:'private'});
+ send('journey_exit',{destination:'home',elapsed:42});
+ send('game_complete',{ending_id:'smother',chapter:1});
+ send('finale_gust',{});
+ const events=Array.from(window.dataLayer,args=>Array.from(args)).filter(args=>args[0]==='event');
+ assert.deepEqual(events.map(args=>args[1]),['game_start','chapter_reached','finale_warning','finale_gust','finale_silence','journey_exit','game_complete']);
+ assert.deepEqual({...events[1][2]},{game_id:'kienaide',chapter:'2'});
+ assert.deepEqual({...events[4][2]},{game_id:'kienaide'});
+ assert.deepEqual({...events[5][2]},{game_id:'kienaide',destination:'home'});
+ assert.equal(events[6][2].chapter,'2');
+ assert.ok(!JSON.stringify(events).includes('private@example.com'));
+});
