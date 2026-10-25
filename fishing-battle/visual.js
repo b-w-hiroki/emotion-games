@@ -5,6 +5,20 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 // The swipe changes the impact of a reel, never the amount of battle progress.
 export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
 
+// Report the state change produced by the reel, including a capped final pull.
+export function reelReadout(event, before, after) {
+  if (event === 'badReel') {
+    const amount = Math.round(after.escape - before.escape);
+    return { label: `危険 +${amount}`, message: `糸が強く張った！ 危険 +${amount}`, danger: true };
+  }
+  const amount = Math.round(after.reel - before.reel);
+  return {
+    label: `+${amount}%`,
+    message: `${event === 'goodOpening' ? 'ゆるんだ糸を引き寄せた！' : '少し近づいた'} +${amount}%`,
+    danger: false,
+  };
+}
+
 // One response curve drives the held control, line and sound from the actual fight.
 export function interactionFeedback(state, pull) {
   const amount = clamp(pull / 90, 0, 1);

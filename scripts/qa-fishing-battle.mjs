@@ -55,7 +55,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await reel.click();
     const progress = await page.locator('#progressFill').evaluate(el => parseFloat(el.style.width));
     if (progress !== 53) throw new Error(`${name} ${width}: reel input expected AINAN 48→53, got ${progress}`);
-    if (!await page.locator('#action').textContent().then(t => t.includes('近づいた'))) throw new Error(`${name} ${width}: reel feedback missing`);
+    if (!await page.locator('#action').textContent().then(t => t.includes('近づいた +5%'))) throw new Error(`${name} ${width}: reel readout missing actual progress`);
     if (width === 390) {
       await page.screenshot({ path: `${out}/${name}-reel-impact.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));

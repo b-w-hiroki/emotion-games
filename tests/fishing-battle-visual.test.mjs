@@ -1,7 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { createBattle, reelBattle } from '../fishing-battle/core.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+
+test('reel readout reports actual progress and danger, including caps', () => {
+  const state = createBattle('aji');
+  let before = { reel: state.reel, escape: state.escape };
+  reelBattle(state);
+  assert.deepEqual(reelReadout(state.events[0], before, state), { label: '+5%', message: '少し近づいた +5%', danger: false });
+  state.time += .3; state.openingUntil = 3; state.openingUsed = false;
+  before = { reel: state.reel, escape: state.escape };
+  reelBattle(state);
+  assert.deepEqual(reelReadout(state.events[0], before, state), { label: '+8%', message: 'ゆるんだ糸を引き寄せた！ +8%', danger: false });
+  state.time += .3; state.phase = 'rage';
+  before = { reel: state.reel, escape: state.escape };
+  reelBattle(state);
+  assert.deepEqual(reelReadout(state.events[0], before, state), { label: '危険 +20', message: '糸が強く張った！ 危険 +20', danger: true });
+  state.time += .3; state.escape = 95;
+  before = { reel: state.reel, escape: state.escape };
+  reelBattle(state);
+  assert.equal(reelReadout(state.events[0], before, state).label, '危険 +5');
+});
 
 test('water and line lighting follow the real warning, run, and opening clocks', () => {
   const state = createBattle('aji');
