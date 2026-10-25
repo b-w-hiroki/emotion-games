@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
@@ -42,6 +42,32 @@ test('the wok begins empty and ingredient order changes preparation quality', ()
   assert.ok(goodPrep > backwards.prep + .4, 'order and egg timing affect the result');
   for (let i = 0; i < 1080; i++) advance(backwards, { steer: 0, heat: 0 }, .05);
   assert.equal(backwards.phase, 'finished', 'an incomplete recipe still reaches a result');
+});
+
+test('egg readiness follows actual heat and freezes when rice is added', () => {
+  const makeEgg = heat => {
+    const g = createGame(); g.phase = 'playing'; g.heat = heat; addIngredient(g, 'egg');
+    for (let i = 0; i < 60; i++) advance(g, { steer: 0, heat: 0 }, .05);
+    return g;
+  };
+  const cold = makeEgg(0), ready = makeEgg(.48), burnt = makeEgg(1);
+  assert.equal(cold.eggCook, 0);
+  assert.equal(eggReadiness(cold).ready, false);
+  assert.match(ingredientCue(cold), /火力で進む/);
+  assert.ok(ready.eggCook > .4 && ready.eggCook < .55);
+  assert.equal(eggReadiness(ready).ready, true);
+  assert.match(ingredientCue(ready), /入れどき/);
+  assert.match(ready.message, /卵がふんわり/);
+  assert.ok(burnt.eggCook > .9);
+  assert.match(ingredientCue(burnt), /焦げそう/);
+  assert.match(burnt.message, /卵が焦げそう/);
+  addIngredient(cold, 'rice'); addIngredient(ready, 'rice'); addIngredient(burnt, 'rice');
+  assert.ok(ready.prep > cold.prep + .2 && ready.prep > burnt.prep + .15);
+  const cooked = ready.eggCook;
+  for (let i = 0; i < 20; i++) advance(ready, { steer: 0, heat: 0 }, .05);
+  assert.equal(ready.eggCook, cooked, 'rice addition locks the egg stage');
+  addIngredient(burnt, 'veg');
+  assert.match(result(burnt).comment, /卵を炒めすぎた/);
 });
 
 test('airborne rice layer keeps transparent space around edible detail', async () => {
@@ -84,7 +110,7 @@ test('heat, stirring and rice all contribute to the final meal', () => {
   assert.ok(result(good).score > result(unmixed).score);
 });
 test('ending feedback points to the actual cooking shortfall', () => {
-  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, prep: 1 });
+  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1 });
   assert.match(result(good).comment, /一粒ずつ/);
   assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);

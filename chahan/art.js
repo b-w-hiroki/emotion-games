@@ -134,9 +134,21 @@ function wok(ctx, game, reduced) {
   const amount=Math.sqrt(game.rice);
   const hasFlight=hasRice&&game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth;
   if (game.ingredients.egg) {
-    const egg=ctx.createRadialGradient(-48,3,4,0,27,170);egg.addColorStop(0,'#ffe996');egg.addColorStop(.65,'#efb644');egg.addColorStop(1,'#a9612f');
-    ellipse(ctx,-25,24,117,38,egg,-.07);
-    for(let i=0;i<12;i++){const x=-115+i*18,y=18+Math.sin(i*2.4)*14;ellipse(ctx,x,y,17,6,i%3?'#ffe7a4':'#f1c15b',i*.43);}
+    const cooked=Math.max(0,Math.min(1,game.eggCook)),raw=Math.max(0,1-cooked/.28),burnt=Math.max(0,Math.min(1,(cooked-.72)/.35));
+    if(cooked<.28){
+      const egg=ctx.createRadialGradient(-48,3,4,0,27,170);egg.addColorStop(0,'#fff8c9');egg.addColorStop(.65,'#efb644');egg.addColorStop(1,'#a9612f');
+      ellipse(ctx,-25,24,117,38,egg,-.07);
+      ctx.save();ctx.globalAlpha=raw*.82;ellipse(ctx,-20,19,33,17,'#f5ab31',-.1);ellipse(ctx,-28,13,12,5,'#fff8c5',-.1);ctx.restore();
+    } else {
+      ellipse(ctx,-25,29,105,30,rgba('#c68533',.5+burnt*.2));
+      for(let i=0;i<24;i++){
+      const x=-114+(i*71)%220,y=3+(i*37)%49,rotation=i*.67,rx=17+i%4*4;
+      ellipse(ctx,x,y+3,rx+2,7,rgba('#61351e',.4+burnt*.25),rotation);
+      ellipse(ctx,x,y,rx,8+i%3,burnt>.4&&i%4===0?'#9a5b32':i%3?'#f5c669':'#ffe7a3',rotation);
+      ellipse(ctx,x-3,y-3,rx*.45,2,rgba('#fff6cf',.55-burnt*.25),rotation);
+      }
+    }
+    if(burnt>0)for(let i=0;i<20;i++){const x=-111+(i*43)%206,y=9+(i*17)%34;ellipse(ctx,x,y,4+i%3,2,rgba('#6a3827',burnt*.65),i*.37);}
   }
   if (!hasRice && game.ingredients.veg) for(let i=0;i<28;i++) {
     const x=-125+(i*47)%255,y=10+(i*29)%46;
