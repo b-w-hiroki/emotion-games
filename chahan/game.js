@@ -1,4 +1,4 @@
-import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, plate, result } from '../assets/chahan-core.js';
+import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, plate, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
@@ -80,6 +80,10 @@ function updateHud() {
   const stage = STAGES[Math.min(game.stage, STAGES.length - 1)];
   $('place').textContent = stage.name; $('clock').textContent = Math.max(0, Math.ceil(STAGES.length * 18 - game.time)); $('combo').textContent = game.combo;
   $('stageTag').textContent = `${Math.min(game.stage + 1, 3).toString().padStart(2, '0')} / 03`;
+  const gust = windForecast(game), gustCue = $('gustCue');
+  gustCue.hidden = game.phase !== 'playing' || gust.state === 'calm';
+  gustCue.dataset.state = gust.state;
+  if (gustCue.textContent !== gust.cue) gustCue.textContent = gust.cue;
   $('balanceNeedle').style.left = `${50 + clamp(game.balance, -1, 1) * 45}%`;
   const cook = cookMeter(game);
   $('riceBar').style.width = `${game.rice * 100}%`; $('cookBar').style.width = `${cook.fill}%`; $('cookTrack').dataset.state = cook.state; $('cookStatus').textContent = cook.label; $('mixBar').style.width = `${game.mix * 100}%`;

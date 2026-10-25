@@ -4,6 +4,25 @@ export const STAGES = [
   { name: '空中キッチン', wind: -0.36, sway: 0.38, heat: 1.2, seconds: 18, color: '#b9a5e8' },
 ];
 
+export function windForecast(game) {
+  if (game.stage === 0 || game.stage >= STAGES.length) return { state: 'calm', direction: 0, force: 0, cue: '' };
+  const train = game.stage === 1;
+  const period = train ? 6 : 7;
+  const cycle = Math.floor(game.stageTime / period);
+  const phase = game.stageTime % period;
+  const start = train ? 3.2 : 4.1;
+  const end = train ? 4.6 : 5.7;
+  const direction = train || cycle % 2 ? 1 : -1;
+  const toward = direction > 0 ? '右' : '左';
+  const counter = direction > 0 ? '左' : '右';
+  const state = phase >= start && phase < end ? 'active' : phase >= start - 1 && phase < start ? 'warning' : 'calm';
+  const wave = state === 'active' ? Math.sin(Math.PI * (phase - start) / (end - start)) : 0;
+  const force = direction * wave * (train ? 1.2 : 1.45);
+  const cue = state === 'warning' ? `まもなく${toward}へ揺れる・${counter}へ戻す`
+    : state === 'active' ? `${toward}へ揺れた！ ${counter}へ戻す` : '';
+  return { state, direction, force, cue };
+}
+
 export function createGame() {
   return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
 }
@@ -69,7 +88,7 @@ export function advance(game, input, dt) {
   const stage = STAGES[game.stage];
   game.time += dt;
   game.stageTime += dt;
-  const disturbance = Math.sin(game.time * 2.4) * stage.sway + stage.wind;
+  const disturbance = Math.sin(game.time * 2.4) * stage.sway + stage.wind + windForecast(game).force;
   game.velocity += (disturbance + input.steer * 1.75 - game.balance * 1.35 - game.velocity * 1.55) * dt;
   game.balance = Math.max(-1.45, Math.min(1.45, game.balance + game.velocity * dt * 2.2));
   const spill = game.ingredients.rice ? Math.max(0, Math.abs(game.balance) - 0.78) * dt * (game.tossed ? 0.08 : 0.045) : 0;

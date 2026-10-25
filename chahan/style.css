@@ -27,6 +27,8 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 .stage::before{content:"";position:absolute;z-index:1;left:0;right:0;bottom:40px;height:85px;background:linear-gradient(transparent,#170f12df);pointer-events:none}
 .stage::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffe3b631,inset 0 0 65px #0005;pointer-events:none}
 .stage-tag{position:absolute;top:12px;right:12px;padding:6px 10px;border:1px solid #f5d0968a;border-radius:30px;background:#151315bf;color:#ffe9bb;font-size:10px;font-weight:900;letter-spacing:.17em;backdrop-filter:blur(8px)}
+.gust-cue{position:absolute;z-index:2;top:49px;right:12px;max-width:76%;padding:7px 10px;border:1px solid #ffc983;border-radius:9px;background:#392324e8;color:#fff1cf;font-size:10px;font-weight:900;line-height:1.25;text-align:right;box-shadow:0 6px 18px #0007;pointer-events:none}
+.gust-cue[hidden]{display:none}.gust-cue[data-state="active"]{border-color:#ffe7af;background:#66352be8;color:#fff9d9}
 .swipe-hint{position:absolute;top:13px;left:13px;max-width:65%;padding:7px 12px;border-radius:20px;background:#ffedd4ec;color:#41291c;font-size:11px;font-weight:900;line-height:1.2;box-shadow:0 4px 15px #0007}
 .balance-label{z-index:2;position:absolute;bottom:77px;left:17px;right:17px;display:flex;align-items:center;justify-content:space-between;color:#f7dfad;font-size:9px;font-weight:700;text-shadow:0 2px 6px #000}
 .balance-label span{font-size:11px;font-weight:900;letter-spacing:.08em}

@@ -2,7 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+
+test('late-stage gusts warn before applying a steerable force', () => {
+  const train = createGame(); Object.assign(train, { phase: 'playing', stage: 1, stageTime: 2.5, time: 20 });
+  assert.equal(windForecast(train).state, 'warning');
+  assert.match(windForecast(train).cue, /右へ揺れる・左へ戻す/);
+  train.stageTime = 3.8;
+  assert.equal(windForecast(train).state, 'active');
+  assert.ok(windForecast(train).force > 1);
+  const calm = { ...train, stageTime: .5 };
+  const countered = { ...train };
+  for (let n = 0; n < 12; n++) {
+    advance(train, { steer: 0, heat: 0 }, .05);
+    advance(calm, { steer: 0, heat: 0 }, .05);
+    advance(countered, { steer: -1, heat: 0 }, .05);
+  }
+  assert.ok(train.balance > calm.balance + .1, 'the warning predicts a real rightward push');
+  assert.ok(countered.balance < train.balance - .1, 'steering left counters the gust');
+  const sky = createGame(); sky.stage = 2;
+  sky.stageTime = 3.5; assert.equal(windForecast(sky).state, 'warning');
+  sky.stageTime = 4.8; assert.ok(windForecast(sky).force < -1);
+  sky.stageTime = 11.8; assert.ok(windForecast(sky).force > 1, 'sky gusts alternate direction');
+});
 
 test('cook meter shows the plating window and continues through scorching', () => {
   const game = createGame();

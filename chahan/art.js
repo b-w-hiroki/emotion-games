@@ -1,4 +1,4 @@
-import { dishAppearance } from '../assets/chahan-core.js';
+import { dishAppearance, windForecast } from '../assets/chahan-core.js';
 
 const W = 780, H = 900;
 const backgrounds = new Map();
@@ -95,6 +95,15 @@ function atmosphere(ctx, game, reduced) {
     }else{
       const x=80+(i*103)%640,y=135+(i*73)%290-(reduced?0:Math.sin(drift*.7+i)*7);
       ellipse(ctx,x,y,2+i%3,2,rgba('#fff0dd',.32));
+    }
+  }
+  const gust = windForecast(game);
+  if(gust.state==='active'){
+    ctx.globalAlpha=.18+Math.abs(gust.force)*.24;
+    for(let i=0;i<(reduced?5:13);i++){
+      const x=(i*149+(reduced?0:game.time*210*gust.direction)+1560)%960-90;
+      const y=150+(i*79)%335;
+      line(ctx,[[x,y],[x+gust.direction*(45+i%4*21),y-5]],rgba('#fff8dc',.35+i%3*.12),2+i%3);
     }
   }
   ctx.restore();

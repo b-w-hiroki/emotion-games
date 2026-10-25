@@ -178,7 +178,27 @@ try {
           assert.equal(await timingPage.locator('#seasoning').isDisabled(), true, `${name}: plating is locked before the final location`);
           await timingPage.clock.runFor(250);
           await timingPage.screenshot({ path: path.join(output, `seasoning-timed-${name}-${width}.png`) });
-          await timingPage.clock.runFor(21_000);
+          await timingPage.locator('#heatControl').evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+          const reachGust = async (place, state, limit = 60) => {
+            for (let i = 0; i < limit; i++) {
+              if (await timingPage.locator('#place').textContent() === place && await timingPage.locator('#gustCue').getAttribute('data-state') === state) return;
+              await timingPage.clock.runFor(500);
+            }
+            assert.fail(`${name}: ${place} never reached ${state} gust state`);
+          };
+          await reachGust('走る列車', 'warning', 30);
+          assert.equal(await timingPage.locator('#gustCue').getAttribute('data-state'), 'warning', `${name}: train sway is telegraphed`);
+          assert.match(await timingPage.locator('#gustCue').textContent(), /右へ揺れる・左へ戻す/);
+          await timingPage.screenshot({ path: path.join(output, `train-gust-warning-${name}-${width}.png`) });
+          await reachGust('走る列車', 'active', 10);
+          assert.equal(await timingPage.locator('#gustCue').getAttribute('data-state'), 'active', `${name}: train gust follows its warning`);
+          await timingPage.screenshot({ path: path.join(output, `train-gust-active-${name}-${width}.png`) });
+          await reachGust('空中キッチン', 'warning', 65);
+          assert.equal(await timingPage.locator('#gustCue').getAttribute('data-state'), 'warning', `${name}: sky wind is telegraphed`);
+          assert.match(await timingPage.locator('#gustCue').textContent(), /左へ揺れる・右へ戻す/);
+          await reachGust('空中キッチン', 'active', 10);
+          assert.equal(await timingPage.locator('#gustCue').getAttribute('data-state'), 'active', `${name}: sky wind follows its warning`);
+          await timingPage.screenshot({ path: path.join(output, `sky-gust-active-${name}-${width}.png`) });
           assert.equal(await timingPage.locator('#place').textContent(), '空中キッチン', `${name}: all locations precede plating`);
           assert.equal(await timingPage.locator('#seasoning').isEnabled(), true, `${name}: plating opens in the final location`);
           assert.equal(await timingPage.locator('#cookTrack').getAttribute('data-state'), 'ready', `${name}: the gauge highlights the actual plating window`);
