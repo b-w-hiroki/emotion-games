@@ -2,7 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+
+test('rice drifts toward the dangerous rim and the countersteer cue follows balance', () => {
+  const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice');
+  assert.deepEqual(balanceReadiness(game), { state: 'steady', cue: '鍋のバランス', drift: 0 });
+  game.balance = .6;
+  assert.deepEqual(balanceReadiness(game), { state: 'leaning', cue: '右へ偏る・左へ戻す', drift: 40 });
+  game.balance = .95;
+  assert.deepEqual(balanceReadiness(game), { state: 'danger', cue: '右へこぼれる！ 左へ戻す', drift: 63 });
+  const rice = game.rice;
+  advance(game, { steer: 0, heat: 0 }, .05);
+  assert.ok(game.rice < rice, 'visible danger agrees with actual rice loss');
+  game.balance = -.95;
+  assert.equal(balanceReadiness(game).cue, '左へこぼれる！ 右へ戻す');
+  assert.equal(balanceReadiness(game).drift, -63);
+});
 
 test('late-stage gusts warn before applying a steerable force', () => {
   const train = createGame(); Object.assign(train, { phase: 'playing', stage: 1, stageTime: 2.5, time: 20 });

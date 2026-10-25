@@ -210,6 +210,38 @@ try {
           assert.equal(await timingPage.locator('#overlay').isVisible(), true, `${name}: plating immediately completes the dish`);
           await timingPage.screenshot({ path: path.join(output, `plated-${name}-${width}.png`) });
           await timingPage.close();
+          const driftPage = await browser.newPage({ viewport: { width, height } });
+          await driftPage.clock.install();
+          await driftPage.goto(url);
+          await driftPage.locator('#start').click();
+          await driftPage.locator('[data-ingredient="rice"]').click();
+          await driftPage.keyboard.down('ArrowRight');
+          await driftPage.clock.runFor(5_000);
+          assert.equal(await driftPage.locator('#balanceTrack').getAttribute('data-state'), 'danger', `${name}: sustained right steer visibly endangers rice`);
+          assert.match(await driftPage.locator('#balanceStatus').textContent(), /右へこぼれる！ 左へ戻す/);
+          const riceAfterRight = await driftPage.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
+          assert.ok(riceAfterRight < 100, `${name}: rice is lost when the bowl visibly tips`);
+          await driftPage.screenshot({ path: path.join(output, `rice-drift-right-${name}-${width}.png`) });
+          await driftPage.keyboard.up('ArrowRight');
+          await driftPage.keyboard.down('ArrowLeft');
+          await driftPage.clock.runFor(7_000);
+          assert.equal(await driftPage.locator('#balanceTrack').getAttribute('data-state'), 'danger', `${name}: leftward danger is equally visible`);
+          assert.match(await driftPage.locator('#balanceStatus').textContent(), /左へこぼれる！ 右へ戻す/);
+          await driftPage.screenshot({ path: path.join(output, `rice-drift-left-${name}-${width}.png`) });
+          const riceCenter = async side => {
+            const { data, info } = await sharp(path.join(output, `rice-drift-${side}-${name}-${width}.png`)).raw().toBuffer({ resolveWithObject: true });
+            let sum = 0, count = 0;
+            for (let y = 390; y < 480; y++) for (let x = 20; x < 320; x++) {
+              const offset = (y * info.width + x) * info.channels;
+              const [r, g, b] = data.subarray(offset, offset + 3);
+              if (r > 170 && g > 130 && b < 210) { sum += x; count++; }
+            }
+            assert.ok(count > 1000, `${name}: rice remains visible while tilted ${side}`);
+            return sum / count;
+          };
+          assert.ok(await riceCenter('right') > await riceCenter('left') + 50, `${name}: the actual rice artwork slides across the wok`);
+          await driftPage.keyboard.up('ArrowLeft');
+          await driftPage.close();
           const eggPage = await browser.newPage({ viewport: { width, height } });
           await eggPage.clock.install();
           await eggPage.goto(url);
