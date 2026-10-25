@@ -23,7 +23,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   try { browser = await engine.launch({ headless: true }); }
   catch (error) { if (requested !== 'all') throw error; console.log(`${name}: unavailable (${error.message.split('\n')[0]})`); continue; }
   for (const [width, height] of [[390, 844], [360, 640], [375, 667], [320, 568], [844, 390]]) {
-    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
@@ -37,7 +37,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       const dial = await page.locator('#reel').boundingBox();
       await page.mouse.move(dial.x + dial.width / 2, dial.y + dial.height / 2);
       await page.mouse.down(); await page.mouse.move(dial.x + dial.width / 2, dial.y + dial.height / 2 + 70, { steps: 5 });
-      await page.waitForTimeout(120);
+      if (!await page.locator('.controls').evaluate(el => el.classList.contains('is-pulling'))) throw new Error(`${name}: landscape drag was not received`);
+      await page.waitForFunction(previous => Number(document.querySelector('.board').style.getPropertyValue('--camera-y').replace('px', '')) > previous + .2, before);
       const after = await page.locator('.board').evaluate(el => Number(el.style.getPropertyValue('--camera-y').replace('px', '')));
       if (!(after > before)) throw new Error(`${name}: held input did not move the camera`);
       await page.screenshot({ path: `${out}/${name}-landscape-pull.png` });

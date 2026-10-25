@@ -146,7 +146,7 @@ function draw(now) {
   const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash });
   const finaleProgress = state.outcome && outcomeAt !== null ? Math.min(1, Math.max(0, (now - outcomeAt) / (state.outcome === 'caught' ? 650 : 500))) : 0;
   const fish = outcomePose(pose, state.outcome, finaleProgress);
-  const target = battleCamera(state, cue, pose, { pull: pointerPull, outcomeProgress: finaleProgress, reduced: reduced.matches });
+  const target = battleCamera(state, cue, pose, { pull: pointerPull, outcomeProgress: finaleProgress, impact, flash, reduced: reduced.matches });
   const blend = reduced.matches ? 1 : 1 - Math.exp(-dt * 9);
   camera.x += (target.x - camera.x) * blend;
   camera.y += (target.y - camera.y) * blend;
