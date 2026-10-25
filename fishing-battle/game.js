@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, reelImpulse, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -184,15 +184,28 @@ function draw(now) {
   board.style.setProperty('--camera-x', `${(camera.x * scale / dpr).toFixed(2)}px`);
   board.style.setProperty('--camera-y', `${(camera.y * scale / dpr).toFixed(2)}px`);
   board.style.setProperty('--camera-zoom', camera.zoom.toFixed(4));
+  const atmosphere = phaseAtmosphere(state, cue);
+  board.style.setProperty('--water-edge-color', atmosphere.color);
+  board.style.setProperty('--water-edge-opacity', atmosphere.edge.toFixed(3));
   const { fishX, fishY } = pose;
   const fisher = fisherPose(cue, { pull: pointerPull, impact, flash, strength: impactStrength, reduced: reduced.matches });
   const line = lineShape(fish, cue, pointerPull, { x: fisher.handX, y: fisher.handY });
   const surface = surfaceResponse(pose, cue, { impact, flash, strength: impactStrength, reduced: reduced.matches });
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
-  ctx.strokeStyle = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
+  const lineColor = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
+  ctx.strokeStyle = lineColor;
   ctx.lineWidth = (rage || cue === 'warning' ? 2.3 : 1.5 + pose.pull * .055) + pose.tension * 2;
   ctx.globalAlpha = fish.alpha;
+  if (atmosphere.line > 0) {
+    ctx.strokeStyle = atmosphere.color;
+    ctx.lineWidth += 9;
+    ctx.globalAlpha = fish.alpha * atmosphere.line * .45;
+    ctx.beginPath(); ctx.moveTo(line.startX, line.startY); ctx.bezierCurveTo(line.c1x, line.c1y, line.c2x, line.c2y, line.endX, line.endY); ctx.stroke();
+    ctx.lineWidth -= 9;
+    ctx.strokeStyle = lineColor;
+    ctx.globalAlpha = fish.alpha;
+  }
   ctx.beginPath(); ctx.moveTo(line.startX, line.startY); ctx.bezierCurveTo(line.c1x, line.c1y, line.c2x, line.c2y, line.endX, line.endY); ctx.stroke();
   ctx.globalAlpha = waterAlpha;
   ctx.fillStyle = '#00385466';

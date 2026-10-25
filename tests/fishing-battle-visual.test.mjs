@@ -1,7 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, reelImpulse, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+
+test('water and line lighting follow the real warning, run, and opening clocks', () => {
+  const state = createBattle('aji');
+  assert.equal(phaseAtmosphere(state, 'calm').edge, 0);
+  state.phaseUntil = 2;
+  state.time = 1.35;
+  const early = phaseAtmosphere(state, 'warning');
+  state.time = 1.9;
+  const late = phaseAtmosphere(state, 'warning');
+  assert.ok(late.edge > early.edge && late.line > early.line);
+  state.phase = 'rage';
+  state.escape = 80;
+  const danger = phaseAtmosphere(state, 'rage');
+  assert.ok(danger.edge > phaseAtmosphere({ ...state, escape: 20 }, 'rage').edge);
+  state.phase = 'calm'; state.openingUntil = 3; state.openingUsed = false;
+  const opening = phaseAtmosphere(state, 'opening');
+  assert.notEqual(opening.color, danger.color);
+  state.time = 2.9;
+  assert.ok(phaseAtmosphere(state, 'opening').edge < opening.edge);
+  state.outcome = 'caught';
+  assert.equal(phaseAtmosphere(state, 'opening').edge, 0);
+});
 
 test('swipe distance scales one reel impact across fish, fisher, water and camera', () => {
   const state = createBattle('aji');

@@ -26,6 +26,25 @@ export function timingWindow(state, cue) {
   return null;
 }
 
+// The same battle clock colors the water edge and line: rising strain before
+// a run, sustained danger during it, and a brief cool opening afterward.
+export function phaseAtmosphere(state, cue) {
+  if (state.outcome) return { color: '#8feedd', edge: 0, line: 0 };
+  if (cue === 'warning') {
+    const progress = timingWindow(state, cue).fraction;
+    return { color: '#ffad6b', edge: .12 + progress * .32, line: .16 + progress * .42 };
+  }
+  if (cue === 'rage') {
+    const danger = clamp(state.escape / 100, 0, 1);
+    return { color: '#ff806a', edge: .22 + danger * .28, line: .32 + danger * .23 };
+  }
+  if (cue === 'opening') {
+    const remaining = timingWindow(state, cue).fraction;
+    return { color: '#8feedd', edge: .12 + remaining * .2, line: .2 + remaining * .28 };
+  }
+  return { color: '#8feedd', edge: 0, line: 0 };
+}
+
 // The line relaxes only while the fish leaves an opening. Holding the reel
 // takes up some slack before release, without changing AINAN's battle rules.
 export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
