@@ -4,14 +4,16 @@
 
 1. **場所の絵と光** — 屋台・列車・空中キッチンの背景に、それぞれの灯りと微細な動きを重ねる。
 2. **作業台と火** — 鍋の下の暗い木目、散った米粒、鍋底に広がる熱の光を置く。
-3. **鍋と食材** — `wok-v2.webp` は空鍋から始まる。卵を入れるとスクランブル状の卵、ごはんを入れると白い米、具材を入れると `rice-v2.webp` の彩りある米に変わる。成功した鍋振りでは米の一部を鍋に残し、具材投入後は透明な `flight-v3.webp` を弧状に動かす。弱振りでは飛翔を出さず、こぼしでは外へ散る米を描く。
+3. **鍋と食材** — `wok-v2.webp` は空鍋から始まる。卵を入れるとスクランブル状の卵、ごはんを入れると卵入りの白い米 `rice-egg-v1.webp`、具材を入れると `rice-v2.webp` の彩りある米に変わる。成功した鍋振りでは米の一部を鍋に残し、具材投入前は `flight-egg-v1.webp`、具材投入後は `flight-v3.webp` を弧状に動かす。弱振りでは飛翔を出さず、こぼしでは外へ散る米を描く。
 4. **手前の湯気と味付け** — 鍋の前に薄い湯気を通し、調味料を入れた瞬間だけ飛沫と反応を重ねる。
 
-新しい飛翔素材の原画は `chahan/art/src/flight-v3.png` に保存。`node scripts/art/build-chahan-scenes.mjs` で配信用 WebP に変換する。アニメーションの確認には `node scripts/capture-chahan-toss.mjs`、画面と操作の確認には `node scripts/qa-chahan.mjs` を使う。動きを減らす設定では光や粒の位置を固定する。
+飛翔素材とごはん素材の原画は `chahan/art/src/` に保存。`rice-egg-v1.png` と `flight-egg-v1.png` は既存の具材入り絵を参照して、ねぎ・にんじん・調味料の焼き色を除いた透明レイヤー。`node scripts/art/build-chahan-scenes.mjs` で配信用 WebP に変換する。アニメーションの確認には `node scripts/capture-chahan-toss.mjs`、画面と操作の確認には `node scripts/qa-chahan.mjs` を使う。動きを減らす設定では光や粒の位置を固定する。
 
 完成皿は別の `drawDish` で描く。米の量で盛り付けを縮め、混ぜ具合で具の分布を変え、味付けで照り、火の通りで色と湯気を変える。比較用のブラウザー画像は [会心の一皿](dish-ideal.png)、[具が偏った一皿](dish-unmixed.png)、[焦げた一皿](dish-burnt.png)。
 
-材料投入の遷移は 360×640 のブラウザー画像で確認できる：[空鍋](recipe-empty-360.png) → [卵](recipe-egg-360.png) → [ごはん](recipe-rice-360.png) → [具材](recipe-veg-360.png)。材料は一度ずつ選べ、投入順と卵の火の通りが完成時の評価に反映される。
+材料投入の遷移は 360×640 のブラウザー画像で確認できる：[空鍋](recipe-empty-360.png) → [卵](recipe-egg-360.png) → [ごはん](recipe-rice-painted-360.png) → [具材](recipe-veg-360.png)。材料は一度ずつ選べ、投入順と卵の火の通りが完成時の評価に反映される。
+
+米と卵だけの新しい描画は [具材投入前のごはん](recipe-rice-painted-360.png) と [鍋振り中の米](rice-egg-flight-390.png) を参照。粒の立体感と具材なしの状態を確認できる。
 
 卵は火力に応じて焼け具合が進み、ごはんを入れた瞬間の状態が下ごしらえの評価になる。ブラウザー画像では [生卵](egg-raw-390.png) → [ふんわりした卵](egg-ready-390.png) → [焦げそうな卵](egg-burnt-390.png) を比較できる。材料トレーの合図と鍋の絵は同じ `eggCook` を参照する。
 

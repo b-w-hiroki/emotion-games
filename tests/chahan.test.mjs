@@ -122,6 +122,26 @@ test('airborne rice layer keeps transparent space around edible detail', async (
   assert.ok(clear > info.width * info.height * .25, 'the sprite must not cover the scene with an opaque box');
   assert.ok(food > info.width * info.height * .15, 'the sprite must contain visible rice');
 });
+test('egg-and-rice stage has transparent painted grains without premature vegetables', async () => {
+  for (const file of ['rice-egg-v1', 'flight-egg-v1']) {
+    const { data, info } = await sharp(`chahan/art/${file}.webp`).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    assert.equal(info.width, 780); assert.equal(info.height, 260);
+    let clear = 0, food = 0, paleGrains = 0, green = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const [r, g, b, a] = data.subarray(i, i + 4);
+      if (a < 12) clear++;
+      if (a > 220) {
+        food++;
+        if (r > 170 && g > 160 && b > 130 && Math.abs(r - g) < 50) paleGrains++;
+        if (g > r * 1.15 && g > b * 1.15) green++;
+      }
+    }
+    assert.ok(clear > info.width * info.height * .2, `${file} preserves transparent space`);
+    assert.ok(food > info.width * info.height * .2, `${file} contains a visible food layer`);
+    assert.ok(paleGrains > food * .35, `${file} depicts pale rice before seasoning`);
+    assert.ok(green < food * .001, `${file} has no green vegetables before selection`);
+  }
+});
 test('seasoning has one chance and scores timing plus mixing', () => {
   const ideal = createGame(); ideal.phase = 'playing'; addIngredient(ideal, 'egg'); addIngredient(ideal, 'rice'); addIngredient(ideal, 'veg'); ideal.cook = .56; ideal.mix = .5;
   assert.equal(addSeasoning(ideal), 1); assert.equal(addSeasoning(ideal), null);

@@ -22,7 +22,15 @@ await sharp(path.join(root, 'src', 'rice-v2.png'))
   .resize({ width: 780 })
   .webp({ quality: 85, effort: 6, alphaQuality: 90 })
   .toFile(path.join(root, 'rice-v2.webp'));
+await sharp(path.join(root, 'src', 'rice-egg-v1.png'))
+  .resize(780, 260)
+  .webp({ quality: 86, effort: 6, alphaQuality: 94 })
+  .toFile(path.join(root, 'rice-egg-v1.webp'));
 await sharp(path.join(root, 'src', 'flight-v3.png'))
   .resize(780, 260)
   .webp({ quality: 88, effort: 6, alphaQuality: 94 })
   .toFile(path.join(root, 'flight-v3.webp'));
+await sharp(path.join(root, 'src', 'flight-egg-v1.png'))
+  .resize(780, 260)
+  .webp({ quality: 88, effort: 6, alphaQuality: 94 })
+  .toFile(path.join(root, 'flight-egg-v1.webp'));

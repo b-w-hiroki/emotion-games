@@ -25,11 +25,11 @@ try {
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         await page.addInitScript(() => { if (window.DeviceMotionEvent) Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: () => Promise.resolve('granted') }); });
         await page.goto(url);
-        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','flight-v3'].map(name => new Promise(resolve => {
-          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name === 'rice-v2' || name === 'flight-v3' ? 260 : name.endsWith('-v2') ? 520 : 900));
+        const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','rice-egg-v1','flight-v3','flight-egg-v1'].map(name => new Promise(resolve => {
+          const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name.startsWith('rice-') || name.startsWith('flight-') ? 260 : name.endsWith('-v2') ? 520 : 900));
           image.onerror = () => resolve(false); image.src = `./art/${name}.webp`;
         }))));
-        assert.deepEqual(painted, [true,true,true,true,true,true,true], `${name} ${width}: painted scene assets decode`);
+        assert.deepEqual(painted, Array(9).fill(true), `${name} ${width}: painted scene assets decode`);
         if (width === 390) {
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
@@ -71,6 +71,8 @@ try {
         assert.equal(await page.locator('#combo').textContent(), '0', `${name} ${width}: upward swipe must not toss`);
         await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 115, { steps: 8 }); await page.mouse.up();
         assert.equal(await page.locator('#combo').textContent(), '1', `${name} ${width}: pulling toward the player tosses rice`);
+        await page.waitForTimeout(180);
+        await page.screenshot({ path: path.join(output, `rice-flight-${name}-${width}.png`) });
         await page.locator('[data-ingredient="veg"]').click();
         assert.equal(await page.locator('#fillingChoices').isVisible(), true, `${name}: filling choices appear on demand`);
         assert.equal(await page.locator('.ingredient-tray').isVisible(), false, `${name}: choice replaces the tray without adding clutter`);
