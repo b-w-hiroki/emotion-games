@@ -12,15 +12,30 @@ const resultStats = document.createElement('div');
 resultStats.className = 'result-stats';
 resultStats.innerHTML = '<div><small>混ざり</small><strong data-stat="mix"></strong></div><div><small>火の通り</small><strong data-stat="cook"></strong></div><div><small>味付け</small><strong data-stat="seasoning"></strong></div><div><small>残った米</small><strong data-stat="rice"></strong></div><div><small>鍋さばき</small><strong data-stat="toss"></strong></div>';
 resultCard.insertBefore(resultStats, $('start'));
-let game = createGame(), last = 0, animation = 0, gesture = null, dragSteer = 0, noticeTimer = 0, audioTick = 0;
+let game = createGame(), last = 0, animation = 0, dishAnimation = 0, gesture = null, dragSteer = 0, noticeTimer = 0, audioTick = 0;
 const audio = createKitchenAudio();
 let motionEnabled = false, motionSeen = false, neutralGamma = null, tiltSteer = 0, motionTimeout = 0;
 const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = game.stage === 0 ? '最初の舞台' : '次の舞台'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
-function begin() { audio.unlock(); game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', '空の鍋から。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
-function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = r.comment; $('overlay').querySelector('.eyebrow').textContent = '完成した一皿' + (game.filling ? '・' + (game.filling === 'pork' ? '焼豚' : 'ねぎ') : ''); for (const [key, value] of Object.entries({ mix: game.mix, cook: r.doneness, seasoning: r.seasoning, rice: game.rice, toss: r.skill })) resultStats.querySelector(`[data-stat="${key}"]`).textContent = `${Math.round(value * 100)}%`; drawDish(resultDish.getContext('2d'), game); resultCard.classList.add('result'); $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; audio.finish(r.score); window.emotionTrack?.('game_complete',{game_id:'chahan',score:r.score,rice_pct:Math.round(game.rice*100),mix_pct:Math.round(game.mix*100),doneness_pct:Math.round(r.doneness*100),seasoning_pct:Math.round(r.seasoning*100)}); }
+function begin() { audio.unlock(); cancelAnimationFrame(dishAnimation); dishAnimation = 0; game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', '空の鍋から。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
+function revealDish() {
+  cancelAnimationFrame(dishAnimation);
+  const dishCtx = resultDish.getContext('2d');
+  if (reduceMotion || game.rice <= .02) { drawDish(dishCtx, game); resultDish.dataset.revealed = 'true'; return; }
+  resultDish.dataset.revealed = 'false';
+  drawDish(dishCtx, game, 0);
+  const start = performance.now();
+  function frame(now) {
+    const elapsed = Math.min(1, (now - start) / 850);
+    drawDish(dishCtx, game, 1 - (1 - elapsed) ** 3);
+    if (elapsed < 1) dishAnimation = requestAnimationFrame(frame);
+    else { dishAnimation = 0; resultDish.dataset.revealed = 'true'; }
+  }
+  dishAnimation = requestAnimationFrame(frame);
+}
+function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = r.comment; $('overlay').querySelector('.eyebrow').textContent = '完成した一皿' + (game.filling ? '・' + (game.filling === 'pork' ? '焼豚' : 'ねぎ') : ''); for (const [key, value] of Object.entries({ mix: game.mix, cook: r.doneness, seasoning: r.seasoning, rice: game.rice, toss: r.skill })) resultStats.querySelector(`[data-stat="${key}"]`).textContent = `${Math.round(value * 100)}%`; resultCard.classList.add('result'); $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; revealDish(); audio.finish(r.score); window.emotionTrack?.('game_complete',{game_id:'chahan',score:r.score,rice_pct:Math.round(game.rice*100),mix_pct:Math.round(game.mix*100),doneness_pct:Math.round(r.doneness*100),seasoning_pct:Math.round(r.seasoning*100)}); }
 $('heatControl').addEventListener('input', event => { if (game.phase === 'playing') game.heat = clamp(Number(event.target.value) / 100, 0, 1); });
 const zone = $('swipeZone');
 zone.addEventListener('pointerdown', e => { if (game.phase !== 'playing' || gesture) return; e.preventDefault(); zone.setPointerCapture(e.pointerId); gesture = { id: e.pointerId, x: e.clientX, y: e.clientY, at: performance.now(), currentX: e.clientX, currentY: e.clientY }; });

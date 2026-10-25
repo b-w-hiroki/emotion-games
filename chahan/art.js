@@ -287,8 +287,9 @@ export function drawScene(ctx, game, reduced = false) {
   burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);
 }
 
-export function drawDish(ctx, game) {
+export function drawDish(ctx, game, reveal = 1) {
   const w = ctx.canvas.width, h = ctx.canvas.height;
+  const progress = Math.max(0, Math.min(1, reveal));
   ctx.clearRect(0, 0, w, h);
   const look = dishAppearance(game);
   const backdrop = ctx.createRadialGradient(w / 2, h * .4, 12, w / 2, h * .5, w * .55);
@@ -301,13 +302,18 @@ export function drawDish(ctx, game) {
   ellipse(ctx, w / 2, 178, 248, 71, '#f4e3c1');
   ellipse(ctx, w / 2, 179, 220, 58, '#334b51');
   ellipse(ctx, w / 2, 171, 209, 53, '#f8e8c3');
+  // Keep the plate fixed while the food lands. The same state-dependent art
+  // renders at every frame, so the reveal cannot change the scored outcome.
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, progress * 3);
+  ctx.translate(0, -90 * (1 - progress) ** 2);
   const amount = look.portion;
   if (game.ingredients.egg && paintedRiceEgg.complete && paintedRiceEgg.naturalWidth) {
     ctx.save();
     ctx.filter = `saturate(${Math.max(.2, 1 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
     const riceArgs=[320 - 197 * amount, 103, 394 * amount, 132 * amount];
     ctx.drawImage(paintedRiceEgg,...riceArgs);
-    if(game.ingredients.veg&&paintedRice.complete&&paintedRice.naturalWidth){ctx.globalAlpha=1-look.unmixed;ctx.drawImage(paintedRice,...riceArgs);}
+    if(game.ingredients.veg&&paintedRice.complete&&paintedRice.naturalWidth){ctx.globalAlpha*=1-look.unmixed;ctx.drawImage(paintedRice,...riceArgs);}
     ctx.restore();
   } else {
   const mound = ctx.createRadialGradient(280, 139, 10, 320, 174, 196);
@@ -335,13 +341,13 @@ export function drawDish(ctx, game) {
   ctx.save(); ctx.beginPath(); ctx.ellipse(320, 165, 190 * amount, 58 * amount, 0, 0, Math.PI * 2); ctx.clip();
   if (look.pale > 0) { ctx.fillStyle = rgba('#fff0ca', look.pale * .25); ctx.fillRect(118, 100, 404, 130); }
   if (look.glaze > 0) {
-    ctx.globalAlpha = look.glaze * .5;
+    ctx.globalAlpha *= look.glaze * .5;
     for (let i = 0; i < 8; i++) {
       const x = 184 + i * 38, y = 141 + (i % 3) * 19;
       ellipse(ctx, x, y, 24, 5, '#b95e29', -.14 + i % 3 * .17);
       ellipse(ctx, x - 3, y - 4, 18, 2, '#ffe19a', -.14 + i % 3 * .17);
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = Math.min(1, progress * 3);
   }
   for (let i = 0; i < (game.ingredients.veg ? look.mixedIngredients : 0); i++) {
     const x = 320 + Math.cos(i * 2.399) * Math.sqrt((i + .5) / 25) * 165 * amount;
@@ -360,8 +366,19 @@ export function drawDish(ctx, game) {
   }
   ctx.restore();
   if (look.steam > 0) {
-    ctx.save(); ctx.globalAlpha = look.steam * (.2 + Math.min(1, game.heat) * .18); ctx.lineWidth = 6; ctx.strokeStyle = '#fff0d7'; ctx.lineCap = 'round';
+    ctx.save(); ctx.globalAlpha *= look.steam * (.2 + Math.min(1, game.heat) * .18); ctx.lineWidth = 6; ctx.strokeStyle = '#fff0d7'; ctx.lineCap = 'round';
     for (let i = 0; i < 4; i++) { const x = 222 + i * 67; ctx.beginPath(); ctx.moveTo(x, 105); ctx.bezierCurveTo(x - 16, 77, x + 20, 54, x, 25); ctx.stroke(); }
+    ctx.restore();
+  }
+  ctx.restore();
+  if (progress > .25 && progress < 1 && amount > .1) {
+    const scatter = Math.sin(Math.PI * progress);
+    ctx.save(); ctx.globalAlpha = scatter * .8;
+    for (let i = 0; i < 18; i++) {
+      const x = 320 + Math.cos(i * 2.399) * (80 + i * 7) * scatter;
+      const y = 149 + Math.sin(i * 2.399) * (20 + i * 2) * scatter - 35 * (1 - progress);
+      ellipse(ctx, x, y, 5 + i % 3, 2, i % 5 === 0 ? '#f4c45e' : '#ffe6a3', i * .42);
+    }
     ctx.restore();
   }
   ctx.strokeStyle = '#fff2ce'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(320, 178, 247, 71, 0, .1, 2.6); ctx.stroke();

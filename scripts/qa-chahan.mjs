@@ -45,6 +45,26 @@ try {
           });
           assert.equal(new Set(Object.values(dishes)).size, 10, `${name}: each cooking outcome and filling state has a distinct plated image`);
           for (const [label, png] of Object.entries(dishes)) fs.writeFileSync(path.join(output, `dish-${label}-${name}.png`), Buffer.from(png, 'base64'));
+          const revealFrames = await page.evaluate(async () => {
+            const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            const game = createGame(); Object.assign(game, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, filling: 'scallion', fillingCook: .3, ingredients: { egg: true, rice: true, veg: true } });
+            const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 280;
+            return [0, .5, 1].map(progress => { drawDish(canvas.getContext('2d'), game, progress); return canvas.toDataURL('image/png').split(',')[1]; });
+          });
+          assert.equal(revealFrames[2], dishes.ideal, `${name}: reveal ends on the scored dish illustration`);
+          assert.equal(new Set(revealFrames).size, 3, `${name}: plate, falling food, and finished dish are distinct frames`);
+          const warmGrains = async png => {
+            const { data, info } = await sharp(Buffer.from(png, 'base64')).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+            let pixels = 0;
+            for (let y = 120; y < 165; y++) for (let x = 230; x < 410; x++) {
+              const i = (y * info.width + x) * 3;
+              if (data[i] > 155 && data[i + 1] < data[i] * .86 && data[i + 2] < data[i + 1] * .85) pixels++;
+            }
+            return pixels;
+          };
+          for (const [index, png] of revealFrames.entries()) fs.writeFileSync(path.join(output, `dish-reveal-${index}-${name}.png`), Buffer.from(png, 'base64'));
+          assert.ok(await warmGrains(revealFrames[0]) < 50, `${name}: reveal starts with an empty plate (${await warmGrains(revealFrames[0])})`);
+          assert.ok(await warmGrains(revealFrames[2]) > 500, `${name}: reveal ends with visible rice (${await warmGrains(revealFrames[2])})`);
           const greenSides = async png => {
             const { data, info } = await sharp(Buffer.from(png, 'base64')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
             const sides = { left: 0, right: 0 };
@@ -211,6 +231,9 @@ try {
           await timingPage.locator('#seasoning').click();
           assert.equal(await timingPage.locator('#overlay').isVisible(), true, `${name}: plating immediately completes the dish`);
           assert.ok(Number((await timingPage.locator('[data-stat="toss"]').textContent()).replace('%', '')) >= 70, `${name}: precise tosses appear in the finished result`);
+          assert.equal(await timingPage.locator('#resultDish').getAttribute('data-revealed'), 'false', `${name}: plating starts a dish reveal`);
+          await timingPage.clock.runFor(900);
+          assert.equal(await timingPage.locator('#resultDish').getAttribute('data-revealed'), 'true', `${name}: dish reveal completes`);
           await timingPage.screenshot({ path: path.join(output, `plated-${name}-${width}.png`) });
           await timingPage.close();
           const driftPage = await browser.newPage({ viewport: { width, height } });
