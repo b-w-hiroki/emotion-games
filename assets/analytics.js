@@ -9,10 +9,10 @@ const KEY='emotion-analytics-consent-v1';
 const fields={
  game_start:[],game_complete:['ending_id','outcome','score','found_count','memories','miracle','lowest_flame','route','chapter','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','fish_id','opening_hits','bad_reels'],
  ending_discovered:['ending_id','found_count'],game_retry:[],share_tap:['ending_id'],
- route_selected:['route'],memory_collected:['count'],finale_window:['level','gust_shield','silence_release'],
+ route_selected:['route'],decision_selected:['kind','choice'],memory_collected:['count'],memory_missed:['memory_id','count'],finale_window:['level','gust_shield','silence_release'],
  chapter_reached:['chapter'],finale_warning:[],finale_gust:[],finale_silence:[],journey_exit:['destination']
 };
-const kienaideOnly=new Set(['chapter_reached','finale_warning','finale_gust','finale_silence','journey_exit']);
+const kienaideOnly=new Set(['decision_selected','memory_missed','chapter_reached','finale_warning','finale_gust','finale_silence','journey_exit']);
 const numeric=new Set(['score','found_count','memories','lowest_flame','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','opening_hits','bad_reels','count']);
 let consent='';try{consent=localStorage.getItem(KEY)||''}catch(_){}
 let active=false;
@@ -34,6 +34,8 @@ function track(name,payload){
  if(kienaideOnly.has(name)&&game!=='kienaide')return;
  if(name==='chapter_reached'&&(!Number.isInteger(payload.chapter)||payload.chapter<2||payload.chapter>4))return;
  if(name==='journey_exit'&&!['home','title'].includes(payload.destination))return;
+ if(name==='decision_selected'&&!((payload.kind==='hearth'&&['feed','breathe'].includes(payload.choice))||(payload.kind==='bridge'&&['spark','shelter'].includes(payload.choice))))return;
+ if(name==='memory_missed'&&(!['scarf','table','promise'].includes(payload.memory_id)||!Number.isInteger(payload.count)||payload.count<0||payload.count>3))return;
  if(!active)return;
  if(name==='game_start')starts.set(game,performance.now());
  if(['game_complete','ending_discovered','route_selected','memory_collected','finale_window'].includes(name)||kienaideOnly.has(name)){

@@ -64,6 +64,12 @@ try{
  await page.evaluate(()=>window.emotionTrack('finale_window',{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8,flame:82}));
  const finale=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&x[1]==='finale_window').map(x=>x[2]));
  assert.deepEqual(finale.at(-1),{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8});
+ await page.evaluate(()=>{
+  window.emotionTrack('decision_selected',{game_id:'kienaide',kind:'hearth',choice:'feed',flame:75});
+  window.emotionTrack('memory_missed',{game_id:'kienaide',memory_id:'scarf',count:0,notes:'private'});
+ });
+ const choices=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&['decision_selected','memory_missed'].includes(x[1])).map(x=>({name:x[1],params:x[2]})));
+ assert.deepEqual(choices,[{name:'decision_selected',params:{game_id:'kienaide',kind:'hearth',choice:'feed'}},{name:'memory_missed',params:{game_id:'kienaide',memory_id:'scarf',count:0}}]);
  await page.goto(origin+'chahan/');await page.locator('#start').click();
  assert.ok(await page.evaluate(()=>window.dataLayer.some(x=>x[0]==='event'&&x[1]==='game_start'&&x[2].game_id==='chahan')));
  await page.goto(origin+'fishing-battle/');await page.locator('#reel').click();
@@ -81,4 +87,10 @@ try{
  assert.equal(excludedRequests,0);
  await excluded.close();
  console.log('PASS '+engine+' GA4 consent, common events, standalone titles, excluded QA/study');
-}finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
+}finally{
+ await browser.close();await new Promise(resolve=>server.close(resolve));
+ // The opt-in probe builds dist with a test ID. Restore the caller's normal build so
+ // later game QA is not covered by the consent banner from this isolated probe.
+ const restore=spawnSync(process.execPath,['scripts/build.mjs'],{encoding:'utf8'});
+ assert.equal(restore.status,0,restore.stderr);
+}

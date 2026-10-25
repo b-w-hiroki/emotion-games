@@ -80,3 +80,23 @@ test('Kienaide journey funnel uses one-based chapters and excludes unstarted or 
  assert.equal(events[6][2].chapter,'2');
  assert.ok(!JSON.stringify(events).includes('private@example.com'));
 });
+test('Kienaide choice and missed memory events preserve only controlled values',()=>{
+ const {window}=boot();
+ const send=(name,payload)=>window.emotionTrack(name,{game_id:'kienaide',...payload});
+ send('decision_selected',{kind:'hearth',choice:'feed'});
+ send('memory_missed',{memory_id:'scarf',count:0});
+ send('game_start',{});
+ window.emotionTrack('decision_selected',{game_id:'chahan',kind:'hearth',choice:'feed'});
+ send('decision_selected',{kind:'hearth',choice:'spark'});
+ send('decision_selected',{kind:'__proto__',choice:'feed'});
+ send('decision_selected',{kind:'bridge',choice:'shelter',flame:82,oxygen:15,email:'private@example.com'});
+ send('memory_missed',{memory_id:'private@example.com',count:0});
+ send('memory_missed',{memory_id:'table',count:99});
+ send('memory_missed',{memory_id:'promise',count:2,notes:'private note'});
+ const events=Array.from(window.dataLayer,args=>Array.from(args)).filter(args=>args[0]==='event');
+ assert.deepEqual(events.map(args=>args[1]),['game_start','decision_selected','memory_missed']);
+ assert.deepEqual({...events[1][2]},{game_id:'kienaide',kind:'bridge',choice:'shelter'});
+ assert.deepEqual({...events[2][2]},{game_id:'kienaide',memory_id:'promise',count:2});
+ assert.ok(!JSON.stringify(events).includes('private@example.com'));
+ assert.ok(!JSON.stringify(events).includes('private note'));
+});
