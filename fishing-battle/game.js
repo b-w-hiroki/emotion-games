@@ -13,6 +13,7 @@ for (const name of ['fight-mid', ...Object.keys(FISH).map(id => `fish_hero_${id}
 }
 let state = createBattle(), last = 0, flash = 0, impact = '';
 let pointerPull = 0;
+let keyboardPull = false;
 let outcomeAt = null;
 let started = false;
 let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
@@ -103,7 +104,7 @@ function setPull(value) {
   sound.setTension(pointerPull > 8 ? response.tension : 0, response.pitch);
 }
 board.addEventListener('pointerdown', e => {
-  if (state.outcome || e.target.closest('.settings,.result') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  if (state.outcome || keyboardPull || e.target.closest('.settings,.result') || (e.pointerType === 'mouse' && e.button !== 0)) return;
   if (pointerStart) return;
   sound.unlock();
   pointerStart = { id: e.pointerId, x: e.clientX, y: e.clientY, onDial: Boolean(e.target.closest('#reel')) };
@@ -125,10 +126,25 @@ function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart
 board.addEventListener('pointercancel', cancelPointer);
 board.addEventListener('lostpointercapture', cancelPointer);
 document.addEventListener('keydown', e => {
-  if (e.code !== 'Space' || e.repeat || !$('result').hidden || ['SELECT', 'BUTTON'].includes(document.activeElement?.tagName)) return;
-  e.preventDefault(); reel();
+  const focused = document.activeElement;
+  if (e.code !== 'Space' || !$('result').hidden || pointerStart || ['SELECT', 'INPUT', 'TEXTAREA'].includes(focused?.tagName) || (focused?.tagName === 'BUTTON' && focused.id !== 'reel')) return;
+  e.preventDefault();
+  if (e.repeat || keyboardPull) return;
+  keyboardPull = true;
+  sound.unlock();
+  setPull(70);
+  syncUI();
 });
-function restart() { sound.reset(); setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+document.addEventListener('keyup', e => {
+  if (e.code !== 'Space' || !keyboardPull) return;
+  e.preventDefault();
+  keyboardPull = false;
+  setPull(0);
+  reel();
+});
+function cancelKeyboardPull() { if (keyboardPull) { keyboardPull = false; setPull(0); syncUI(); } }
+window.addEventListener('blur', cancelKeyboardPull);
+function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -235,6 +251,6 @@ function draw(now) {
   last = now;
   requestAnimationFrame(draw);
 }
-document.addEventListener('visibilitychange', () => { last = 0; sound.setHidden(document.hidden); });
+document.addEventListener('visibilitychange', () => { last = 0; if (document.hidden) cancelKeyboardPull(); sound.setHidden(document.hidden); });
 window.addEventListener('pagehide', () => sound.reset());
 syncUI(); requestAnimationFrame(draw);
