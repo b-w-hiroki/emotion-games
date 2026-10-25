@@ -5,6 +5,26 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 // The swipe changes the impact of a reel, never the amount of battle progress.
 export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
 
+// Keep the held control's color and instruction consistent with the battle cue.
+export function pullGuidance(cue, pull, keyboard = false) {
+  const ready = pull >= 34;
+  if (cue === 'rage') return {
+    color: '#ff976c',
+    hint: pull > 8 ? keyboard ? 'Escで中止。離すと危険' : '上へ戻して、離す' : '暴れが収まるまで待とう',
+    shortRelease: '魚が暴れてる。待とう',
+  };
+  if (cue === 'warning') return {
+    color: '#ffd18a',
+    hint: ready ? 'いま離して巻く！' : pull > 8 ? keyboard ? 'いま離すか、Escで中止' : 'いま離すか、上へ戻す' : '走りそう。指を止めよう',
+    shortRelease: '走りそう。手を止めよう',
+  };
+  return {
+    color: cue === 'opening' ? '#a9fff1' : ready ? '#b6fff0' : '#75d5ff',
+    hint: ready ? cue === 'opening' ? 'いま離して巻く！' : '離して巻く！' : pull > 8 ? '下へ引いて、離す' : cue === 'opening' ? 'いま、下へスワイプ！' : '下へスワイプして巻く',
+    shortRelease: 'もう少し下へ引こう',
+  };
+}
+
 // Escape pressure lingers after a run until the player has brought it down.
 export const escapePressure = state => state.outcome ? 0 : clamp((state.escape - 55) / 45, 0, 1);
 

@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -73,8 +73,10 @@ function syncUI() {
   }
   document.querySelector('.controls').classList.toggle('is-raging', !finishing && cue === 'rage');
   $('rageLabel').hidden = finishing || cue !== 'rage';
-  const hint = finishing ? state.outcome === 'caught' ? '水面へ！' : '届かなかった…' : cue === 'rage' ? '暴れが収まるまで待とう' : cue === 'warning' ? '走りそう。指を止めよう' : pointerPull >= 34 ? '離して巻く！' : pointerPull > 8 ? '下へ引いて、離す' : cue === 'opening' ? 'いま、下へスワイプ！' : '下へスワイプして巻く';
+  const guidance = pullGuidance(cue, pointerPull, keyboardPull);
+  const hint = finishing ? state.outcome === 'caught' ? '水面へ！' : '届かなかった…' : guidance.hint;
   if ($('hint').textContent !== hint) $('hint').textContent = hint;
+  controls.style.setProperty('--charge-color', guidance.color);
   if ($('action').textContent && state.time >= actionUntil) $('action').textContent = '';
   $('reel').disabled = Boolean(state.outcome);
   if (state.outcome) {
@@ -106,7 +108,7 @@ function setPull(value) {
   const ready = pointerPull >= 34;
   controls.style.setProperty('--pull', `${Math.min(7, pointerPull * .06)}px`);
   controls.style.setProperty('--charge-angle', `${Math.round(Math.min(1, pointerPull / 34) * 360)}deg`);
-  controls.style.setProperty('--charge-color', ready ? '#b6fff0' : '#75d5ff');
+  controls.style.setProperty('--charge-color', pullGuidance(battleCue(state), pointerPull, keyboardPull).color);
   controls.style.setProperty('--tension', response.tension.toFixed(3));
   controls.style.setProperty('--glow-size', `${Math.round(18 + response.tension * 14)}px`);
   controls.style.setProperty('--pull-glow', response.danger ? '#ff976c' : '#8de7ff');
@@ -133,8 +135,9 @@ board.addEventListener('pointerup', e => {
   if (tapDial || dy >= 34) reel(tapDial ? 1 : reelImpulse(dy));
   else {
     if (dy >= 10 && dx < 36) {
-      $('action').textContent = 'もう少し下へ引こう';
-      $('action').className = 'short-action';
+      const cue = battleCue(state);
+      $('action').textContent = pullGuidance(cue, dy).shortRelease;
+      $('action').className = cue === 'rage' ? 'danger-action' : cue === 'warning' ? 'warning-action' : 'short-action';
       actionUntil = state.time + .9;
     }
     syncUI();
@@ -144,6 +147,7 @@ function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart
 board.addEventListener('pointercancel', cancelPointer);
 board.addEventListener('lostpointercapture', cancelPointer);
 document.addEventListener('keydown', e => {
+  if (e.code === 'Escape' && keyboardPull) { e.preventDefault(); cancelKeyboardPull(); return; }
   const focused = document.activeElement;
   if (e.code !== 'Space' || !$('result').hidden || pointerStart || ['SELECT', 'INPUT', 'TEXTAREA'].includes(focused?.tagName) || (focused?.tagName === 'BUTTON' && focused.id !== 'reel')) return;
   e.preventDefault();
