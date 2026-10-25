@@ -77,6 +77,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         await page.locator('#fish').selectOption(id);
         if (!await page.locator('#fishName').textContent()) throw new Error(`${name}: ${id} has no name`);
       }
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
+      await page.screenshot({ path: `${out}/${name}-kue-rage.png` });
       await page.locator('#mute').click();
       await page.reload();
       if (await page.locator('#mute').getAttribute('aria-pressed') !== 'true') throw new Error(`${name}: mute did not persist`);

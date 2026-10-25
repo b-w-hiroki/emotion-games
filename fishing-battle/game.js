@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, timingWindow } from './visual.js';
+import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -184,6 +184,7 @@ function draw(now) {
   board.style.setProperty('--camera-zoom', camera.zoom.toFixed(4));
   const { fishX, fishY } = pose;
   const line = lineShape(fish, cue, pointerPull);
+  const surface = surfaceResponse(pose, cue, { impact, flash, reduced: reduced.matches });
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
   ctx.strokeStyle = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
@@ -209,7 +210,34 @@ function draw(now) {
     ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 11, pose.ringHeight + 9, -.1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * timing.fraction);
     ctx.stroke();
   }
+  if (surface.wake > .05) {
+    ctx.strokeStyle = '#edffff'; ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const x = fishX + 70 - surface.direction * (62 + i * 13), y = fishY + 55 + (i - 1) * 11;
+      ctx.globalAlpha = waterAlpha * surface.wake * (.48 - i * .08);
+      ctx.lineWidth = 3 - i * .5;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x - surface.direction * 15, y - 7, x - surface.direction * (27 + surface.wake * 19), y - 4);
+      ctx.stroke();
+    }
+  }
+  if (surface.splash > 0) {
+    const spread = (1 - surface.splash) * 25;
+    ctx.strokeStyle = impact === 'badReel' ? '#88412c' : '#08647c';
+    ctx.globalAlpha = waterAlpha * surface.splash * .55; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 15 + spread, pose.ringHeight + 8 + spread * .35, -.1, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = surface.color; ctx.globalAlpha = waterAlpha * surface.splash * .9; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 15 + spread, pose.ringHeight + 8 + spread * .35, -.1, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = surface.color; ctx.globalAlpha = waterAlpha * surface.splash * .85;
+    for (let i = 0; i < 7; i++) {
+      const a = .3 + i * Math.PI / 8;
+      const x = fishX + 70 + Math.cos(a) * (28 + i * 5) * surface.splash;
+      const y = fishY + 50 - Math.sin(a) * (24 + i * 3) * surface.splash - surface.splash * 13;
+      ctx.beginPath(); ctx.arc(x, y, 2 + i % 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   ctx.globalAlpha = 1;
+  ctx.lineCap = 'butt';
   ctx.save(); ctx.globalAlpha = fish.alpha; ctx.translate(fish.fishX + 70, fish.fishY + 40); ctx.rotate(fish.angle); ctx.scale(fish.scale, fish.scale);
   drawImage(`fish_hero_${state.fishId}`, -70, -40, 140, 80); ctx.restore();
   drawImage('fight-mid', 8, 409, 184, 218);
