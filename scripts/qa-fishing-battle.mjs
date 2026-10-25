@@ -110,11 +110,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 300, { steps: 4 });
   const pullFeedback = await input.evaluate(() => {
     const controls = document.querySelector('.controls');
-    return { cue: document.querySelector('#cue').className, hint: document.querySelector('#hint').textContent, pulling: controls.classList.contains('is-pulling'), tension: Number(controls.style.getPropertyValue('--tension')), glow: controls.style.getPropertyValue('--pull-glow') };
+    return { cue: document.querySelector('#cue').className, hint: document.querySelector('#hint').textContent, pulling: controls.classList.contains('is-pulling'), ready: controls.classList.contains('is-ready'), charge: controls.style.getPropertyValue('--charge-angle'), tension: Number(controls.style.getPropertyValue('--tension')), glow: controls.style.getPropertyValue('--pull-glow') };
   });
   const inputRage = pullFeedback.cue.includes('rage');
   const expectedHint = inputRage ? '待とう' : pullFeedback.cue.includes('warning') ? '指を止めよう' : '離して巻く';
   if (!pullFeedback.pulling || !pullFeedback.hint.includes(expectedHint)) throw new Error(`${name}: drag preview did not follow the finger (${JSON.stringify(pullFeedback)})`);
+  if (!pullFeedback.ready || pullFeedback.charge !== '360deg') throw new Error(`${name}: reel charge did not show a ready release`);
   if (pullFeedback.tension <= 0 || pullFeedback.glow !== (inputRage ? '#ff976c' : '#8de7ff')) throw new Error(`${name}: line tension and control glow did not follow the pull`);
   const pulled = await input.locator('#reel').boundingBox(), settings = await input.locator('.settings label').boundingBox();
   if (pulled.x < settings.x + settings.width && pulled.x + pulled.width > settings.x && pulled.y < settings.y + settings.height && pulled.y + pulled.height > settings.y) throw new Error(`${name}: pulled reel overlaps fish selector on 390x844`);
@@ -130,6 +131,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 53) throw new Error(`${name}: short swipe changed the AINAN reel amount`);
   await input.waitForTimeout(40);
   await input.screenshot({ path: `${out}/${name}-short-swipe-impact.png` });
+  await input.reload();
+  await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 230);
+  const partial = await input.locator('.controls').evaluate(el => ({ ready: el.classList.contains('is-ready'), charge: el.style.getPropertyValue('--charge-angle') }));
+  if (partial.ready || partial.charge !== '212deg') throw new Error(`${name}: partial pull did not show remaining distance`);
+  await input.mouse.up();
+  if (await input.locator('#progressValue').textContent() !== '48%' || !await input.locator('#action').textContent().then(t => t.includes('もう少し下へ引こう'))) throw new Error(`${name}: short pull failed to explain its release`);
   await input.reload();
   await input.locator('#reel').focus(); await input.keyboard.press('Enter');
   if (!await input.locator('#action').textContent()) throw new Error(`${name}: focused reel button ignored the keyboard`);
