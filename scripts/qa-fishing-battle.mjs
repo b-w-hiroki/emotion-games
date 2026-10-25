@@ -62,6 +62,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       if (!await page.locator('#hint').textContent().then(t => t.includes('指を止めよう'))) throw new Error(`${name}: warning guidance missing`);
       if (await page.locator('#timingFill').getAttribute('hidden') !== null || !await page.locator('#cueText').textContent().then(t => t.includes('もうすぐ走る'))) throw new Error(`${name}: warning timer and guidance are disconnected`);
       if (!await page.locator('.controls').evaluate(el => el.classList.contains('is-timed') && el.style.getPropertyValue('--window-color') === '#ffd18a')) throw new Error(`${name}: warning did not reach the reel dial`);
+      await page.waitForFunction(() => document.querySelector('.board').style.getPropertyValue('--water-edge-color') === '#ffad6b');
+      const warningLight = await page.locator('.board').evaluate(el => ({ color: el.style.getPropertyValue('--water-edge-color'), edge: Number(el.style.getPropertyValue('--water-edge-opacity')), overlay: getComputedStyle(el, '::after').backgroundImage }));
+      if (warningLight.color !== '#ffad6b' || warningLight.edge <= 0 || !warningLight.overlay.includes('radial-gradient')) throw new Error(`${name}: warning did not light the water edge (${JSON.stringify(warningLight)})`);
       await page.screenshot({ path: `${out}/${name}-warning.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
@@ -69,6 +72,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       if (await page.locator('#timingFill').getAttribute('hidden') !== null) throw new Error(`${name}: opening window has no visible timer`);
       const openingDial = await page.locator('.controls').evaluate(el => ({ active: el.classList.contains('is-opening'), color: el.style.getPropertyValue('--window-color'), angle: parseFloat(el.style.getPropertyValue('--window-angle')), ring: getComputedStyle(el.querySelector('#reel'), '::after').backgroundImage }));
       if (!openingDial.active || openingDial.color !== '#a9fff1' || !openingDial.ring.includes('conic-gradient')) throw new Error(`${name}: opening is not visible at the reel (${JSON.stringify(openingDial)})`);
+      await page.waitForFunction(() => { const board = document.querySelector('.board'); return board.style.getPropertyValue('--water-edge-color') === '#8feedd' && Number(board.style.getPropertyValue('--water-edge-opacity')) > 0; });
+      const openingLight = await page.locator('.board').evaluate(el => ({ color: el.style.getPropertyValue('--water-edge-color'), edge: Number(el.style.getPropertyValue('--water-edge-opacity')) }));
+      if (openingLight.color !== '#8feedd' || openingLight.edge <= 0) throw new Error(`${name}: opening did not cool the water edge (${JSON.stringify(openingLight)})`);
       await page.screenshot({ path: `${out}/${name}-opening.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening') && parseFloat(document.querySelector('#timingFill')?.style.width) <= 35);
       if (!await page.locator('.controls').evaluate((el, early) => parseFloat(el.style.getPropertyValue('--window-angle')) < early, openingDial.angle)) throw new Error(`${name}: reel ring did not drain with the opening`);
