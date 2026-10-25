@@ -68,6 +68,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await page.screenshot({ path: `${out}/${name}-warning.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
+      if (!await page.locator('#cue').evaluate(el => el.classList.contains('clean-opening') && el.textContent.includes('走りをしのいだ'))) throw new Error(`${name}: waiting through the run had no clean-opening payoff`);
       if (!await page.locator('#hint').textContent().then(t => t.includes('スワイプ'))) throw new Error(`${name}: opening guidance missing`);
       if (await page.locator('#timingFill').getAttribute('hidden') !== null) throw new Error(`${name}: opening window has no visible timer`);
       const openingDial = await page.locator('.controls').evaluate(el => ({ active: el.classList.contains('is-opening'), color: el.style.getPropertyValue('--window-color'), angle: parseFloat(el.style.getPropertyValue('--window-angle')), ring: getComputedStyle(el.querySelector('#reel'), '::after').backgroundImage }));
@@ -105,6 +106,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     console.log(`${name} ${width}x${height}: reel ${progress}%, no page errors`);
     await page.close();
   }
+  const risky = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await risky.goto(url);
+  await risky.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
+  await risky.mouse.move(190, 210); await risky.mouse.down(); await risky.mouse.move(190, 270); await risky.mouse.up();
+  if (!await risky.locator('#action').textContent().then(t => t.includes('糸が強く張った'))) throw new Error(`${name}: risky reel did not register during the run`);
+  await risky.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
+  if (await risky.locator('#cue').evaluate(el => el.classList.contains('clean-opening') || el.textContent.includes('走りをしのいだ'))) throw new Error(`${name}: a run with a mistake received the clean-opening reward`);
+  await risky.close();
   const input = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await input.goto(url);
   await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 300, { steps: 4 });

@@ -20,6 +20,7 @@ let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
 let previousCue = 'calm';
 let openingLatePlayed = false;
 let lastReadout = null, readoutAt = 0;
+let rageMistake = false, cleanOpeningAt = -Infinity;
 const camera = { x: 0, y: 0, zoom: 1 };
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
 const sound = new BattleAudio(() => new (window.AudioContext || window.webkitAudioContext)());
@@ -27,7 +28,12 @@ sound.setMuted(muted);
 
 function feedback(events, beforeReel = null) {
   for (const event of events) {
-    if (event === 'opening') openingLatePlayed = false;
+    if (event === 'rage') { rageMistake = false; cleanOpeningAt = -Infinity; }
+    if (event === 'badReel') rageMistake = true;
+    if (event === 'opening') {
+      openingLatePlayed = false;
+      if (!rageMistake) cleanOpeningAt = performance.now();
+    }
     if ((event === 'caught' || event === 'escaped') && outcomeAt === null) {
       outcomeAt = performance.now();
       pointerStart = null;
@@ -35,6 +41,7 @@ function feedback(events, beforeReel = null) {
     }
     const reelEvent = ['goodReel', 'goodOpening', 'badReel'].includes(event);
     sound.play(event, reelEvent ? impactStrength : 1);
+    if (event === 'opening' && !rageMistake) sound.play('cleanOpening');
     if (reelEvent) {
       flash = .35; impact = event;
       lastReadout = reelReadout(event, beforeReel, state);
@@ -49,6 +56,7 @@ function feedback(events, beforeReel = null) {
 }
 function syncUI() {
   const cue = battleCue(state), fish = FISH[state.fishId];
+  const cleanOpening = cue === 'opening' && performance.now() - cleanOpeningAt < 650;
   const timing = timingWindow(state, cue);
   const finishing = state.outcome && !reduced.matches && outcomeAt !== null && performance.now() - outcomeAt < (state.outcome === 'caught' ? 650 : 500);
   const critical = state.escape >= 70;
@@ -60,8 +68,8 @@ function syncUI() {
   document.querySelector('.top').classList.toggle('critical', critical);
   $('progressFill').style.width = `${state.reel}%`;
   $('progressValue').textContent = `${Math.round(state.reel)}%`;
-  $('cue').className = `cue ${finishing ? `finale-${state.outcome}` : cue}`;
-  const cueText = finishing ? state.outcome === 'caught' ? '引き寄せた！' : '離れていく…' : cue === 'rage' ? critical ? '逃げそう！ 手を止めて' : '魚が走った！ 手を止めて' : cue === 'opening' ? '糸がゆるんだ！ いま巻く' : cue === 'warning' ? '糸が張る… もうすぐ走る' : critical ? '逃げそう！ いま巻く' : '魚の動きを見よう';
+  $('cue').className = `cue ${finishing ? `finale-${state.outcome}` : cue}${cleanOpening && !finishing ? ' clean-opening' : ''}`;
+  const cueText = finishing ? state.outcome === 'caught' ? '引き寄せた！' : '離れていく…' : cue === 'rage' ? critical ? '逃げそう！ 手を止めて' : '魚が走った！ 手を止めて' : cue === 'opening' ? cleanOpening ? '走りをしのいだ！ いま巻く' : '糸がゆるんだ！ いま巻く' : cue === 'warning' ? '糸が張る… もうすぐ走る' : critical ? '逃げそう！ いま巻く' : '魚の動きを見よう';
   if ($('cueText').textContent !== cueText) $('cueText').textContent = cueText;
   $('timingFill').hidden = !timing || Boolean(finishing);
   if (timing) $('timingFill').style.width = `${Math.round(timing.fraction * 100)}%`;
@@ -166,7 +174,7 @@ document.addEventListener('keyup', e => {
 });
 function cancelKeyboardPull() { if (keyboardPull) { keyboardPull = false; setPull(0); syncUI(); } }
 window.addEventListener('blur', cancelKeyboardPull);
-function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; rageMistake = false; cleanOpeningAt = -Infinity; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -241,6 +249,13 @@ function draw(now) {
   if (cue === 'opening') {
     ctx.globalAlpha = waterAlpha * .52; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth - 15, pose.ringHeight - 8, -.1, 0, Math.PI * 2); ctx.stroke();
+  }
+  const reliefAge = (now - cleanOpeningAt) / 1000;
+  if (cue === 'opening' && reliefAge >= 0 && reliefAge < .65 && !reduced.matches) {
+    const spread = reliefAge / .65;
+    ctx.globalAlpha = waterAlpha * (1 - spread) * .8;
+    ctx.strokeStyle = '#d6fff0'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 8 + spread * 42, pose.ringHeight + 6 + spread * 18, -.1, 0, Math.PI * 2); ctx.stroke();
   }
   const timing = timingWindow(state, cue);
   if (timing && timing.fraction > 0) {

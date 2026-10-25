@@ -119,6 +119,7 @@ export class BattleAudio {
       case 'warning': return this.note(340, 210, .27, 'triangle', .026);
       case 'rage': return this.note(165, 95, .36, 'sawtooth', .035);
       case 'opening': return this.note(420, 680, .23, 'sine', .04);
+      case 'cleanOpening': return this.note(620, 850, .28, 'sine', .025);
       case 'openingLate': return this.note(690, 820, .1, 'sine', .025);
       case 'goodReel': return this.note(330, 430, .12, 'triangle', .028 * strength);
       case 'goodOpening': return this.note(510, 740, .19, 'sine', .045 * strength);
