@@ -167,6 +167,8 @@ try {
           assert.match(await timingPage.locator('#seasonHint').textContent(), /まず米と具を混ぜる/, `${name}: seasoning starts with a mixing cue`);
           await timingPage.locator('#heatControl').evaluate(el => { el.value = '80'; el.dispatchEvent(new Event('input', { bubbles: true })); });
           for (let i = 0; i < 6; i++) { await timingPage.keyboard.press('Space'); await timingPage.clock.runFor(500); }
+          assert.match(await timingPage.locator('#tip').textContent(), /会心の返し/, `${name}: precise keyboard toss earns immediate feedback`);
+          await timingPage.screenshot({ path: path.join(output, `perfect-toss-${name}-${width}.png`) });
           await timingPage.clock.runFor(13_000);
           assert.equal(await timingPage.locator('#recipe').getAttribute('data-filling-state'), 'ready', `${name}: heat makes pork fragrant during play`);
           assert.match(await timingPage.locator('#fillingLabel').textContent(), /香ばしい/, `${name}: the filling tile explains the current doneness`);
@@ -208,6 +210,7 @@ try {
           assert.ok(secondsLeft > 0, `${name}: plating can complete before the timer expires`);
           await timingPage.locator('#seasoning').click();
           assert.equal(await timingPage.locator('#overlay').isVisible(), true, `${name}: plating immediately completes the dish`);
+          assert.ok(Number((await timingPage.locator('[data-stat="toss"]').textContent()).replace('%', '')) >= 70, `${name}: precise tosses appear in the finished result`);
           await timingPage.screenshot({ path: path.join(output, `plated-${name}-${width}.png`) });
           await timingPage.close();
           const driftPage = await browser.newPage({ viewport: { width, height } });

@@ -104,10 +104,10 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 .card.result .hero-art,.card.result .mini{display:none}
 .card.result .result-dish{display:block;width:100%;height:auto;max-height:155px;object-fit:contain;border:1px solid #dba97488;border-radius:12px;box-shadow:0 8px 20px #0008}
 .card.result p{min-height:40px;margin:10px 0;font-size:13px}
-.card.result .result-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:9px 0}
+.card.result .result-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:9px 0}
 .result-stats>div{padding:7px 3px;border:1px solid #987454;border-radius:9px;background:#1c1719}
 .result-stats small,.result-stats strong{display:block}
-.result-stats small{color:#dfb88b;font-size:9px}
+.result-stats small{color:#dfb88b;font-size:8px;white-space:nowrap}
 .result-stats strong{color:#fff1ce;font-size:16px}
 .card.result button{margin:6px 0 0;padding:13px}
 @media(max-height:700px){.shell{gap:5px;padding-top:5px}

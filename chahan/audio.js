@@ -50,8 +50,8 @@ export function createKitchenAudio({ Context = globalThis.AudioContext || global
     oscillator.connect(gain).connect(context.destination);
     oscillator.start(now); oscillator.stop(now + duration);
   }
-  function toss(safe, combo) {
-    if (safe) { tone(150, .16, 'triangle', .07, 470); tone(390 + Math.min(combo, 8) * 28, .22, 'sine', .055, 240); }
+  function toss(safe, combo, quality = 0) {
+    if (safe) { tone(150, .16, 'triangle', .07, 470); tone(390 + Math.min(combo, 8) * 28, .22, 'sine', .055, 240); if (quality >= .82) tone(880, .28, 'sine', .035, 1170); }
     else tone(135, .24, 'sawtooth', .055, 72);
   }
   function season(quality) { tone(750, .42, 'triangle', .08, 230); if (quality > .6) tone(970, .5, 'sine', .045, 650); }

@@ -2,7 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, tossReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+
+test('precise tosses earn a visible skill result without rewarding spills', () => {
+  const g = createGame(); g.phase = 'playing'; addIngredient(g, 'egg'); addIngredient(g, 'rice');
+  for (let i = 0; i < 5; i++) { g.time += .5; assert.equal(toss(g, { lift: .7, lean: 0 }), true); }
+  assert.equal(g.perfectTosses, 5);
+  assert.equal(g.lastTossQuality, 1);
+  assert.equal(tossReadiness(g), 1);
+  assert.match(g.message, /会心の返し/);
+  assert.equal(result(g).skill, 1);
+  assert.ok(result(g).score > result({ ...g, tossQuality: 0 }).score);
+  g.time += .5; toss(g, { lift: 1.9, lean: 0 });
+  assert.equal(g.lastTossQuality, 0);
+  assert.equal(g.perfectTosses, 5, 'a spill cannot add a perfect toss');
+  assert.equal(tossReadiness(g), 1, 'previous clean tosses remain credited');
+});
 
 test('rice drifts toward the dangerous rim and the countersteer cue follows balance', () => {
   const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice');
