@@ -237,8 +237,9 @@ function wok(ctx, game, reduced) {
   }
   ctx.restore();
   if(age>=0&&age<1.05&&game.tossOutcome!=='none'&&(!game.seasoned||game.time-game.seasonedAt>=1.35)){
-    const label=game.tossOutcome==='caught'?'ふわっ！':game.tossOutcome==='weak'?'弱すぎた':'こぼれた！';
-    ctx.save();ctx.textAlign='center';ctx.font='bold 35px sans-serif';ctx.lineWidth=7;ctx.strokeStyle='#322022';ctx.fillStyle=game.tossOutcome==='caught'?'#fff0bd':'#fff9e9';
+    const perfect=game.tossOutcome==='caught'&&game.lastTossQuality>=.82;
+    const label=perfect?'会心の返し！':game.tossOutcome==='caught'?'ふわっ！':game.tossOutcome==='weak'?'弱すぎた':'こぼれた！';
+    ctx.save();ctx.textAlign='center';ctx.font='bold 35px sans-serif';ctx.lineWidth=7;ctx.strokeStyle='#322022';ctx.fillStyle=perfect?'#fff6aa':game.tossOutcome==='caught'?'#fff0bd':'#fff9e9';
     const lift=reduced?0:Math.min(age, .5)*42;
     const labelY=game.tossOutcome==='caught'&&hasFlight?278:348;
     ctx.strokeText(label,390,labelY-lift);ctx.fillText(label,390,labelY-lift);ctx.restore();
