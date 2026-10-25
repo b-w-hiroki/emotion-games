@@ -126,7 +126,7 @@ try {
           await page.screenshot({ path: path.join(output, `spilled-${name}-${width}.png`) });
           assert.match(await page.locator('#seasonHint').textContent(), /米と具|火を通す/, `${name}: seasoning gives an actionable timing cue`);
           await page.locator('#seasoning').click();
-          assert.match(await page.locator('#seasonHint').textContent(), /味付け \d+%/, `${name}: seasoning reveals the achieved quality`);
+          assert.match(await page.locator('#seasonHint').textContent(), /最後の場所/, `${name}: plating waits for the final location`);
           await page.screenshot({ path: path.join(output, `seasoning-early-${name}-${width}.png`) });
           const seasonedScene = await page.evaluate(async () => {
             const [{ createGame, addSeasoning }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
@@ -173,9 +173,19 @@ try {
           assert.equal(await timingPage.locator('#seasoning').evaluate(el => el.classList.contains('ready')), true, `${name}: well mixed, hot rice exposes seasoning window`);
           assert.equal(await timingPage.locator('#seasonHint').textContent(), '今が入れどき！');
           await timingPage.locator('#seasoning').click();
-          assert.ok(Number((await timingPage.locator('#seasonHint').textContent()).match(/\d+/)[0]) >= 70, `${name}: timing cue leads to a good seasoning score`);
+          assert.equal(await timingPage.locator('#seasonAction').textContent(), '盛り付け', `${name}: the same tile becomes the plating action`);
+          assert.equal(await timingPage.locator('#seasoning').isDisabled(), true, `${name}: plating is locked before the final location`);
           await timingPage.clock.runFor(250);
           await timingPage.screenshot({ path: path.join(output, `seasoning-timed-${name}-${width}.png`) });
+          await timingPage.clock.runFor(21_000);
+          assert.equal(await timingPage.locator('#place').textContent(), '空中キッチン', `${name}: all locations precede plating`);
+          assert.equal(await timingPage.locator('#seasoning').isEnabled(), true, `${name}: plating opens in the final location`);
+          await timingPage.screenshot({ path: path.join(output, `plating-ready-${name}-${width}.png`) });
+          const secondsLeft = Number(await timingPage.locator('#clock').textContent());
+          assert.ok(secondsLeft > 0, `${name}: plating can complete before the timer expires`);
+          await timingPage.locator('#seasoning').click();
+          assert.equal(await timingPage.locator('#overlay').isVisible(), true, `${name}: plating immediately completes the dish`);
+          await timingPage.screenshot({ path: path.join(output, `plated-${name}-${width}.png`) });
           await timingPage.close();
           const eggPage = await browser.newPage({ viewport: { width, height } });
           await eggPage.clock.install();

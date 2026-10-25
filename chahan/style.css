@@ -59,6 +59,7 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 .ingredient-tray{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .ingredient-tray button{min-width:0;min-height:57px;padding:5px 2px;border:1px solid #e9b375;border-radius:9px;background:linear-gradient(#f5ce90,#c88048);box-shadow:inset 0 1px #fff8,inset 0 -3px #81482e;color:#301e16;font-size:12px;font-weight:900;line-height:1.1}
 .ingredient-tray button span,.ingredient-tray button small{display:block}.ingredient-tray button span{font-size:19px;line-height:1.1}.ingredient-tray button small{margin-top:2px;font-size:8px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ingredient-tray button b{display:block;font-size:12px;line-height:1.1}
 .ingredient-tray button.suggested{box-shadow:inset 0 1px #fff8,inset 0 -3px #81482e,0 0 0 2px #ffe8a5,0 0 15px #ffb65d99}
 .ingredient-tray button:disabled{border-color:#746254;background:#62564a;box-shadow:inset 0 -2px #453a32;color:#f0dfc5;opacity:.72}
 .recipe[data-filling-state="ready"] [data-ingredient="veg"]{border-color:#d8f2a3;box-shadow:inset 0 1px #fff8,0 0 12px #a9d76c88}.recipe[data-filling-state="burnt"] [data-ingredient="veg"]{border-color:#d98864}.recipe[data-filling-state="burnt"] #fillingLabel{color:#ffd2b9}
