@@ -25,13 +25,29 @@ export function timingWindow(state, cue) {
 
 // The line relaxes only while the fish leaves an opening. Holding the reel
 // takes up some slack before release, without changing AINAN's battle rules.
-export function lineShape(fish, cue, pull = 0) {
+export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
   const slack = Math.max(0, (cue === 'opening' ? 48 : cue === 'calm' ? 14 : cue === 'warning' ? 5 : 0) - pull * .22);
   const endX = fish.fishX + 20, endY = fish.fishY + 45;
   return {
-    startX: 146, startY: 490, endX, endY, slack,
-    c1x: 146 - slack, c1y: 437 + slack * .28,
+    startX: hand.x, startY: hand.y, endX, endY, slack,
+    c1x: hand.x - slack, c1y: hand.y - 53 + slack * .28,
     c2x: endX - slack * .85, c2y: endY + 57 + slack * .4,
+  };
+}
+
+// Pivot around the fisher's feet; transform the hand by the same pose so the
+// fishing line stays attached while the character braces or recoils.
+export function fisherPose(cue, { pull = 0, impact = '', flash = 0, reduced = false } = {}) {
+  const held = clamp(pull / 110, 0, 1);
+  const hit = clamp(flash / .35, 0, 1);
+  const recoil = impact === 'badReel' ? hit : impact === 'goodReel' || impact === 'goodOpening' ? -hit : 0;
+  const angle = reduced ? 0 : clamp((cue === 'rage' ? .035 : cue === 'warning' ? .015 : 0) - held * .07 + recoil * .055, -.095, .09);
+  const anchorX = 100 + (reduced ? 0 : -held * 4 + recoil * 5);
+  const anchorY = 627 + (reduced ? 0 : held * 3 + (cue === 'rage' ? 2 : 0) + Math.abs(recoil) * 2);
+  return {
+    anchorX, anchorY, angle,
+    handX: anchorX + 46 * Math.cos(angle) + 137 * Math.sin(angle),
+    handY: anchorY + 46 * Math.sin(angle) - 137 * Math.cos(angle),
   };
 }
 

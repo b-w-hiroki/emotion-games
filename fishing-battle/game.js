@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -183,7 +183,8 @@ function draw(now) {
   board.style.setProperty('--camera-y', `${(camera.y * scale / dpr).toFixed(2)}px`);
   board.style.setProperty('--camera-zoom', camera.zoom.toFixed(4));
   const { fishX, fishY } = pose;
-  const line = lineShape(fish, cue, pointerPull);
+  const fisher = fisherPose(cue, { pull: pointerPull, impact, flash, reduced: reduced.matches });
+  const line = lineShape(fish, cue, pointerPull, { x: fisher.handX, y: fisher.handY });
   const surface = surfaceResponse(pose, cue, { impact, flash, reduced: reduced.matches });
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
@@ -240,7 +241,8 @@ function draw(now) {
   ctx.lineCap = 'butt';
   ctx.save(); ctx.globalAlpha = fish.alpha; ctx.translate(fish.fishX + 70, fish.fishY + 40); ctx.rotate(fish.angle); ctx.scale(fish.scale, fish.scale);
   drawImage(`fish_hero_${state.fishId}`, -70, -40, 140, 80); ctx.restore();
-  drawImage('fight-mid', 8, 409, 184, 218);
+  ctx.save(); ctx.translate(fisher.anchorX, fisher.anchorY); ctx.rotate(fisher.angle);
+  drawImage('fight-mid', -92, -218, 184, 218); ctx.restore();
   if (rage || cue === 'warning') {
     ctx.strokeStyle = rage ? '#e2faff' : '#ffe2a4'; ctx.lineWidth = rage ? 3 : 2; ctx.globalAlpha = waterAlpha * .82;
     for (let i = 0; i < 3; i++) {

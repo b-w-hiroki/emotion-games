@@ -1,7 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+
+test('the fisher braces, pulls and recoils while the line stays on the transformed hand', () => {
+  const neutral = fisherPose('calm');
+  const held = fisherPose('calm', { pull: 110 });
+  const rage = fisherPose('rage');
+  const good = fisherPose('calm', { impact: 'goodReel', flash: .35 });
+  const bad = fisherPose('calm', { impact: 'badReel', flash: .35 });
+  assert.deepEqual([neutral.anchorX, neutral.anchorY, neutral.handX, neutral.handY], [100, 627, 146, 490]);
+  assert.ok(held.angle < neutral.angle && held.handX < neutral.handX);
+  assert.ok(rage.angle > neutral.angle);
+  assert.ok(good.angle < neutral.angle && bad.angle > neutral.angle);
+  const fish = { fishX: 176, fishY: 305 };
+  const line = lineShape(fish, 'opening', 110, { x: held.handX, y: held.handY });
+  assert.equal(line.startX, held.handX);
+  assert.equal(line.startY, held.handY);
+  assert.equal(line.c1y, held.handY - 53 + line.slack * .28);
+  assert.deepEqual(fisherPose('rage', { pull: 110, impact: 'badReel', flash: .35, reduced: true }), neutral);
+});
 
 test('warning fills and the real opening window drains on the battle clock', () => {
   const state = createBattle('aji');
