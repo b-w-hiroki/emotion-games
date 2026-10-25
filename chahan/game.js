@@ -1,4 +1,4 @@
-import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
+import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
@@ -90,7 +90,9 @@ function updateHud() {
   $('eggStatus').textContent = !game.ingredients.egg ? 'ふわっと' : game.ingredients.rice ? '投入済み' : game.eggCook < .28 ? `火入れ ${Math.round(game.eggCook / .48 * 100)}%` : egg.ready ? 'ふんわり！' : '焦げ注意';
   $('recipe').dataset.eggState = !game.ingredients.egg || game.ingredients.rice ? '' : game.eggCook < .28 ? 'raw' : egg.ready ? 'ready' : 'burnt';
   $('recipeCount').textContent = `${Number(game.ingredients.egg) + Number(game.ingredients.rice) + Number(game.ingredients.veg) + Number(game.seasoned)} / 4`;
-  $('fillingLabel').textContent = game.filling === 'pork' ? '焼豚' : game.filling === 'scallion' ? 'ねぎ' : '選んで入れる';
+  const filling = fillingReadiness(game);
+  $('recipe').dataset.fillingState = filling.state;
+  $('fillingLabel').textContent = !game.filling ? '選んで入れる' : game.filling === 'pork' ? filling.state === 'raw' ? '焼豚・焼き待ち' : filling.state === 'ready' ? '焼豚・香ばしい' : '焼豚・焦げ注意' : filling.state === 'raw' ? 'ねぎ・炒め中' : filling.state === 'ready' ? 'ねぎ・いい香り' : 'ねぎ・香り注意';
   $('fillingIcon').textContent = game.filling === 'pork' ? '🍖' : game.filling === 'scallion' ? '🌿' : '🫛';
   if ($('fillingChoices').hidden) $('recipeHint').textContent = ingredientCue(game);
   seasonButton.disabled = game.seasoned || game.phase !== 'playing' || !game.ingredients.rice || !game.ingredients.veg;

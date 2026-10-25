@@ -5,7 +5,7 @@ export const STAGES = [
 ];
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
 }
 
 export function eggReadiness(game) {
@@ -13,6 +13,21 @@ export function eggReadiness(game) {
   const quality = Math.max(0, 1 - Math.abs(cook - .48) / .52);
   const cue = cook < .28 ? '卵を炒めよう・火力で進む' : cook <= .72 ? '卵がふんわり！ ごはんを入れどき' : '卵が焦げそう！ ごはんを急いで';
   return { quality, cue, ready: cook >= .28 && cook <= .72 };
+}
+
+export function fillingReadiness(game) {
+  if (!game.filling) return { quality: 0, cue: '', state: 'missing' };
+  const cook = game.fillingCook || 0;
+  const pork = game.filling === 'pork';
+  const ideal = pork ? .7 : .3;
+  const tolerance = pork ? .6 : .35;
+  const cooked = Math.max(0, 1 - Math.abs(cook - ideal) / tolerance);
+  const tossed = Math.min(1, (game.fillingTosses || 0) / (pork ? 3 : 2));
+  const quality = Math.max(0, Math.min(1, (game.fillingQuality || 0) * .45 + cooked * .4 + tossed * .15));
+  const state = cook < (pork ? .48 : .14) ? 'raw' : cook > (pork ? 1.05 : .52) ? 'burnt' : 'ready';
+  const cue = pork ? state === 'raw' ? '焼豚をもう少し焼こう' : state === 'burnt' ? '焼豚が焦げそう！ 火力を下げて' : '焼豚が香ばしい！'
+    : state === 'raw' ? 'ねぎをさっと炒めよう' : state === 'burnt' ? 'ねぎの香りが飛びそう！ 火力を下げて' : 'ねぎの香りが立った！';
+  return { quality, cue, state };
 }
 
 export function ingredientCue(game) {
@@ -37,6 +52,8 @@ export function addIngredient(game, kind, filling = 'scallion') {
     game.message = game.ingredients.egg && egg.quality < .35 ? game.eggCook > .72 ? '卵が少し焦げた。ごはんを返して香りを整えよう。' : '卵はまだ生っぽい。火を通しながら返そう。' : 'ごはんを投入！ 手前へ引いて、卵と混ぜよう。';
   } else {
     game.filling = filling;
+    game.fillingCook = 0;
+    game.fillingTosses = 0;
     const timing = filling === 'scallion' ? Math.max(0, 1 - Math.abs(game.cook - .52) / .52) : Math.max(0, 1 - Math.abs(game.cook - .24) / .48);
     const heat = filling === 'scallion' ? 1 - Math.max(0, game.heat - .7) : .5 + game.heat * .5;
     game.fillingQuality = Math.max(0, Math.min(1, timing * heat * (game.mix >= .1 ? 1 : .7)));
@@ -66,6 +83,12 @@ export function advance(game, input, dt) {
     if (previous <= .72 && game.eggCook > .72) game.message = '卵が焦げそう！ ごはんを急いで。';
   }
   if (game.ingredients.rice) game.cook += dt * game.heat * stage.heat * 0.03;
+  if (game.ingredients.veg) {
+    const before = fillingReadiness(game).state;
+    game.fillingCook = Math.min(1.5, game.fillingCook + dt * game.heat * stage.heat * .05);
+    const after = fillingReadiness(game);
+    if (before !== after.state) game.message = after.cue;
+  }
   if (game.stageTime >= stage.seconds) {
     game.stageTime -= stage.seconds;
     game.stage++;
@@ -94,6 +117,7 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
     game.bestCombo = Math.max(game.bestCombo, game.combo);
     game.mix = Math.min(1, game.mix + (game.ingredients.egg || game.ingredients.veg ? 0.025 + quality * 0.075 : .012));
     game.cook = Math.min(1.35, game.cook + 0.005 + quality * 0.008);
+    if (game.ingredients.veg) game.fillingTosses++;
     game.message = quality > 0.65 ? 'ふわっ！ 米がきれいに回った。' : '返った！ 次はもう少しまっすぐ。';
   } else {
     game.combo = 0;
@@ -131,7 +155,7 @@ export function addSeasoning(game) {
 
 export function result(game) {
   const doneness = Math.max(0, 1 - Math.abs(game.cook - 0.86) / 0.86);
-  const score = Math.round(100 * (game.mix * 0.24 + doneness * 0.2 + game.rice * 0.18 + game.seasoning * 0.17 + game.prep * 0.13 + (game.fillingQuality || 0) * 0.08));
+  const score = Math.round(100 * (game.mix * 0.22 + doneness * 0.18 + game.rice * 0.17 + game.seasoning * 0.16 + game.prep * 0.11 + fillingReadiness(game).quality * 0.16));
   const title = game.rice <= 0.25 ? '空っぽの鍋' : score >= 80 ? '伝説のパラパラ' : score >= 60 ? 'うまいチャーハン' : score >= 40 ? 'まだまだ食べられる' : '次はもっとおいしく';
   const comment = !game.ingredients.rice ? 'ごはんが入らないまま完成。次は卵を炒めて、ごはんを入れよう。'
     : game.rice <= 0.25 ? '米が鍋から飛んでいった。次は少しやさしく、まっすぐ返そう。'
@@ -142,6 +166,8 @@ export function result(game) {
     : game.mix < 0.35 ? '具と米がまだ別々。鍋を小さく、何度か返してみよう。'
     : doneness < 0.45 ? '芯が少し残った。火力を見ながら、もうひと炒め。'
     : game.seasoning < 0.35 ? '香りが惜しい。具が混ざり、火が通った瞬間を狙おう。'
+    : game.filling && fillingReadiness(game).state === 'burnt' ? `${game.filling === 'pork' ? '焼豚' : 'ねぎ'}を炒めすぎた。火力を下げるか、入れるタイミングを遅らせよう。`
+    : game.filling && fillingReadiness(game).state === 'raw' ? `${game.filling === 'pork' ? '焼豚' : 'ねぎ'}の火入れが足りない。鍋で少し炒めて、数回返そう。`
     : score >= 80 ? '一粒ずつ香ばしく、ふわりとほどける。今日の会心のひと皿。'
     : '香ばしく仕上がった。次はもっと軽やかに返せそうだ。';
   return { score, title, doneness, seasoning: game.seasoning, comment };

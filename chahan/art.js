@@ -116,11 +116,11 @@ function frontSteam(ctx, game, reduced) {
   }
   ctx.restore();
 }
-function fillingPiece(ctx,x,y,kind,i,scale=1){
+function fillingPiece(ctx,x,y,kind,i,scale=1,cook=0){
   if(kind==='pork'){
-    ctx.save();ctx.translate(x,y);ctx.rotate(i*.53);ctx.fillStyle=i%4===0?'#6d3529':'#aa4c2d';ctx.fillRect(-8*scale,-5*scale,16*scale,10*scale);ctx.fillStyle='#e59455';ctx.fillRect(-6*scale,-4*scale,12*scale,3*scale);ctx.restore();
+    ctx.save();ctx.translate(x,y);ctx.rotate(i*.53);ctx.fillStyle=cook>1.05?'#4f2924':cook>.48?'#8b4126':'#b8664d';ctx.fillRect(-8*scale,-5*scale,16*scale,10*scale);ctx.fillStyle=cook>1.05?'#8a5638':cook>.48?'#efa55e':'#e8a087';ctx.fillRect(-6*scale,-4*scale,12*scale,3*scale);ctx.restore();
   }else{
-    ctx.save();ctx.strokeStyle=i%3===0?'#c7df7c':'#5d9c4d';ctx.lineWidth=3*scale;ctx.beginPath();ctx.ellipse(x,y,6*scale,3*scale,i*.4,0,Math.PI*2);ctx.stroke();ctx.restore();
+    ctx.save();ctx.strokeStyle=cook>.52?'#846d41':i%3===0?'#c7df7c':'#5d9c4d';ctx.lineWidth=3*scale;ctx.beginPath();ctx.ellipse(x,y,6*scale,3*scale,i*.4,0,Math.PI*2);ctx.stroke();ctx.restore();
   }
 }
 function wok(ctx, game, reduced) {
@@ -159,7 +159,7 @@ function wok(ctx, game, reduced) {
   }
   if (!hasRice && game.ingredients.veg) for(let i=0;i<28;i++) {
     const x=-125+(i*47)%255,y=10+(i*29)%46;
-    fillingPiece(ctx,x,y,game.filling,i,.9);
+    fillingPiece(ctx,x,y,game.filling,i,.9,game.fillingCook);
   }
   if (hasRice && game.ingredients.veg && paintedRice.complete && paintedRice.naturalWidth) {
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
@@ -168,7 +168,7 @@ function wok(ctx, game, reduced) {
     ctx.rotate(-game.lastLean*fly*.14);
     const baseScale=hasFlight?1-fly*.22:1;
     ctx.drawImage(paintedRice,-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale);
-    for(let i=0;i<26*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale);}
+    for(let i=0;i<26*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
     ctx.restore();
   } else if (hasRice) {
   const rice=ctx.createRadialGradient(-65,-3,10,0,26,210);rice.addColorStop(0,'#ffe4a9');rice.addColorStop(.5,game.cook>.65?'#eeb574':'#f2cf8e');rice.addColorStop(1,'#b9783e');ellipse(ctx,0,23,193*amount,57*amount,rice);
@@ -310,11 +310,11 @@ export function drawDish(ctx, game) {
   for (let i = 0; i < (game.ingredients.veg ? look.mixedIngredients : 0); i++) {
     const x = 320 + Math.cos(i * 2.399) * Math.sqrt((i + .5) / 25) * 165 * amount;
     const y = 160 + Math.sin(i * 2.399) * Math.sqrt((i + .5) / 25) * 39 * amount;
-    fillingPiece(ctx,x,y,game.filling,i,amount);
+    fillingPiece(ctx,x,y,game.filling,i,amount,game.fillingCook);
   }
   for (let i = 0; i < (game.ingredients.veg ? look.scatteredIngredients : 0); i++) {
     const x = 346 + (i % 5) * 23 * amount, y = 145 + Math.floor(i / 5) * 12 * amount;
-    fillingPiece(ctx,x,y,game.filling,i,amount);
+    fillingPiece(ctx,x,y,game.filling,i,amount,game.fillingCook);
   }
   for (let i = 0; i < Math.round(look.char * 23 * amount); i++) {
     const x = 320 + Math.cos(i * 2.399) * 170 * amount * Math.sqrt((i + .5) / 23);
