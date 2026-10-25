@@ -2,6 +2,9 @@ import { FISH } from './core.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+// The swipe changes the impact of a reel, never the amount of battle progress.
+export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
+
 // One response curve drives the held control, line and sound from the actual fight.
 export function interactionFeedback(state, pull) {
   const amount = clamp(pull / 90, 0, 1);
@@ -37,10 +40,10 @@ export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
 
 // Pivot around the fisher's feet; transform the hand by the same pose so the
 // fishing line stays attached while the character braces or recoils.
-export function fisherPose(cue, { pull = 0, impact = '', flash = 0, reduced = false } = {}) {
+export function fisherPose(cue, { pull = 0, impact = '', flash = 0, strength = 1, reduced = false } = {}) {
   const held = clamp(pull / 110, 0, 1);
   const hit = clamp(flash / .35, 0, 1);
-  const recoil = impact === 'badReel' ? hit : impact === 'goodReel' || impact === 'goodOpening' ? -hit : 0;
+  const recoil = (impact === 'badReel' ? hit : impact === 'goodReel' || impact === 'goodOpening' ? -hit : 0) * strength;
   const angle = reduced ? 0 : clamp((cue === 'rage' ? .035 : cue === 'warning' ? .015 : 0) - held * .07 + recoil * .055, -.095, .09);
   const anchorX = 100 + (reduced ? 0 : -held * 4 + recoil * 5);
   const anchorY = 627 + (reduced ? 0 : held * 3 + (cue === 'rage' ? 2 : 0) + Math.abs(recoil) * 2);
@@ -52,7 +55,7 @@ export function fisherPose(cue, { pull = 0, impact = '', flash = 0, reduced = fa
 }
 
 // Canvas-space pose. Visual pull and recoil never change the battle state.
-export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0 } = {}) {
+export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0, strength = 1 } = {}) {
   const fish = FISH[state.fishId];
   const rage = cue === 'rage', warning = cue === 'warning', opening = cue === 'opening';
   const speed = rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6;
@@ -61,12 +64,12 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const swimVelocity = reduced ? 0 : Math.cos(seconds * speed) * run * speed;
   const distance = clamp(state.reel - 48, 0, 52);
   const handPull = clamp(pull, 0, 110) * .13;
-  const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0);
+  const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0) * strength;
   const fishX = 176 - distance * .7 + wave * run + Math.max(0, state.escape - 45) * .16 - handPull + recoil;
   const fishY = 305 + distance * 1.05 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
   return {
     fishX, fishY,
-    angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1),
+    angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
     ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9,
     ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4,
     lineControlX: opening ? 173 : rage || warning ? 154 : 160,
@@ -77,13 +80,14 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   };
 }
 
-export function surfaceResponse(pose, cue, { impact = '', flash = 0, reduced = false } = {}) {
+export function surfaceResponse(pose, cue, { impact = '', flash = 0, strength = 1, reduced = false } = {}) {
   const wake = reduced || cue !== 'rage' ? 0 : clamp(Math.abs(pose.swimVelocity) / 450, 0, 1);
   const splash = reduced ? 0 : clamp(flash / .35, 0, 1);
   return {
     wake,
     direction: Math.sign(pose.swimVelocity) || 1,
     splash,
+    impactScale: splash ? strength : 1,
     color: impact === 'badReel' ? '#ffd4a3' : '#c9fff5',
   };
 }
@@ -109,14 +113,14 @@ export function outcomePose(pose, outcome, progress) {
 
 // Camera offsets are in the 390x844 scene. Keep them small enough that the
 // hooked fish and the fisher remain visible on the narrowest supported phone.
-export function battleCamera(state, cue, pose, { pull = 0, outcomeProgress = 0, impact = '', flash = 0, reduced = false } = {}) {
+export function battleCamera(state, cue, pose, { pull = 0, outcomeProgress = 0, impact = '', flash = 0, strength = 1, reduced = false } = {}) {
   if (reduced) return { x: 0, y: 0, zoom: 1 };
   const held = clamp(pull / 110, 0, 1);
   const run = cue === 'rage' ? 1 : cue === 'warning' ? .45 : 0;
   // Move against the fish's displacement to keep the line's target in view.
   const fishOffset = clamp((176 - pose.fishX) * .26, -12, 12);
   const hit = clamp(flash / .35, 0, 1);
-  const reelKick = impact === 'goodReel' || impact === 'goodOpening' ? -1 : impact === 'badReel' ? 1 : 0;
+  const reelKick = (impact === 'goodReel' || impact === 'goodOpening' ? -1 : impact === 'badReel' ? 1 : 0) * strength;
   if (state.outcome === 'caught') return { x: -10 * outcomeProgress, y: -17 * outcomeProgress, zoom: 1 + .055 * outcomeProgress };
   if (state.outcome === 'escaped') return { x: -20 * outcomeProgress, y: 3 * outcomeProgress, zoom: 1 - .035 * outcomeProgress };
   return {

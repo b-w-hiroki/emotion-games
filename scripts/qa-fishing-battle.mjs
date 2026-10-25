@@ -116,6 +116,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await input.mouse.move(190, 900, { steps: 4 }); await input.mouse.up();
   if (!await input.locator('#action').textContent().then(t => t.includes('近づいた') || t.includes('張った'))) throw new Error(`${name}: off-board swipe release was lost`);
   if (await input.locator('.controls').evaluate(el => el.classList.contains('is-pulling'))) throw new Error(`${name}: drag preview remained after release`);
+  if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 53) throw new Error(`${name}: long swipe changed the AINAN reel amount`);
+  await input.waitForTimeout(40);
+  await input.screenshot({ path: `${out}/${name}-long-swipe-impact.png` });
+  await input.reload();
+  await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 250); await input.mouse.up();
+  if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 53) throw new Error(`${name}: short swipe changed the AINAN reel amount`);
+  await input.waitForTimeout(40);
+  await input.screenshot({ path: `${out}/${name}-short-swipe-impact.png` });
   await input.reload();
   await input.locator('#reel').focus(); await input.keyboard.press('Enter');
   if (!await input.locator('#action').textContent()) throw new Error(`${name}: focused reel button ignored the keyboard`);

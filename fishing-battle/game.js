@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, reelImpulse, surfaceResponse, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -11,7 +11,7 @@ for (const name of ['fight-mid', ...Object.keys(FISH).map(id => `fish_hero_${id}
   image.src = `./assets/${name}.${name === 'fight-mid' ? 'png' : 'svg'}`;
   art[name] = image;
 }
-let state = createBattle(), last = 0, flash = 0, impact = '';
+let state = createBattle(), last = 0, flash = 0, impact = '', impactStrength = 1;
 let pointerPull = 0;
 let keyboardPull = false;
 let outcomeAt = null;
@@ -32,8 +32,9 @@ function feedback(events) {
       pointerStart = null;
       setPull(0);
     }
-    sound.play(event);
-    if (['goodReel', 'goodOpening', 'badReel'].includes(event)) {
+    const reelEvent = ['goodReel', 'goodOpening', 'badReel'].includes(event);
+    sound.play(event, reelEvent ? impactStrength : 1);
+    if (reelEvent) {
       flash = .35; impact = event;
       if (event === 'goodOpening') actions.openingHits++;
       if (event === 'badReel') actions.badReels++;
@@ -85,9 +86,10 @@ function syncUI() {
     if (newlyEnded) { if (started) window.emotionTrack?.('game_complete',{game_id:'fishing-battle',fish_id:state.fishId,outcome:state.outcome,opening_hits:actions.openingHits,bad_reels:actions.badReels}); $('retry').focus(); }
   }
 }
-function reel() {
+function reel(strength = 1) {
   if (!started) { started = true; window.emotionTrack?.('game_start',{game_id:'fishing-battle'}); }
   if (!reelBattle(state)) return;
+  impactStrength = strength;
   sound.unlock();
   feedback(state.events); state.events = []; syncUI();
 }
@@ -119,7 +121,7 @@ board.addEventListener('pointerup', e => {
   const tapDial = pointerStart.onDial && Math.hypot(dx, dy) <= 24;
   pointerStart = null;
   setPull(0);
-  if (tapDial || dy >= 34) reel();
+  if (tapDial || dy >= 34) reel(tapDial ? 1 : reelImpulse(dy));
   else syncUI();
 });
 function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); syncUI(); } }
@@ -144,7 +146,7 @@ document.addEventListener('keyup', e => {
 });
 function cancelKeyboardPull() { if (keyboardPull) { keyboardPull = false; setPull(0); syncUI(); } }
 window.addEventListener('blur', cancelKeyboardPull);
-function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -165,10 +167,10 @@ function draw(now) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const dt = last ? Math.min((now - last) / 1000, .05) : 0;
   const t = now / 1000, cue = battleCue(state), rage = cue === 'rage';
-  const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash });
+  const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash, strength: impactStrength });
   const finaleProgress = state.outcome && outcomeAt !== null ? Math.min(1, Math.max(0, (now - outcomeAt) / (state.outcome === 'caught' ? 650 : 500))) : 0;
   const fish = outcomePose(pose, state.outcome, finaleProgress);
-  const target = battleCamera(state, cue, pose, { pull: pointerPull, outcomeProgress: finaleProgress, impact, flash, reduced: reduced.matches });
+  const target = battleCamera(state, cue, pose, { pull: pointerPull, outcomeProgress: finaleProgress, impact, flash, strength: impactStrength, reduced: reduced.matches });
   const blend = reduced.matches ? 1 : 1 - Math.exp(-dt * 9);
   camera.x += (target.x - camera.x) * blend;
   camera.y += (target.y - camera.y) * blend;
@@ -183,9 +185,9 @@ function draw(now) {
   board.style.setProperty('--camera-y', `${(camera.y * scale / dpr).toFixed(2)}px`);
   board.style.setProperty('--camera-zoom', camera.zoom.toFixed(4));
   const { fishX, fishY } = pose;
-  const fisher = fisherPose(cue, { pull: pointerPull, impact, flash, reduced: reduced.matches });
+  const fisher = fisherPose(cue, { pull: pointerPull, impact, flash, strength: impactStrength, reduced: reduced.matches });
   const line = lineShape(fish, cue, pointerPull, { x: fisher.handX, y: fisher.handY });
-  const surface = surfaceResponse(pose, cue, { impact, flash, reduced: reduced.matches });
+  const surface = surfaceResponse(pose, cue, { impact, flash, strength: impactStrength, reduced: reduced.matches });
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
   ctx.strokeStyle = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
@@ -223,18 +225,18 @@ function draw(now) {
     }
   }
   if (surface.splash > 0) {
-    const spread = (1 - surface.splash) * 25;
+    const spread = (1 - surface.splash) * 25 + (surface.impactScale - 1) * 15;
     ctx.strokeStyle = impact === 'badReel' ? '#88412c' : '#08647c';
-    ctx.globalAlpha = waterAlpha * surface.splash * .55; ctx.lineWidth = 7;
+    ctx.globalAlpha = waterAlpha * surface.splash * .55; ctx.lineWidth = 7 * surface.impactScale;
     ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 15 + spread, pose.ringHeight + 8 + spread * .35, -.1, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = surface.color; ctx.globalAlpha = waterAlpha * surface.splash * .9; ctx.lineWidth = 3;
+    ctx.strokeStyle = surface.color; ctx.globalAlpha = waterAlpha * surface.splash * .9; ctx.lineWidth = 3 * surface.impactScale;
     ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth + 15 + spread, pose.ringHeight + 8 + spread * .35, -.1, 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = surface.color; ctx.globalAlpha = waterAlpha * surface.splash * .85;
     for (let i = 0; i < 7; i++) {
       const a = .3 + i * Math.PI / 8;
-      const x = fishX + 70 + Math.cos(a) * (28 + i * 5) * surface.splash;
-      const y = fishY + 50 - Math.sin(a) * (24 + i * 3) * surface.splash - surface.splash * 13;
-      ctx.beginPath(); ctx.arc(x, y, 2 + i % 3, 0, Math.PI * 2); ctx.fill();
+      const x = fishX + 70 + Math.cos(a) * (28 + i * 5) * surface.splash * surface.impactScale;
+      const y = fishY + 50 - Math.sin(a) * (24 + i * 3) * surface.splash * surface.impactScale - surface.splash * 13;
+      ctx.beginPath(); ctx.arc(x, y, (2 + i % 3) * surface.impactScale, 0, Math.PI * 2); ctx.fill();
     }
   }
   ctx.globalAlpha = 1;

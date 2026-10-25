@@ -96,3 +96,14 @@ test('the final opening cue respects gesture unlock and mute', () => {
   r.audio.setMuted(true);
   assert.equal(r.audio.play('openingLate'), false);
 });
+
+test('reel sound follows swipe impulse without changing phase cue volume', () => {
+  const r = rig(); r.audio.unlock();
+  const peaks = [];
+  r.audio.note = (start, end, duration, type, peak) => { peaks.push(peak); return true; };
+  r.audio.play('goodReel', .65);
+  r.audio.play('goodReel', 1.35);
+  r.audio.play('warning', 1.35);
+  assert.ok(peaks[1] > peaks[0]);
+  assert.equal(peaks[2], .026);
+});

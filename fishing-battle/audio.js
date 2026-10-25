@@ -113,16 +113,16 @@ export class BattleAudio {
     this.timers.add(timer);
   }
 
-  play(event) {
+  play(event, strength = 1) {
     if (!this.unlocked || this.muted || this.hidden) return false;
     switch (event) {
       case 'warning': return this.note(340, 210, .27, 'triangle', .026);
       case 'rage': return this.note(165, 95, .36, 'sawtooth', .035);
       case 'opening': return this.note(420, 680, .23, 'sine', .04);
       case 'openingLate': return this.note(690, 820, .1, 'sine', .025);
-      case 'goodReel': return this.note(330, 430, .12, 'triangle', .028);
-      case 'goodOpening': return this.note(510, 740, .19, 'sine', .045);
-      case 'badReel': return this.note(150, 82, .25, 'sawtooth', .05);
+      case 'goodReel': return this.note(330, 430, .12, 'triangle', .028 * strength);
+      case 'goodOpening': return this.note(510, 740, .19, 'sine', .045 * strength);
+      case 'badReel': return this.note(150, 82, .25, 'sawtooth', .05 * strength);
       case 'caught': {
         const played = this.note(520, 660, .32, 'sine', .046);
         if (played) this.later(() => this.note(660, 880, .42, 'sine', .04), 150);

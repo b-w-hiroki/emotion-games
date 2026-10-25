@@ -1,7 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, fisherPose, interactionFeedback, lineShape, outcomePose, reelImpulse, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+
+test('swipe distance scales one reel impact across fish, fisher, water and camera', () => {
+  const state = createBattle('aji');
+  const short = reelImpulse(34), long = reelImpulse(150);
+  assert.equal(reelImpulse(0), short);
+  assert.equal(reelImpulse(1000), long);
+  assert.ok(short < 1 && long > 1);
+  const options = { impact: 'goodReel', flash: .35 };
+  const shortFish = battlePose(state, 'calm', 0, { ...options, strength: short });
+  const longFish = battlePose(state, 'calm', 0, { ...options, strength: long });
+  assert.ok(longFish.fishX < shortFish.fishX);
+  assert.ok(fisherPose('calm', { ...options, strength: long }).angle < fisherPose('calm', { ...options, strength: short }).angle);
+  assert.ok(surfaceResponse(longFish, 'calm', { ...options, strength: long }).impactScale > surfaceResponse(shortFish, 'calm', { ...options, strength: short }).impactScale);
+  assert.ok(battleCamera(state, 'calm', longFish, { ...options, strength: long }).y < battleCamera(state, 'calm', shortFish, { ...options, strength: short }).y);
+  assert.equal(battlePose(state, 'calm', 0, { ...options, strength: long, reduced: true }).fishX, battlePose(state, 'calm', 0, { ...options, strength: short, reduced: true }).fishX);
+});
 
 test('the fisher braces, pulls and recoils while the line stays on the transformed hand', () => {
   const neutral = fisherPose('calm');
