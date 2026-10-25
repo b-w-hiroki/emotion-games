@@ -61,7 +61,7 @@ try{
  assert.equal(observations[0].felt,'緊張');
  assert.equal(observations[0].answered,true);
  assert.equal(observations[0].game_id,'micha-dame');
- assert.equal(observations[0].schema_version,2);
+ assert.equal(observations[0].schema_version,3);
  assert.equal(observations[0].attempt_index,1);
  assert.equal(observations[0].understood,'immediate');
  assert.equal(observations[0].intensity,4);
@@ -77,6 +77,7 @@ try{
  const selected=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
  assert.equal(selected.route,'rest','the choice is saved before an ending, including if the player exits early');
  assert.equal(selected.completed,false);
+ assert.ok(selected.journey_detail,'004 starts an isolated journey observation');
  const decision=page.locator('#route-choice [data-decision]').first();
  const deadline=Date.now()+20000;
  while(Date.now()<deadline&&await page.locator('#study-feedback').isHidden()){
@@ -112,6 +113,19 @@ try{
  const retried=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
  assert.equal(retried.attempt_index,2,'a reload must not silently reset the device-local attempt order');
  assert.equal(retried.route,null);
+ await page.evaluate(()=>{
+  for(const [name,values] of [
+   ['decision_selected',{kind:'hearth',choice:'feed',email:'private@example.com'}],
+   ['memory_collected',{memory_id:'scarf',count:1,input:'touch'}],
+   ['memory_missed',{memory_id:'table',count:1}],
+   ['shelter_discovered',{chapter:2}],['companion_warmth',{oxygen_gain:6}],['miracle_triggered',{lowest_flame:18}],
+   ['finale_window',{level:'faint',gust_shield:2.6,silence_release:.1,flame:70}]
+  ])window.emotionTrack(name,{game_id:'kienaide',...values});
+  window.emotionTrack('memory_collected',{game_id:'kienaide',memory_id:'private@example.com'});
+ });
+ const inProgress=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
+ assert.deepEqual(inProgress.journey_detail,{decisions:[{kind:'hearth',choice:'feed'}],collected:['scarf'],missed:['table'],shelter:true,companion:true,miracle:true,window:{level:'faint',gust_shield:2.6,silence_release:.1}});
+ assert.ok(!JSON.stringify(inProgress).includes('private@example.com'));
  await page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:10000});
  await page.locator('#route-choice [data-route="shortcut"]').click();
  const abandoned=(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')||'[]'))).at(-1);
@@ -121,6 +135,11 @@ try{
  assert.ok(await page.locator('#study-export').isVisible());
  assert.ok(await page.locator('#study-clear').isVisible());
  assert.ok((await page.locator('.study-dashboard').innerText()).includes('3 回のプレイ'));
+ const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#study-export').click()]);
+ const exported=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+ assert.equal(exported.version,3);
+ assert.equal(exported.records.length,3);
+ assert.deepEqual(exported.records.at(-1).journey_detail,inProgress.journey_detail,'the downloaded JSON includes observations from an unfinished journey');
  await page.setViewportSize({width:360,height:640});
  const dashboardButtons=await page.locator('.study-actions button').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {height:r.height,left:r.left,right:r.right}}));
  for(const button of dashboardButtons)assert.ok(button.height>=44&&button.left>=0&&button.right<=360,'study export and clear must be reachable on a narrow phone: '+JSON.stringify(button));
@@ -133,6 +152,14 @@ try{
  await page.goto(origin);assert.equal(await page.locator('.study-dashboard').count(),0);
  await page.goto(origin+'kasa-o/');
  assert.equal(await page.locator('#study-feedback').count(),0);
+ const legacy={id:'old-local-attempt',schema_version:2,game_id:'kienaide',attempt_index:4,completed:true,ending_id:'wish',memories:2};
+ await page.evaluate(value=>localStorage.setItem('emotion-games-study-v1',JSON.stringify([value])),legacy);
+ await page.goto(origin+'kienaide/?study=1&qa=1&t=27');
+ await page.locator('#play').click();
+ const upgraded=await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-games-study-v1')));
+ assert.deepEqual(upgraded[0],legacy,'new study sessions retain the original legacy record without inventing observations');
+ assert.equal(upgraded[1].schema_version,3);
+ assert.equal(upgraded[1].attempt_index,5);
  assert.deepEqual(errors,[]);
  await ctx.close();
 }finally{await browser.close();await new Promise(r=>srv.close(r))}

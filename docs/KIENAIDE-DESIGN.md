@@ -16,7 +16,7 @@
 | 004専用の入口と題字 | `assets/app.js`、`assets/style.css`、`assets/kienaide-lettering.webp`、`assets/kienaide/paint/src/title-brush-master.png` | ルートとタイトル画面のモバイル表示、他作品の直通URL維持、共有画像との題字一致 |
 | 入口の作品詳細 | `assets/app.js`、`assets/style.css`、`assets/kienaide-detail/`、`scripts/art/kienaide-detail.mjs` | `scripts/qa-game-detail.mjs` の両画面幅・Chromium／WebKit、調査モードからの開始。画像原本は `scripts/qa-kienaide-visual.mjs` の実ブラウザキャプチャ |
 | 共有サムネイル | `assets/kienaide-thumbnail-bg.webp`、`scripts/art/kienaide-thumbnail.mjs`、`assets/kienaide-thumbnail.png` | 1200×630、題字の判読性、少女と炎の位置、入口と004のOG画像一致 |
-| 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域 | `scripts/qa-research.mjs`、360×640／390×844の回答スクリーンショット |
+| 任意の初見調査 | `assets/experiment.js`、`assets/style.css` の004限定回答領域、`scripts/analyze-study.mjs` | `scripts/qa-research.mjs`、`tests/research.test.mjs`、360×640／390×844の回答スクリーンショット |
 | 任意の作品別KPI | `assets/app.js` の既存イベント → `assets/analytics.js`、`docs/ANALYTICS.md` | 同意前・拒否後の無通信、許可後の共通／004固有イベント、検証モード除外を `scripts/qa-analytics.mjs` で確認。窓の返事と結末にはcoreが判定に使う `gustShield`／`silenceRelease` を秒単位で渡し、許可リストで `gust_shield`／`silence_release` だけを送る。章到達と最終局面は既存のcoreイベントから計測し、結末や操作判定を複製しない |
 
 `kienaide-core.js` はDOM・音・保存を知らない決定論的なルール層。`app.js` が入力をcoreへ渡し、返されたイベントをview/audio/DOM/計測へ配る。表示やサウンドを変更しても、結末判定の正本を別に作らない。
@@ -85,11 +85,12 @@ coreのendイベント ──> app.js finish() ──> 図鑑保存・理由表�
 | `emotion-kienaide-intro-v1` | 導入を見た印 | 再挑戦で消さない |
 | `emotion-kienaide-audio-v1` | ミュートと音量 | 再挑戦で消さない |
 | `emotion-kienaide-journeys-v1` | この端末の旅開始・結末到達回数 | 本編開始と結末確定時にそれぞれ一度加算。旧セーブは書き換えず、過去の周回は遡って推定しない。破損時は0から表示し、保存不可でも当該ページ内の回数は更新する |
-| `emotion-games-study-v1` | 任意の研究モードの端末内試行記録 | 既存JSONとキーを保持し、道の選択と再読込後の試行順を追加。通常プレイでは記録しない |
+| `emotion-games-study-v1` | 任意の研究モードの端末内試行記録 | 既存JSONとキーを保持。新規記録はスキーマ3で、004の判断・記憶・関係性・窓の応答を `journey_detail` へ保存する。旧記録の欠損を0回と見なさず、集計対象数を分ける。通常プレイでは記録しない |
 
 保存失敗時も周回内の発見は動く。結末カード準備は結果確定時に開始し、古い周回の非同期完了が新しい周回のUIを汚さない。共有URLから `qa`・`seed`・`speed`・`t`・`mem`・`vital` 等の検査用パラメーターを除く。QA用URLは通常プレイヤー向けの約束ではなく、公開URLへの共有に含めない。
 
 研究モードの `route_selected` は道を選んだ時点で現行の端末内レコードへ保存する。結末時にも有効な経路を照合して記録し、途中離脱と完走の双方を経路別に集計できるようにする。再読込後の試行番号は同じ作品の保存済み最大値から継続し、旧エクスポートに経路がない場合は不明として扱う。この番号は端末内の順番であり、参加者数や自発的な再挑戦人数を示さない。
+004の新規 `journey_detail` は、既存の `emotionTrack` に流れる確定イベントだけを記録する。選択・記憶ID・窓の応答は既知値へ絞り、1周内の重複を除く。火・息の生値、自由入力、個人識別子は保存しない。途中離脱でも最後に記録した事実は残し、旧スキーマの試行に詳細欄を後付けしない。集計は詳細欄のある試行だけを分母にし、旧版の欠損と「発生しなかった」を混同しない。
 
 ## 変更と検証の対応
 
