@@ -13,6 +13,9 @@ export const FISH = Object.freeze({
 });
 
 const TICK = .2;
+// This standalone battle has no tackle upgrades. Limit the longest possible
+// run's automatic escape pressure so every fish has a playable first opening.
+const STARTER_ROD_RUN_BUDGET = 5.1;
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const random01 = state => {
   state.seed = (Math.imul(state.seed, 1664525) + 1013904223) >>> 0;
@@ -53,6 +56,7 @@ export function stepBattle(state, dt) {
   state.events = [];
   if (state.outcome || !Number.isFinite(dt) || dt <= 0) return state;
   const fish = FISH[state.fishId];
+  const runPressure = Math.min(fish.speed * fish.strength, STARTER_ROD_RUN_BUDGET / fish.duration[1]);
   // Freeze large background gaps. Normal frames accumulate to AINAN's 200 ms tick.
   const elapsed = Math.min(dt, .1);
   state.time += elapsed;
@@ -61,7 +65,7 @@ export function stepBattle(state, dt) {
   while (state.accumulator + 1e-9 >= TICK && !state.outcome) {
     state.accumulator -= TICK;
     if (state.phase === 'rage') {
-      state.escape = clamp(state.escape + fish.speed * fish.strength * (1.5 + random01(state) * 2), 0, 100);
+      state.escape = clamp(state.escape + runPressure * (1.5 + random01(state) * 2), 0, 100);
       state.reel = clamp(state.reel - .5, 0, 100);
     } else {
       state.escape = clamp(state.escape - .5, 0, 100);

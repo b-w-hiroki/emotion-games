@@ -279,6 +279,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await page.screenshot({ path: `${out}/${name}-escaped.png` });
   console.log(`${name}: natural catch and escape paths passed`);
   await page.close();
+  const heavy = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await heavy.addInitScript(() => { Date.now = () => 1; });
+  await heavy.goto(url);
+  await heavy.locator('#fish').selectOption('kue');
+  await heavy.locator('#fish').evaluate(el => el.blur());
+  for (let i = 0; i < 80 && await heavy.locator('#result').isHidden(); i++) {
+    const cue = await heavy.locator('#cue').getAttribute('class');
+    if (cue?.includes('calm') || cue?.includes('warning') || cue?.includes('opening')) await heavy.keyboard.press('Space');
+    await heavy.waitForTimeout(240);
+  }
+  if (!await heavy.locator('#resultTitle').textContent().then(title => title.includes('クエを釣り上げた'))) throw new Error(`${name}: patient play could not catch the strongest fish`);
+  await heavy.screenshot({ path: `${out}/${name}-kue-caught.png` });
+  console.log(`${name}: strongest fish caught with patient input`);
+  await heavy.close();
   await browser.close();
 }
 server.close();

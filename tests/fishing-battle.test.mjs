@@ -58,3 +58,46 @@ test('same seed and input schedule reproduce the same fight', () => {
   const play = () => { const s = createBattle('tai', 51); for (let i = 0; i < 300 && !s.outcome; i++) { stepBattle(s, .05); if (i % 8 === 0 && battleCue(s) !== 'rage') reelBattle(s); } return { phase: s.phase, reel: s.reel, escape: s.escape, outcome: s.outcome }; };
   assert.deepEqual(play(), play());
 });
+
+function playPatiently(fishId, seed, interval = .3) {
+  const state = createBattle(fishId, seed);
+  for (let frame = 0; frame < 2400 && !state.outcome; frame++) {
+    stepBattle(state, .05);
+    if (battleCue(state) !== 'rage' && state.time - state.lastInputAt >= interval) reelBattle(state);
+  }
+  return state;
+}
+
+test('every selectable fish reaches a first opening with the fixed starter rod', () => {
+  for (const fishId of Object.keys(FISH)) {
+    for (let seed = 1; seed <= 100; seed++) {
+      const state = createBattle(fishId, seed);
+      let sawRun = false;
+      for (let frame = 0; frame < 300 && !state.outcome; frame++) {
+        stepBattle(state, .05);
+        sawRun ||= state.phase === 'rage';
+        if (sawRun && battleCue(state) === 'opening') break;
+      }
+      assert.equal(battleCue(state), 'opening', `${fishId} seed ${seed} escaped before its first opening`);
+    }
+  }
+});
+
+test('patient reeling can catch every fish while the strongest still rewards timing', () => {
+  for (const fishId of Object.keys(FISH)) {
+    let catches = 0;
+    for (let seed = 1; seed <= 100; seed++) catches += playPatiently(fishId, seed).outcome === 'caught';
+    assert.ok(catches >= 50, `${fishId}: only ${catches}/100 patient catches`);
+  }
+  let fast = 0, slow = 0;
+  for (let seed = 1; seed <= 100; seed++) {
+    fast += playPatiently('kue', seed, .3).outcome === 'caught';
+    slow += playPatiently('kue', seed, .7).outcome === 'caught';
+  }
+  assert.ok(fast > slow, `quicker safe reels should help against kue (${fast} vs ${slow})`);
+  const mistake = createBattle('kue', 1);
+  while (mistake.phase !== 'rage') stepBattle(mistake, .05);
+  const escape = mistake.escape;
+  reelBattle(mistake);
+  assert.ok(mistake.escape >= escape + 20, 'reeling during a run still strains the line');
+});
