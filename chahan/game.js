@@ -1,4 +1,4 @@
-import { STAGES, createGame, advance, toss, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
+import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
@@ -19,7 +19,7 @@ const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = game.stage === 0 ? '最初の舞台' : '次の舞台'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
-function begin() { audio.unlock(); game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', 'まずは、まっすぐ返す。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
+function begin() { audio.unlock(); game = createGame(); game.phase = 'playing'; gesture = null; dragSteer = 0; neutralGamma = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); animation = requestAnimationFrame(loop); showNotice('路地裏の屋台', '空の鍋から。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
 function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = r.comment; $('overlay').querySelector('.eyebrow').textContent = '完成した一皿'; for (const [key, value] of Object.entries({ mix: game.mix, cook: r.doneness, seasoning: r.seasoning, rice: game.rice })) resultStats.querySelector(`[data-stat="${key}"]`).textContent = `${Math.round(value * 100)}%`; drawDish(resultDish.getContext('2d'), game); resultCard.classList.add('result'); $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; audio.finish(r.score); window.emotionTrack?.('game_complete',{game_id:'chahan',score:r.score,rice_pct:Math.round(game.rice*100),mix_pct:Math.round(game.mix*100),doneness_pct:Math.round(r.doneness*100),seasoning_pct:Math.round(r.seasoning*100)}); }
 $('heatControl').addEventListener('input', event => { if (game.phase === 'playing') game.heat = clamp(Number(event.target.value) / 100, 0, 1); });
 const zone = $('swipeZone');
@@ -27,7 +27,7 @@ zone.addEventListener('pointerdown', e => { if (game.phase !== 'playing' || gest
 zone.addEventListener('pointermove', e => { if (!gesture || e.pointerId !== gesture.id) return; gesture.currentX = e.clientX; gesture.currentY = e.clientY; dragSteer = clamp((e.clientX - gesture.x) / 80, -1, 1); });
 zone.addEventListener('pointerup', e => { if (!gesture || e.pointerId !== gesture.id) return; const dx = e.clientX - gesture.x, pull = e.clientY - gesture.y, ms = Math.max(60, performance.now() - gesture.at); if (pull > 25) doToss({ lift: clamp(pull / 120 * (300 / ms) ** .35 * .7, 0, 2), lean: clamp(dx / Math.max(80, pull), -1.5, 1.5) }); gesture = null; dragSteer = 0; });
 for (const event of ['pointercancel','lostpointercapture']) zone.addEventListener(event, () => { gesture = null; dragSteer = 0; });
-document.addEventListener('keydown', e => { if (e.code === 'KeyS') { e.preventDefault(); if (!e.repeat) doSeasoning(); return; } const k = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (!k) return; e.preventDefault(); if (k === 'toss' && !e.repeat) doToss({ lift: .7, lean: 0 }); held.add(k); });
+document.addEventListener('keydown', e => { const ingredient = { Digit1: 'egg', Digit2: 'rice', Digit3: 'veg' }[e.code]; if (ingredient) { e.preventDefault(); if (!e.repeat) doIngredient(ingredient); return; } if (e.code === 'KeyS') { e.preventDefault(); if (!e.repeat) doSeasoning(); return; } const k = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (!k) return; e.preventDefault(); if (k === 'toss' && !e.repeat) doToss({ lift: .7, lean: 0 }); held.add(k); });
 document.addEventListener('keyup', e => { const k = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (k) held.delete(k); });
 window.addEventListener('blur', () => { held.clear(); gesture = null; dragSteer = 0; });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); gesture = null; dragSteer = 0; last = 0; audio.pause(); } else { last = performance.now(); audio.unlock(); } });
@@ -68,6 +68,8 @@ $('motionButton').onclick = async () => {
   } catch { stopMotion('許可を確認できません・スワイプで操作'); }
 };
 function doToss(input) { if (game.phase !== 'playing') return; const safe = toss(game, input); if (safe === null) return; audio.toss(safe, game.combo); updateHud(); }
+function doIngredient(kind) { if (!addIngredient(game, kind)) return; audio.season(.45); updateHud(); draw(); }
+for (const button of document.querySelectorAll('[data-ingredient]')) button.onclick = () => doIngredient(button.dataset.ingredient);
 function doSeasoning() { const quality = addSeasoning(game); if (quality === null) return; audio.season(quality); updateHud(); }
 $('seasoning').onclick = doSeasoning;
 function updateHud() {
@@ -78,9 +80,14 @@ function updateHud() {
   $('riceBar').style.width = `${game.rice * 100}%`; $('cookBar').style.width = `${clamp(game.cook, 0, 1) * 100}%`; $('mixBar').style.width = `${game.mix * 100}%`;
   $('heatLabel').textContent = `火力 ${Math.round(game.heat * 100)}%`; $('heatControl').value = Math.round(game.heat * 100); $('heatControl').style.setProperty('--heat', `${Math.round(game.heat * 100)}%`); $('tip').textContent = game.message;
   const seasoning = seasoningReadiness(game), seasonButton = $('seasoning'), seasonHint = $('seasonHint');
-  seasonButton.disabled = game.seasoned || game.phase !== 'playing';
+  for (const button of document.querySelectorAll('[data-ingredient]')) button.disabled = game.phase !== 'playing' || game.ingredients[button.dataset.ingredient];
+  const next = !game.ingredients.egg ? 'egg' : !game.ingredients.rice ? 'rice' : !game.ingredients.veg ? 'veg' : 'seasoning';
+  for (const button of document.querySelectorAll('.ingredient-tray button')) button.classList.toggle('suggested', button.id === next || button.dataset.ingredient === next);
+  $('recipeCount').textContent = `${Number(game.ingredients.egg) + Number(game.ingredients.rice) + Number(game.ingredients.veg) + Number(game.seasoned)} / 4`;
+  $('recipeHint').textContent = ingredientCue(game);
+  seasonButton.disabled = game.seasoned || game.phase !== 'playing' || !game.ingredients.rice || !game.ingredients.veg;
   seasonButton.classList.toggle('ready', !game.seasoned && game.phase === 'playing' && seasoning.ready);
-  const hint = game.seasoned ? `味付け ${Math.round(game.seasoning * 100)}%` : game.phase === 'playing' ? seasoning.cue : '一度だけ・中盤が狙い目';
+  const hint = game.seasoned ? `味付け ${Math.round(game.seasoning * 100)}%` : game.phase === 'playing' ? seasoning.cue : '仕上げに';
   if (seasonHint.textContent !== hint) seasonHint.textContent = hint;
 }
 function draw() { drawScene(ctx, game, reduceMotion); }

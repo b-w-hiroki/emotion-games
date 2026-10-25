@@ -4,7 +4,7 @@ html,body{margin:0;min-height:100%;overscroll-behavior:none}
 body{min-height:100dvh;background:radial-gradient(ellipse at 50% -20%,#6d3d25 0%,#211715 48%,#100e0d 100%)}
 button{font:inherit;cursor:pointer;touch-action:none;user-select:none;border:0;color:inherit}
 button:focus-visible,.stage:focus-visible{outline:3px solid #ffdc82;outline-offset:3px}
-.shell{width:min(100%,520px);min-height:100dvh;margin:auto;padding:10px max(14px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;background:linear-gradient(160deg,#31201b,#171312 42%,#241914);box-shadow:0 0 90px #000a}
+.shell{width:min(100%,520px);height:100dvh;min-height:550px;margin:auto;padding:10px max(14px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;background:linear-gradient(160deg,#31201b,#171312 42%,#241914);box-shadow:0 0 90px #000a}
 header{position:relative;z-index:5;display:flex;justify-content:space-between;align-items:center;min-height:32px}
 .brand{font-size:10px;letter-spacing:.22em;font-weight:900;color:#e8b96f}
 .brand b{font-size:10px;letter-spacing:0;color:#d2bca4;font-weight:500}
@@ -49,14 +49,18 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 .meters span{display:block;margin-bottom:6px;color:#eed2ae;font-size:10px;font-weight:700;white-space:nowrap}
 .bar{height:8px;overflow:hidden;border-radius:8px;background:#49362c;box-shadow:inset 0 2px 4px #0009}
 .bar i{display:block;width:0;height:100%;border-radius:8px;background:linear-gradient(90deg,#d87942,#ffc976);box-shadow:0 0 12px #efa65b88}
-.cook-controls{display:grid;grid-template-columns:1fr 1.55fr;gap:8px;min-height:61px}
-.cook-controls #seasoning{border-radius:12px;background:linear-gradient(135deg,#ffe0a0,#eaa05b 70%,#cb6a42);box-shadow:inset 0 2px #fff6,inset 0 -4px #8e4938,0 6px 16px #0006;color:#2a1a11;font-size:15px;font-weight:900;letter-spacing:.02em}
-.cook-controls #seasoning small{display:block;font-size:9px;font-weight:700;letter-spacing:0}
-.cook-controls #seasoning.ready{background:linear-gradient(135deg,#fff2b5,#ffbd68 65%,#e77d43);box-shadow:inset 0 2px #fff9,inset 0 -4px #a35435,0 0 0 2px #ffe3a9,0 0 20px #ffb24a99}
-.cook-controls #seasoning:disabled{background:#705f51;color:#e7d4c0;box-shadow:inset 0 -3px #46372f}
-.heat-controls{display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0;padding:6px 15px;border:1px solid #876449;border-radius:12px;background:#2b201b}
+.recipe{padding:7px;border:1px solid #826044;border-radius:12px;background:linear-gradient(#35251d,#241b18);box-shadow:inset 0 1px #ffffff1c}
+.recipe-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin:0 2px 6px}
+.recipe-head strong{font-size:11px;color:#ffdfad;white-space:nowrap}.recipe-head strong span{color:#f3a85e;font-variant-numeric:tabular-nums}
+.recipe-head small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f1d2ac;font-size:10px}
+.ingredient-tray{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.ingredient-tray button{min-width:0;min-height:57px;padding:5px 2px;border:1px solid #e9b375;border-radius:9px;background:linear-gradient(#f5ce90,#c88048);box-shadow:inset 0 1px #fff8,inset 0 -3px #81482e;color:#301e16;font-size:12px;font-weight:900;line-height:1.1}
+.ingredient-tray button span,.ingredient-tray button small{display:block}.ingredient-tray button span{font-size:19px;line-height:1.1}.ingredient-tray button small{margin-top:2px;font-size:8px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ingredient-tray button.suggested{box-shadow:inset 0 1px #fff8,inset 0 -3px #81482e,0 0 0 2px #ffe8a5,0 0 15px #ffb65d99}
+.ingredient-tray button:disabled{border-color:#746254;background:#62564a;box-shadow:inset 0 -2px #453a32;color:#f0dfc5;opacity:.72}
+.heat-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:37px;padding:5px 12px;border:1px solid #876449;border-radius:10px;background:#2b201b}
 .heat-controls span{color:#ffcb88;font-size:11px;font-weight:900}
-#heatControl{appearance:none;-webkit-appearance:none;width:100%;height:11px;margin:0;border:1px solid #b37a4d;border-radius:20px;background:linear-gradient(90deg,#f49a48 var(--heat,48%),#544037 var(--heat,48%));cursor:pointer;touch-action:auto}
+#heatControl{appearance:none;-webkit-appearance:none;width:68%;height:11px;margin:0;border:1px solid #b37a4d;border-radius:20px;background:linear-gradient(90deg,#f49a48 var(--heat,48%),#544037 var(--heat,48%));cursor:pointer;touch-action:auto}
 #heatControl::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:24px;height:24px;border:3px solid #fff0c6;border-radius:50%;background:#d87537;box-shadow:0 2px 8px #0008}
 #heatControl::-moz-range-thumb{width:18px;height:18px;border:3px solid #fff0c6;border-radius:50%;background:#d87537;box-shadow:0 2px 8px #0008}
 .motion-button{min-height:37px;padding:4px 10px;border:1px solid #769991;border-radius:10px;background:linear-gradient(#29443f,#20312f);box-shadow:inset 0 1px #ffffff24;color:#e2fff4;font-size:11px;font-weight:900}
@@ -93,7 +97,7 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 .hud>div{padding:5px 8px}
 .hud strong{font-size:16px}
 .hud>div:not(:first-child) strong{font-size:19px}
-.cook-controls{min-height:48px}
+.recipe{padding:5px}.recipe-head{margin-bottom:4px}.ingredient-tray button{min-height:48px}.ingredient-tray button span{font-size:16px}.ingredient-tray button small{font-size:7px}.heat-controls{min-height:32px}
 .motion-button{min-height:32px}
 .help{display:none}
 .card{padding:17px 25px}

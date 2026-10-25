@@ -119,7 +119,8 @@ function frontSteam(ctx, game, reduced) {
 function wok(ctx, game, reduced) {
   const t=game.time,age=t-game.lastToss;
   const arc=reduced||age<0||age>.72?0:Math.sin(Math.PI*age/.72);
-  const fly=game.tossOutcome==='weak'?0:arc*Math.min(1.35,game.lastLift);
+  const hasRice=game.ingredients.rice;
+  const fly=!hasRice||game.tossOutcome==='weak'?0:arc*Math.min(1.35,game.lastLift);
   const escaping=game.tossOutcome==='spilled'&&age>=0&&age<.9&&!reduced;
   const escapeSide=Math.sign(game.lastLean+game.balance*.55)||1;
   ctx.save();ctx.translate(310,548+fly*19);ctx.scale(1+fly*.04,1+fly*.04);ctx.rotate(game.balance*.28);
@@ -131,8 +132,17 @@ function wok(ctx, game, reduced) {
   const inner=ctx.createRadialGradient(-100,-40,20,0,40,300);inner.addColorStop(0,'#536774');inner.addColorStop(.46,'#263842');inner.addColorStop(1,'#0a1820');ellipse(ctx,0,22,258,87,inner);
   }
   const amount=Math.sqrt(game.rice);
-  const hasFlight=paintedFlight.complete&&paintedFlight.naturalWidth;
-  if (paintedRice.complete && paintedRice.naturalWidth) {
+  const hasFlight=hasRice&&game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth;
+  if (game.ingredients.egg) {
+    const egg=ctx.createRadialGradient(-48,3,4,0,27,170);egg.addColorStop(0,'#ffe996');egg.addColorStop(.65,'#efb644');egg.addColorStop(1,'#a9612f');
+    ellipse(ctx,-25,24,117,38,egg,-.07);
+    for(let i=0;i<12;i++){const x=-115+i*18,y=18+Math.sin(i*2.4)*14;ellipse(ctx,x,y,17,6,i%3?'#ffe7a4':'#f1c15b',i*.43);}
+  }
+  if (!hasRice && game.ingredients.veg) for(let i=0;i<28;i++) {
+    const x=-125+(i*47)%255,y=10+(i*29)%46;
+    ellipse(ctx,x,y,i%3?8:11,i%3?4:6,i%3===0?'#76a853':i%3===1?'#f0bd51':'#d8734d',i*.51);
+  }
+  if (hasRice && game.ingredients.veg && paintedRice.complete && paintedRice.naturalWidth) {
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
     ctx.save();
     ctx.translate(escaping?escapeSide*fly*28:0,hasFlight?0:-fly*155);
@@ -140,13 +150,13 @@ function wok(ctx, game, reduced) {
     const baseScale=hasFlight?1-fly*.22:1;
     ctx.drawImage(paintedRice,-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale);
     ctx.restore();
-  } else {
+  } else if (hasRice) {
   const rice=ctx.createRadialGradient(-65,-3,10,0,26,210);rice.addColorStop(0,'#ffe4a9');rice.addColorStop(.5,game.cook>.65?'#eeb574':'#f2cf8e');rice.addColorStop(1,'#b9783e');ellipse(ctx,0,23,193*amount,57*amount,rice);
   ctx.save();ctx.beginPath();ctx.ellipse(0,20,234*amount,70*amount,0,0,7);ctx.clip();
-  for(let i=0;i<230*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/230)*187*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.27+21;const rise=fly*(72+(i%8)*13),side=fly*game.lastLean*(i%7)*12;const color=i%17===0?'#85b65e':i%13===0?'#f17e55':i%11===0?'#fff1b2':i%5===0?'#e2a859':'#fff1c6';ellipse(ctx,x+side,y-rise,5+i%3,2+i%2,color,a*.4);}
+  for(let i=0;i<230*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/230)*187*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.27+21;const rise=fly*(72+(i%8)*13),side=fly*game.lastLean*(i%7)*12;const color=game.ingredients.egg&&i%11===0?'#f8c658':i%5===0?'#e2a859':'#fff1c6';ellipse(ctx,x+side,y-rise,5+i%3,2+i%2,color,a*.4);}
   ctx.restore();
   // Ingredients above the rice are larger and readable at phone size.
-  for(let i=0;i<28*game.rice;i++){const a=i*2.39,r=Math.sqrt((i+.5)/28)*184*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.26+16-fly*(55+i%4*14);if(i%3===0)ellipse(ctx,x,y,10,5,'#f9c94d',a);else if(i%3===1)ellipse(ctx,x,y,7,4,'#e96d4d',a);else{ellipse(ctx,x,y,9,4,'#6eaa5e',a);ellipse(ctx,x+3,y-1,4,2,'#c9df78',a);}}
+  for(let i=0;i<(game.ingredients.veg?28:game.ingredients.egg?12:0)*game.rice;i++){const a=i*2.39,r=Math.sqrt((i+.5)/28)*184*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.26+16-fly*(55+i%4*14);if(i%3===0)ellipse(ctx,x,y,10,5,'#f9c94d',a);else if(i%3===1)ellipse(ctx,x,y,7,4,game.ingredients.veg?'#e96d4d':'#f9d47b',a);else if(game.ingredients.veg){ellipse(ctx,x,y,9,4,'#6eaa5e',a);ellipse(ctx,x+3,y-1,4,2,'#c9df78',a);}}
   }
   if(hasFlight&&fly>.04){
     ctx.save();ctx.globalAlpha=Math.min(1,fly*1.5);
@@ -198,13 +208,29 @@ function seasoningEffect(ctx, game, reduced) {
   ctx.strokeText(label,390,348-rise);ctx.fillText(label,390,348-rise);
   ctx.restore();
 }
+function ingredientEffect(ctx, game, reduced) {
+  const age=game.time-game.lastAddedAt;
+  if(!game.lastAdded||age<0||age>1.1)return;
+  const names={egg:'卵',rice:'ごはん',veg:'具材'};
+  const colors={egg:['#ffe49a','#f5bf4e'],rice:['#fff4cc','#e6cda1'],veg:['#81b861','#e77e51']};
+  ctx.save();
+  if(!reduced) for(let i=0;i<22;i++){
+    const progress=Math.min(1,age/.72),x=550+(350+(i%7-3)*19-550)*progress;
+    const y=270+(535+(i%5)*7-270)*progress-95*Math.sin(Math.PI*progress);
+    ellipse(ctx,x,y,game.lastAdded==='rice'?6:8,game.lastAdded==='egg'?4:3,colors[game.lastAdded][i%2],i*.58);
+  }
+  ctx.textAlign='center';ctx.font='bold 33px sans-serif';ctx.lineWidth=7;ctx.strokeStyle='#322022';ctx.fillStyle='#fff0c3';
+  const label=`${names[game.lastAdded]}を投入！`,rise=reduced?0:Math.min(age,.6)*28;
+  ctx.strokeText(label,390,335-rise);ctx.fillText(label,390,335-rise);
+  ctx.restore();
+}
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;
   const painted = paintedScenes[stage];
   ctx.drawImage(painted.complete && painted.naturalWidth ? painted : background(stage),0,0,W,H);
   const vignette=ctx.createRadialGradient(390,420,170,390,420,610);vignette.addColorStop(0,'#0000');vignette.addColorStop(1,'#090a16a8');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   atmosphere(ctx,game,reduced);worktop(ctx);
-  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);seasoningEffect(ctx,game,reduced);
+  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);
 }
 
 export function drawDish(ctx, game) {
@@ -222,7 +248,7 @@ export function drawDish(ctx, game) {
   ellipse(ctx, w / 2, 179, 220, 58, '#334b51');
   ellipse(ctx, w / 2, 171, 209, 53, '#f8e8c3');
   const amount = look.portion;
-  if (paintedRice.complete && paintedRice.naturalWidth) {
+  if (game.ingredients.egg && game.ingredients.veg && paintedRice.complete && paintedRice.naturalWidth) {
     ctx.save();
     ctx.filter = `saturate(${Math.max(.2, 1 - look.unmixed * .65 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
     ctx.drawImage(paintedRice, 320 - 197 * amount, 103, 394 * amount, 132 * amount);
@@ -239,13 +265,13 @@ export function drawDish(ctx, game) {
     const angle = i * 2.399, radius = Math.sqrt((i + .5) / Math.max(1, count));
     const x = 320 + Math.cos(angle) * radius * 183 * amount;
     const y = 162 + Math.sin(angle) * radius * 48 * amount;
-    const color = i % 19 === 0 ? '#77a45c' : i % 17 === 0 ? '#ef7650' : i % 11 === 0 ? '#f9ca5a' : i % 5 === 0 ? '#f2bc74' : '#fff0ba';
+    const color = game.ingredients.veg && i % 19 === 0 ? '#77a45c' : game.ingredients.veg && i % 17 === 0 ? '#ef7650' : game.ingredients.egg && i % 11 === 0 ? '#f9ca5a' : i % 5 === 0 ? '#f2bc74' : '#fff0ba';
     ellipse(ctx, x, y, 6 + i % 3, 2.2 + i % 2, color, angle * .22);
   }
-  for (let i = 0; i < 24 * amount * amount; i++) {
+  for (let i = 0; i < (game.ingredients.veg ? 24 : game.ingredients.egg ? 9 : 0) * amount * amount; i++) {
     const angle = i * 2.399, radius = Math.sqrt((i + .5) / 24);
     const x = 320 + Math.cos(angle) * radius * 160 * amount, y = 158 + Math.sin(angle) * radius * 36 * amount;
-    ellipse(ctx, x, y, i % 3 ? 8 : 10, i % 3 ? 3 : 5, i % 3 === 0 ? '#75a856' : i % 3 === 1 ? '#f1bf54' : '#e8754a', angle);
+    ellipse(ctx, x, y, i % 3 ? 8 : 10, i % 3 ? 3 : 5, !game.ingredients.veg ? '#f1bf54' : i % 3 === 0 ? '#75a856' : i % 3 === 1 ? '#f1bf54' : '#e8754a', angle);
   }
   ctx.restore();
   }
@@ -261,12 +287,12 @@ export function drawDish(ctx, game) {
     }
     ctx.globalAlpha = 1;
   }
-  for (let i = 0; i < look.mixedIngredients; i++) {
+  for (let i = 0; i < (game.ingredients.veg ? look.mixedIngredients : 0); i++) {
     const x = 320 + Math.cos(i * 2.399) * Math.sqrt((i + .5) / 25) * 165 * amount;
     const y = 160 + Math.sin(i * 2.399) * Math.sqrt((i + .5) / 25) * 39 * amount;
     ellipse(ctx, x, y, i % 3 ? 7 : 10, i % 3 ? 3 : 4, i % 3 === 0 ? '#75aa58' : i % 3 === 1 ? '#ffca62' : '#e88356', i * .53);
   }
-  for (let i = 0; i < look.scatteredIngredients; i++) {
+  for (let i = 0; i < (game.ingredients.veg ? look.scatteredIngredients : 0); i++) {
     const x = 346 + (i % 5) * 23 * amount, y = 145 + Math.floor(i / 5) * 12 * amount;
     ellipse(ctx, x, y, i % 3 ? 10 : 13, i % 3 ? 4 : 6, i % 3 === 0 ? '#75a754' : i % 3 === 1 ? '#f4bf48' : '#dd7347', i * .37);
   }
