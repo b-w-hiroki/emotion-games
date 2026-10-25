@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battlePose, interactionFeedback, outcomePose, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, interactionFeedback, outcomePose, timingWindow } from '../fishing-battle/visual.js';
 
 test('warning fills and the real opening window drains on the battle clock', () => {
   const state = createBattle('aji');
@@ -77,4 +77,21 @@ test('catch and escape carry the fish in opposite directions before the result',
   assert.equal(outcomePose(pose, 'caught', 1).alpha, 1);
   assert.equal(outcomePose(pose, 'escaped', 1).alpha, 0);
   assert.deepEqual(outcomePose(pose, null, .5), { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, scale: 1, alpha: 1 });
+});
+
+test('camera follows held input, fish run and opposite outcomes while reduced motion stays still', () => {
+  const state = createBattle('aji');
+  const pose = battlePose(state, 'calm', 0);
+  const idle = battleCamera(state, 'calm', pose);
+  const held = battleCamera(state, 'calm', pose, { pull: 110 });
+  const running = battleCamera(state, 'rage', pose);
+  assert.ok(held.y > idle.y && held.zoom > idle.zoom);
+  assert.ok(running.x < idle.x && running.y > idle.y);
+  state.outcome = 'caught';
+  const caught = battleCamera(state, 'calm', pose, { outcomeProgress: 1 });
+  assert.ok(caught.y < idle.y && caught.zoom > 1);
+  state.outcome = 'escaped';
+  const escaped = battleCamera(state, 'calm', pose, { outcomeProgress: 1 });
+  assert.ok(escaped.x < caught.x && escaped.zoom < 1);
+  assert.deepEqual(battleCamera(state, 'calm', pose, { outcomeProgress: 1, reduced: true }), { x: 0, y: 0, zoom: 1 });
 });

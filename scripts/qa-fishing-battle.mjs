@@ -22,7 +22,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   let browser;
   try { browser = await engine.launch({ headless: true }); }
   catch (error) { if (requested !== 'all') throw error; console.log(`${name}: unavailable (${error.message.split('\n')[0]})`); continue; }
-  for (const [width, height] of [[390, 844], [360, 640], [375, 667], [320, 568]]) {
+  for (const [width, height] of [[390, 844], [360, 640], [375, 667], [320, 568], [844, 390]]) {
     const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -30,6 +30,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.goto(url);
     await page.waitForTimeout(150);
     await page.screenshot({ path: `${out}/${name}-${width}x${height}.png`, fullPage: true });
+    if (width === 844) {
+      const board = await page.locator('.board').boundingBox();
+      if (board.width < 650 || board.height !== 390) throw new Error(`${name}: landscape scene did not expand`);
+      const before = await page.locator('.board').evaluate(el => Number(el.style.getPropertyValue('--camera-y').replace('px', '')));
+      const dial = await page.locator('#reel').boundingBox();
+      await page.mouse.move(dial.x + dial.width / 2, dial.y + dial.height / 2);
+      await page.mouse.down(); await page.mouse.move(dial.x + dial.width / 2, dial.y + dial.height / 2 + 70, { steps: 5 });
+      await page.waitForTimeout(120);
+      const after = await page.locator('.board').evaluate(el => Number(el.style.getPropertyValue('--camera-y').replace('px', '')));
+      if (!(after > before)) throw new Error(`${name}: held input did not move the camera`);
+      await page.screenshot({ path: `${out}/${name}-landscape-pull.png` });
+      await page.mouse.up();
+      await page.locator('#fish').selectOption('aji');
+    }
     if (!await page.locator('#dangerLabel').textContent().then(t => t === '逃走危険')) throw new Error(`${name} ${width}: danger meter has no visible meaning`);
     if (!await page.locator('#danger').getAttribute('aria-valuenow')) throw new Error(`${name} ${width}: danger meter has no accessible value`);
     const reel = page.locator('#reel');
@@ -116,6 +130,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await quiet.goto(url);
   await quiet.locator('#mute').click();
   await quiet.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
+  const stillCamera = await quiet.locator('.board').evaluate(el => [el.style.getPropertyValue('--camera-x'), el.style.getPropertyValue('--camera-y'), el.style.getPropertyValue('--camera-zoom')]);
+  if (stillCamera.join(',') !== '0.00px,0.00px,1.0000') throw new Error(`${name}: reduced motion moved the camera (${stillCamera})`);
   if (!await quiet.locator('#cue').isVisible() || await quiet.locator('#mute').getAttribute('aria-pressed') !== 'true') throw new Error(`${name}: warning lost with reduced motion and sound off`);
   await quiet.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
   if (!await quiet.locator('#cue').isVisible()) throw new Error(`${name}: opening lost with reduced motion and sound off`);
