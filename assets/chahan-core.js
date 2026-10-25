@@ -23,6 +23,16 @@ export function windForecast(game) {
   return { state, direction, force, cue };
 }
 
+export function balanceReadiness(game) {
+  const lean = Math.max(-1.45, Math.min(1.45, game.balance));
+  const severity = Math.abs(lean);
+  const state = !game.ingredients.rice || severity < .42 ? 'steady' : severity < .78 ? 'leaning' : 'danger';
+  const side = lean > 0 ? '右' : '左';
+  const counter = lean > 0 ? '左' : '右';
+  const cue = state === 'steady' ? '鍋のバランス' : state === 'danger' ? `${side}へこぼれる！ ${counter}へ戻す` : `${side}へ偏る・${counter}へ戻す`;
+  return { state, cue, drift: Math.round(lean * 66) };
+}
+
 export function createGame() {
   return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
 }

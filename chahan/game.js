@@ -1,4 +1,4 @@
-import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, plate, result } from '../assets/chahan-core.js';
+import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, plate, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
@@ -85,6 +85,9 @@ function updateHud() {
   gustCue.dataset.state = gust.state;
   if (gustCue.textContent !== gust.cue) gustCue.textContent = gust.cue;
   $('balanceNeedle').style.left = `${50 + clamp(game.balance, -1, 1) * 45}%`;
+  const balance = balanceReadiness(game);
+  $('balanceTrack').dataset.state = balance.state;
+  if ($('balanceStatus').textContent !== balance.cue) $('balanceStatus').textContent = balance.cue;
   const cook = cookMeter(game);
   $('riceBar').style.width = `${game.rice * 100}%`; $('cookBar').style.width = `${cook.fill}%`; $('cookTrack').dataset.state = cook.state; $('cookStatus').textContent = cook.label; $('mixBar').style.width = `${game.mix * 100}%`;
   $('heatLabel').textContent = `火力 ${Math.round(game.heat * 100)}%`; $('heatControl').value = Math.round(game.heat * 100); $('heatControl').style.setProperty('--heat', `${Math.round(game.heat * 100)}%`); $('tip').textContent = game.message;
