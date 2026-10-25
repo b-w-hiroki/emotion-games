@@ -100,3 +100,25 @@ test('Kienaide choice and missed memory events preserve only controlled values',
  assert.ok(!JSON.stringify(events).includes('private@example.com'));
  assert.ok(!JSON.stringify(events).includes('private note'));
 });
+test('Kienaide memory and relationship moments are counted only during a consented play',()=>{
+ const {window}=boot();
+ const send=(name,payload={})=>window.emotionTrack(name,{game_id:'kienaide',...payload});
+ send('companion_warmth',{oxygen_gain:6});
+ send('shelter_discovered',{});
+ send('miracle_triggered',{});
+ send('game_start');
+ send('memory_collected',{memory_id:'scarf',count:1,input:'touch',email:'private@example.com'});
+ send('memory_collected',{memory_id:'private@example.com',count:2});
+ send('memory_collected',{memory_id:'table',count:0});
+ send('shelter_discovered',{chapter:2});
+ send('companion_warmth',{oxygen_gain:6,flame:40});
+ send('miracle_triggered',{memories:3,lowest_flame:18});
+ window.emotionTrack('companion_warmth',{game_id:'chahan'});
+ send('game_complete',{ending_id:'dawn'});
+ send('miracle_triggered');
+ const events=Array.from(window.dataLayer,args=>Array.from(args)).filter(args=>args[0]==='event');
+ assert.deepEqual(events.map(args=>args[1]),['game_start','memory_collected','shelter_discovered','companion_warmth','miracle_triggered','game_complete']);
+ assert.deepEqual({...events[1][2]},{game_id:'kienaide',memory_id:'scarf',count:1});
+ for(const event of events.slice(2,5))assert.deepEqual({...event[2]},{game_id:'kienaide'});
+ assert.ok(!JSON.stringify(events).includes('private@example.com'));
+});

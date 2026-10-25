@@ -64,12 +64,26 @@ try{
  await page.evaluate(()=>window.emotionTrack('finale_window',{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8,flame:82}));
  const finale=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&x[1]==='finale_window').map(x=>x[2]));
  assert.deepEqual(finale.at(-1),{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8});
+ await page.locator('#journey-menu-open').click();
+ assert.ok(await page.locator('#journey-menu').isVisible(),'pause the real play before checking synthetic event filtering');
+ const priorChoiceCount=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&['decision_selected','memory_missed','memory_collected','shelter_discovered','companion_warmth','miracle_triggered'].includes(x[1])).length);
  await page.evaluate(()=>{
   window.emotionTrack('decision_selected',{game_id:'kienaide',kind:'hearth',choice:'feed',flame:75});
   window.emotionTrack('memory_missed',{game_id:'kienaide',memory_id:'scarf',count:0,notes:'private'});
+  window.emotionTrack('memory_collected',{game_id:'kienaide',memory_id:'table',count:1,notes:'private'});
+  window.emotionTrack('shelter_discovered',{game_id:'kienaide',chapter:2});
+  window.emotionTrack('companion_warmth',{game_id:'kienaide',oxygen_gain:6});
+  window.emotionTrack('miracle_triggered',{game_id:'kienaide',lowest_flame:18});
  });
- const choices=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&['decision_selected','memory_missed'].includes(x[1])).map(x=>({name:x[1],params:x[2]})));
- assert.deepEqual(choices,[{name:'decision_selected',params:{game_id:'kienaide',kind:'hearth',choice:'feed'}},{name:'memory_missed',params:{game_id:'kienaide',memory_id:'scarf',count:0}}]);
+ const choices=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&['decision_selected','memory_missed','memory_collected','shelter_discovered','companion_warmth','miracle_triggered'].includes(x[1])).map(x=>({name:x[1],params:x[2]})));
+ assert.deepEqual(choices.slice(priorChoiceCount),[
+  {name:'decision_selected',params:{game_id:'kienaide',kind:'hearth',choice:'feed'}},
+  {name:'memory_missed',params:{game_id:'kienaide',memory_id:'scarf',count:0}},
+  {name:'memory_collected',params:{game_id:'kienaide',memory_id:'table',count:1}},
+  {name:'shelter_discovered',params:{game_id:'kienaide'}},
+  {name:'companion_warmth',params:{game_id:'kienaide'}},
+  {name:'miracle_triggered',params:{game_id:'kienaide'}}
+ ]);
  await page.goto(origin+'chahan/');await page.locator('#start').click();
  assert.ok(await page.evaluate(()=>window.dataLayer.some(x=>x[0]==='event'&&x[1]==='game_start'&&x[2].game_id==='chahan')));
  await page.goto(origin+'fishing-battle/');await page.locator('#reel').click();
