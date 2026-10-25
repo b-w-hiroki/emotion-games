@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
@@ -89,6 +89,30 @@ test('filling choice rewards different timing and stays in the finished meal', (
   assert.ok(result(earlyPork).score > result(latePork).score);
   assert.equal(addIngredient(createGame(), 'veg', 'invalid'), false);
 });
+test('filling continues cooking with heat and safe tosses after selection', () => {
+  const make = (kind, heat) => {
+    const g = createGame(); g.phase = 'playing'; g.heat = heat;
+    addIngredient(g, 'egg'); addIngredient(g, 'rice'); g.mix = .3; g.cook = kind === 'pork' ? .24 : .52;
+    addIngredient(g, 'veg', kind); return g;
+  };
+  const scallion = make('scallion', .5), cold = make('scallion', 0);
+  for (let i = 0; i < 240; i++) { advance(scallion, { steer: 0, heat: 0 }, .05); advance(cold, { steer: 0, heat: 0 }, .05); }
+  assert.equal(fillingReadiness(scallion).state, 'ready');
+  assert.equal(fillingReadiness(cold).state, 'raw');
+  assert.ok(fillingReadiness(scallion).quality > fillingReadiness(cold).quality);
+  const beforeToss = fillingReadiness(scallion).quality;
+  for (let i = 0; i < 2; i++) { scallion.time += .5; assert.equal(toss(scallion, { lift: .7, lean: 0 }), true); }
+  assert.equal(scallion.fillingTosses, 2);
+  assert.ok(fillingReadiness(scallion).quality > beforeToss + .1);
+  const scorched = make('scallion', 1);
+  for (let i = 0; i < 500; i++) advance(scorched, { steer: 0, heat: 0 }, .05);
+  assert.equal(fillingReadiness(scorched).state, 'burnt');
+  assert.match(result({ ...scorched, mix: 1, seasoning: 1, eggCook: .48, cook: .86 }).comment, /ねぎを炒めすぎた/);
+  const pork = make('pork', .8);
+  for (let i = 0; i < 300; i++) advance(pork, { steer: 0, heat: 0 }, .05);
+  assert.equal(fillingReadiness(pork).state, 'ready');
+  assert.match(fillingReadiness(pork).cue, /香ばしい/);
+});
 
 test('airborne rice layer keeps transparent space around edible detail', async () => {
   const { data, info } = await sharp('chahan/art/flight-v3.webp').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -130,7 +154,7 @@ test('heat, stirring and rice all contribute to the final meal', () => {
   assert.ok(result(good).score > result(unmixed).score);
 });
 test('ending feedback points to the actual cooking shortfall', () => {
-  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1 });
+  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1, fillingCook: .3, fillingTosses: 2 });
   assert.match(result(good).comment, /一粒ずつ/);
   assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);

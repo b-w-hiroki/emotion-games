@@ -34,14 +34,14 @@ try {
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
-            const base = createGame(); Object.assign(base, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, filling: 'scallion', ingredients: { egg: true, rice: true, veg: true } });
-            return Object.fromEntries(Object.entries({ ideal: base, unmixed: { ...base, mix: 0, seasoning: 0, seasoned: false }, raw: { ...base, cook: .12 }, burnt: { ...base, cook: 1.5 }, spilled: { ...base, rice: .2 }, noEgg: { ...base, ingredients: { ...base.ingredients, egg: false } }, noVeg: { ...base, ingredients: { ...base.ingredients, veg: false } }, pork: { ...base, filling: 'pork' } }).map(([label, game]) => {
+            const base = createGame(); Object.assign(base, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, filling: 'scallion', fillingCook: .3, ingredients: { egg: true, rice: true, veg: true } });
+            return Object.fromEntries(Object.entries({ ideal: base, unmixed: { ...base, mix: 0, seasoning: 0, seasoned: false }, raw: { ...base, cook: .12 }, burnt: { ...base, cook: 1.5 }, spilled: { ...base, rice: .2 }, noEgg: { ...base, ingredients: { ...base.ingredients, egg: false } }, noVeg: { ...base, ingredients: { ...base.ingredients, veg: false } }, pork: { ...base, filling: 'pork', fillingCook: .7 }, scallionBurnt: { ...base, fillingCook: .8 }, porkRaw: { ...base, filling: 'pork', fillingCook: 0 } }).map(([label, game]) => {
               const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 280;
               drawDish(canvas.getContext('2d'), game);
               return [label, canvas.toDataURL('image/png').split(',')[1]];
             }));
           });
-          assert.equal(new Set(Object.values(dishes)).size, 8, `${name}: each cooking outcome and filling has a distinct plated image`);
+          assert.equal(new Set(Object.values(dishes)).size, 10, `${name}: each cooking outcome and filling state has a distinct plated image`);
           for (const [label, png] of Object.entries(dishes)) fs.writeFileSync(path.join(output, `dish-${label}-${name}.png`), Buffer.from(png, 'base64'));
         }
         assert.equal(await page.locator('.ingredient-tray button').count(), 4, `${name} ${width}: four ingredients are selectable`);
@@ -76,7 +76,7 @@ try {
         assert.equal(await page.locator('.ingredient-tray').isVisible(), false, `${name}: choice replaces the tray without adding clutter`);
         await page.screenshot({ path: path.join(output, `filling-choice-${name}-${width}.png`) });
         await page.locator('[data-filling="scallion"]').click();
-        assert.equal(await page.locator('#fillingLabel').textContent(), 'ねぎ', `${name}: selected filling persists in the tray`);
+        assert.match(await page.locator('#fillingLabel').textContent(), /^ねぎ/, `${name}: selected filling persists in the tray`);
         assert.equal(await page.locator('#recipeCount').textContent(), '3 / 4', `${name}: ingredient progress advances`);
         await page.screenshot({ path: path.join(output, `veg-${name}-${width}.png`) });
         if (width === 390) {
@@ -147,11 +147,14 @@ try {
           await timingPage.keyboard.press('Digit3');
           assert.equal(await timingPage.locator('#fillingChoices').isVisible(), true, `${name}: keyboard opens filling choices`);
           await timingPage.keyboard.press('Digit2');
-          assert.equal(await timingPage.locator('#fillingLabel').textContent(), '焼豚', `${name}: pork selection is visible`);
+          assert.match(await timingPage.locator('#fillingLabel').textContent(), /^焼豚/, `${name}: pork selection is visible`);
           assert.match(await timingPage.locator('#seasonHint').textContent(), /まず米と具を混ぜる/, `${name}: seasoning starts with a mixing cue`);
           await timingPage.locator('#heatControl').evaluate(el => { el.value = '80'; el.dispatchEvent(new Event('input', { bubbles: true })); });
           for (let i = 0; i < 6; i++) { await timingPage.keyboard.press('Space'); await timingPage.clock.runFor(500); }
           await timingPage.clock.runFor(13_000);
+          assert.equal(await timingPage.locator('#recipe').getAttribute('data-filling-state'), 'ready', `${name}: heat makes pork fragrant during play`);
+          assert.match(await timingPage.locator('#fillingLabel').textContent(), /香ばしい/, `${name}: the filling tile explains the current doneness`);
+          await timingPage.screenshot({ path: path.join(output, `pork-ready-${name}-${width}.png`) });
           assert.equal(await timingPage.locator('#seasoning').evaluate(el => el.classList.contains('ready')), true, `${name}: well mixed, hot rice exposes seasoning window`);
           assert.equal(await timingPage.locator('#seasonHint').textContent(), '今が入れどき！');
           await timingPage.locator('#seasoning').click();
