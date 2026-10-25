@@ -143,9 +143,10 @@ function wok(ctx, game, reduced) {
   const inner=ctx.createRadialGradient(-100,-40,20,0,40,300);inner.addColorStop(0,'#536774');inner.addColorStop(.46,'#263842');inner.addColorStop(1,'#0a1820');ellipse(ctx,0,22,258,87,inner);
   }
   const amount=Math.sqrt(game.rice);
-  const riceSprite=game.ingredients.veg?paintedRice:game.ingredients.egg?paintedRiceEgg:null;
-  const flightSprite=game.ingredients.veg?paintedFlight:game.ingredients.egg?paintedFlightEgg:null;
-  const hasFlight=hasRice&&flightSprite?.complete&&flightSprite.naturalWidth;
+  const mixed=Math.max(0,Math.min(1,game.mix));
+  const hasEggRice=game.ingredients.egg&&paintedRiceEgg.complete&&paintedRiceEgg.naturalWidth;
+  const hasColoredRice=game.ingredients.veg&&paintedRice.complete&&paintedRice.naturalWidth;
+  const hasFlight=hasRice&&(game.ingredients.egg?paintedFlightEgg.complete&&paintedFlightEgg.naturalWidth:paintedFlight.complete&&paintedFlight.naturalWidth);
   if (game.ingredients.egg) {
     const cooked=Math.max(0,Math.min(1,game.eggCook)),raw=Math.max(0,1-cooked/.28),burnt=Math.max(0,Math.min(1,(cooked-.72)/.35));
     if(cooked<.28){
@@ -167,14 +168,19 @@ function wok(ctx, game, reduced) {
     const x=-125+(i*47)%255,y=10+(i*29)%46;
     fillingPiece(ctx,x,y,game.filling,i,.9,game.fillingCook);
   }
-  if (hasRice && riceSprite?.complete && riceSprite.naturalWidth) {
+  if (hasRice && (hasEggRice || hasColoredRice)) {
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
     ctx.save();
     ctx.translate(escaping?escapeSide*fly*28:0,hasFlight?0:-fly*155);
     ctx.rotate(-game.lastLean*fly*.14);
     const baseScale=hasFlight?1-fly*.22:1;
-    ctx.drawImage(riceSprite,-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale);
-    if(game.ingredients.veg)for(let i=0;i<26*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
+    const riceArgs=[-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale];
+    if(hasEggRice)ctx.drawImage(paintedRiceEgg,...riceArgs);
+    if(hasColoredRice){ctx.save();ctx.globalAlpha=hasEggRice?mixed:1;ctx.drawImage(paintedRice,...riceArgs);ctx.restore();}
+    if(game.ingredients.veg){
+      for(let i=0;i<26*mixed*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
+      for(let i=0;i<20*(1-mixed)*game.rice;i++){const x=77+(i%5)*12,y=12+Math.floor(i/5)*9;fillingPiece(ctx,x*amount*baseScale,y*amount*baseScale,game.filling,i,amount*baseScale,game.fillingCook);}
+    }
     ctx.restore();
   } else if (hasRice) {
   const rice=ctx.createRadialGradient(-65,-3,10,0,26,210);rice.addColorStop(0,'#ffe4a9');rice.addColorStop(.5,game.cook>.65?'#eeb574':'#f2cf8e');rice.addColorStop(1,'#b9783e');ellipse(ctx,0,23,193*amount,57*amount,rice);
@@ -188,15 +194,16 @@ function wok(ctx, game, reduced) {
     ctx.save();ctx.globalAlpha=Math.min(1,fly*1.5);
     ctx.translate(game.lastLean*fly*76+(escaping?escapeSide*fly*50:0),-fly*145);
     ctx.rotate(-game.lastLean*fly*.12);
-    ctx.drawImage(flightSprite,-242,-105,484,160);ctx.restore();
+    if(game.ingredients.egg&&paintedFlightEgg.complete&&paintedFlightEgg.naturalWidth)ctx.drawImage(paintedFlightEgg,-242,-105,484,160);
+    if(game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth){ctx.globalAlpha*=game.ingredients.egg?mixed:1;ctx.drawImage(paintedFlight,-242,-105,484,160);}ctx.restore();
   }
-  if(fly>.03) for(let i=0;i<(hasFlight?20:56)*game.rice;i++){const a=i*2.399,x=Math.cos(a)*178*amount+game.lastLean*fly*65,y=Math.sin(a)*34*amount+12-fly*(135+i%8*15);ellipse(ctx,x,y,5+i%3,2+i%2,i%7===0?'#89bd68':i%5===0?'#f6c15d':'#fff0bb',a*.4);}
+  if(fly>.03) for(let i=0;i<(hasFlight?20:56)*game.rice;i++){const a=i*2.399,x=Math.cos(a)*178*amount+game.lastLean*fly*65,y=Math.sin(a)*34*amount+12-fly*(135+i%8*15);ellipse(ctx,x,y,5+i%3,2+i%2,game.ingredients.veg&&i%7===0?'#89bd68':i%5===0?'#f6c15d':'#fff0bb',a*.4);}
   if(escaping) {
     const progress=Math.min(1,age/.9), count=Math.max(8,Math.round(game.tossSpill*180));
     for(let i=0;i<count;i++){
       const spread=(i%7-3)*18, x=escapeSide*(160+progress*(150+i%5*19))+spread;
       const y=-70-progress*(95+i%6*17)+progress*progress*(190+i%4*25);
-      ellipse(ctx,x,y,5+i%3,2+i%2,i%9===0?'#8bb667':i%7===0?'#e67d4c':'#fff0bb',i*.43);
+      ellipse(ctx,x,y,5+i%3,2+i%2,game.ingredients.veg&&i%9===0?'#8bb667':game.ingredients.veg&&i%7===0?'#e67d4c':'#fff0bb',i*.43);
     }
   }
   if(game.seasoned){ctx.strokeStyle=rgba('#834623',.25+game.seasoning*.2);ctx.lineWidth=8;for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(-75+i*47,16,24,.2,2.3);ctx.stroke();}}
@@ -274,11 +281,12 @@ export function drawDish(ctx, game) {
   ellipse(ctx, w / 2, 179, 220, 58, '#334b51');
   ellipse(ctx, w / 2, 171, 209, 53, '#f8e8c3');
   const amount = look.portion;
-  const riceSprite = game.ingredients.veg ? paintedRice : paintedRiceEgg;
-  if (game.ingredients.egg && riceSprite.complete && riceSprite.naturalWidth) {
+  if (game.ingredients.egg && paintedRiceEgg.complete && paintedRiceEgg.naturalWidth) {
     ctx.save();
-    ctx.filter = `saturate(${Math.max(.2, 1 - look.unmixed * .65 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
-    ctx.drawImage(riceSprite, 320 - 197 * amount, 103, 394 * amount, 132 * amount);
+    ctx.filter = `saturate(${Math.max(.2, 1 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
+    const riceArgs=[320 - 197 * amount, 103, 394 * amount, 132 * amount];
+    ctx.drawImage(paintedRiceEgg,...riceArgs);
+    if(game.ingredients.veg&&paintedRice.complete&&paintedRice.naturalWidth){ctx.globalAlpha=1-look.unmixed;ctx.drawImage(paintedRice,...riceArgs);}
     ctx.restore();
   } else {
   const mound = ctx.createRadialGradient(280, 139, 10, 320, 174, 196);
@@ -320,6 +328,7 @@ export function drawDish(ctx, game) {
     fillingPiece(ctx,x,y,game.filling,i,amount,game.fillingCook);
   }
   for (let i = 0; i < (game.ingredients.veg ? look.scatteredIngredients : 0); i++) {
+    if(i===0)ellipse(ctx,391,169,64*amount,18*amount,rgba('#3c3023',look.unmixed*.25));
     const x = 346 + (i % 5) * 23 * amount, y = 145 + Math.floor(i / 5) * 12 * amount;
     fillingPiece(ctx,x,y,game.filling,i,amount,game.fillingCook);
   }

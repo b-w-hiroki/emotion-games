@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { chromium, webkit } from 'playwright';
+import sharp from 'sharp';
 
 const root = path.resolve('dist'), output = path.resolve('artifacts/chahan');
 fs.mkdirSync(output, { recursive: true });
@@ -43,6 +44,18 @@ try {
           });
           assert.equal(new Set(Object.values(dishes)).size, 10, `${name}: each cooking outcome and filling state has a distinct plated image`);
           for (const [label, png] of Object.entries(dishes)) fs.writeFileSync(path.join(output, `dish-${label}-${name}.png`), Buffer.from(png, 'base64'));
+          const greenSides = async png => {
+            const { data, info } = await sharp(Buffer.from(png, 'base64')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+            const sides = { left: 0, right: 0 };
+            for (let y = 118; y < 209; y++) for (let x = 128; x < 515; x++) {
+              const i = (y * info.width + x) * 4, [r, g, b] = data.subarray(i, i + 3);
+              if (g > r * 1.12 && g > b * 1.08 && g > 75) sides[x < 320 ? 'left' : 'right']++;
+            }
+            return sides;
+          };
+          const mixedGreens = await greenSides(dishes.ideal), separateGreens = await greenSides(dishes.unmixed);
+          assert.ok(mixedGreens.left > 400 && mixedGreens.right > 400, `${name}: mixed filling reaches both sides of the plate`);
+          assert.ok(separateGreens.left < 200 && separateGreens.right > 400, `${name}: unmixed filling stays in a visible pile`);
         }
         assert.equal(await page.locator('.ingredient-tray button').count(), 4, `${name} ${width}: four ingredients are selectable`);
         assert.equal(await page.locator('#motionButton').isVisible(), false, `${name} ${width}: sensor setup stays in settings`);
