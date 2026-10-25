@@ -26,8 +26,7 @@
 
 探索レポートで `game_id=kienaide` に絞り、`event_name` ごとのイベント数を `game_start` → `chapter_reached`（`chapter` 別）→ `finale_warning` → `finale_gust` → `finale_silence` → `finale_window` → `game_complete` の順に確認する。各周回で同じ到達点は1回だけ発火する。これは段階別の件数であり、匿名の周回IDを送らないため、複数周回をまたいだ個別プレイの厳密な転換率ではない。
 
-GA4 探索「作品別KPI」の「004の選択と記憶」タブは、`game_id=kienaide` と `decision_selected|memory_missed` のイベント名で絞り、選択場面・選択肢・記憶ID別のイベント数を表示する。実データが入るまでは表が空のままになる。取り逃し数は記憶が消えた回数であり、個人別の失敗率ではない。
-記憶の取得種類と、火の子・風よけ・奇跡の発生件数も `game_id=kienaide` と各イベント名で絞って確認できる。既存の探索タブは選択と取り逃しに限定されるため、表示対象に加える場合はGA4側のフィルターを更新する。
+GA4 探索「作品別KPI」の「004の選択・記憶・絆」タブは、`game_id=kienaide` と `decision_selected|memory_collected|memory_missed|shelter_discovered|companion_warmth|miracle_triggered` のイベント名で絞り、選択場面・選択肢・記憶ID・関係性の発見別にイベント数を表示する。実データが入るまでは表が空のままになる。取り逃し数は記憶が消えた回数であり、個人別の失敗率ではない。
 
 『チャーハン大回転』固有: 完了時の `rice_pct`、`mix_pct`、`doneness_pct`、`seasoning_pct`。『AINAN釣りバトル』固有: `fish_id`、`opening_hits`、`bad_reels`。釣りは最初の操作を開始と数え、放置だけの表示はプレイ回数に含めない。
 
