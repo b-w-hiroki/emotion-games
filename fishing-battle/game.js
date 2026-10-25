@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battlePose, interactionFeedback, outcomePose, timingWindow } from './visual.js';
+import { battleCamera, battlePose, interactionFeedback, outcomePose, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -18,6 +18,7 @@ let started = false;
 let actions = { openingHits: 0, badReels: 0 }, actionUntil = 0;
 let previousCue = 'calm';
 let openingLatePlayed = false;
+const camera = { x: 0, y: 0, zoom: 1 };
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
 const sound = new BattleAudio(() => new (window.AudioContext || window.webkitAudioContext)());
 sound.setMuted(muted);
@@ -121,7 +122,7 @@ document.addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.repeat || !$('result').hidden || ['SELECT', 'BUTTON'].includes(document.activeElement?.tagName)) return;
   e.preventDefault(); reel();
 });
-function restart() { sound.reset(); setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -138,13 +139,27 @@ function draw(now) {
   if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
     canvas.width = Math.round(rect.width * dpr); canvas.height = Math.round(rect.height * dpr);
   }
-  ctx.setTransform(canvas.width / 390, 0, 0, canvas.height / 844, 0, 0);
-  ctx.clearRect(0, 0, 390, 844);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const dt = last ? Math.min((now - last) / 1000, .05) : 0;
   const t = now / 1000, cue = battleCue(state), rage = cue === 'rage';
   const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash });
   const finaleProgress = state.outcome && outcomeAt !== null ? Math.min(1, Math.max(0, (now - outcomeAt) / (state.outcome === 'caught' ? 650 : 500))) : 0;
   const fish = outcomePose(pose, state.outcome, finaleProgress);
+  const target = battleCamera(state, cue, pose, { pull: pointerPull, outcomeProgress: finaleProgress, reduced: reduced.matches });
+  const blend = reduced.matches ? 1 : 1 - Math.exp(-dt * 9);
+  camera.x += (target.x - camera.x) * blend;
+  camera.y += (target.y - camera.y) * blend;
+  camera.zoom += (target.zoom - camera.zoom) * blend;
+  const scale = canvas.height / 844;
+  const wide = rect.width > rect.height;
+  const originX = (canvas.width - 390 * scale) / 2 - (wide ? Math.min(55 * dpr, canvas.width * .08) : 0);
+  ctx.setTransform(scale * camera.zoom, 0, 0, scale * camera.zoom,
+    originX + scale * (195 * (1 - camera.zoom) + camera.x),
+    scale * (422 * (1 - camera.zoom) + camera.y));
+  board.style.setProperty('--camera-x', `${(camera.x * scale / dpr).toFixed(2)}px`);
+  board.style.setProperty('--camera-y', `${(camera.y * scale / dpr).toFixed(2)}px`);
+  board.style.setProperty('--camera-zoom', camera.zoom.toFixed(4));
   const { fishX, fishY } = pose;
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
