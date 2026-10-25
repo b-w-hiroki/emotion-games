@@ -55,6 +55,29 @@ try {
           const rawLight = await riceLight(cookingFrames.raw), readyLight = await riceLight(cookingFrames.ready), burntLight = await riceLight(cookingFrames.burnt);
           assert.ok(rawLight > readyLight + 2 && readyLight > burntLight + 5, `${name}: rice visibly moves from pale to golden to charred (${rawLight.toFixed(1)}, ${readyLight.toFixed(1)}, ${burntLight.toFixed(1)})`);
           for (const [label, png] of Object.entries(cookingFrames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(png, 'base64'));
+          const tossFrames = await page.evaluate(async () => {
+            const [{ createGame }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            const game = createGame(); Object.assign(game, { phase: 'playing', time: 2, cook: .86, rice: 1, mix: 1, lastLift: .7, tossOutcome: 'caught', ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3 });
+            const canvas = document.createElement('canvas'); canvas.width = 780; canvas.height = 900;
+            return Object.fromEntries([['rest', -10], ['airborne', 1.64], ['landed', 1.2]].map(([label, lastToss]) => {
+              game.lastToss = lastToss; drawScene(canvas.getContext('2d'), game);
+              return [label, canvas.toDataURL('image/png').split(',')[1]];
+            }));
+          });
+          const ricePixels = async (png, top, bottom) => {
+            const { data, info } = await sharp(Buffer.from(png, 'base64')).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+            let pixels = 0;
+            for (let y = top; y < bottom; y++) for (let x = 170; x < 480; x++) {
+              const i = (y * info.width + x) * 3;
+              if (data[i] > 150 && data[i + 1] > 95 && data[i + 2] < 175 && data[i + 1] < data[i] * .96) pixels++;
+            }
+            return pixels;
+          };
+          const panRest = await ricePixels(tossFrames.rest, 535, 610), panAir = await ricePixels(tossFrames.airborne, 535, 610), panLanded = await ricePixels(tossFrames.landed, 535, 610);
+          for (const [label, png] of Object.entries(tossFrames)) fs.writeFileSync(path.join(output, `toss-continuity-${label}-${name}.png`), Buffer.from(png, 'base64'));
+          assert.ok(panAir < panRest * .5 && panLanded > panRest * .9, `${name}: rice leaves and returns to the pan (${panRest}, ${panAir}, ${panLanded})`);
+          const flightRest = await ricePixels(tossFrames.rest, 365, 485), flightAir = await ricePixels(tossFrames.airborne, 365, 485);
+          assert.ok(flightAir > flightRest + 500, `${name}: the same rice appears in the air (${flightRest}, ${flightAir})`);
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
@@ -162,9 +185,10 @@ try {
           assert.equal(await page.locator('#combo').textContent(), '0', `${name}: weak pull breaks combo`);
           assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)), riceBeforeWeak, `${name}: weak pull retains rice`);
           await page.screenshot({ path: path.join(output, `weak-${name}-${width}.png`) });
-          await page.waitForTimeout(500);
+          await page.waitForTimeout(850);
           await page.mouse.move(x - 65, y); await page.mouse.down(); await page.mouse.move(x + 65, y + 110, { steps: 8 }); await page.mouse.up();
-          assert.ok(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)) < riceBeforeWeak, `${name}: diagonal pull visibly costs rice`);
+          const riceAfterDiagonal = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
+          assert.ok(riceAfterDiagonal < riceBeforeWeak, `${name}: diagonal pull visibly costs rice (${riceBeforeWeak}, ${riceAfterDiagonal})`);
           await page.waitForTimeout(160);
           await page.screenshot({ path: path.join(output, `spilled-${name}-${width}.png`) });
           assert.match(await page.locator('#seasonHint').textContent(), /米と具|火を通す/, `${name}: seasoning gives an actionable timing cue`);
@@ -245,6 +269,10 @@ try {
           await timingPage.screenshot({ path: path.join(output, `sky-gust-active-${name}-${width}.png`) });
           assert.equal(await timingPage.locator('#place').textContent(), '空中キッチン', `${name}: all locations precede plating`);
           assert.equal(await timingPage.locator('#seasoning').isEnabled(), true, `${name}: plating opens in the final location`);
+          if (await timingPage.locator('#cookTrack').getAttribute('data-state') === 'raw') {
+            await timingPage.locator('#heatControl').evaluate(el => { el.value = '100'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+            for (let i = 0; i < 40 && await timingPage.locator('#cookTrack').getAttribute('data-state') === 'raw'; i++) await timingPage.clock.runFor(250);
+          }
           assert.equal(await timingPage.locator('#cookTrack').getAttribute('data-state'), 'ready', `${name}: the gauge highlights the actual plating window`);
           assert.equal(await timingPage.locator('#cookStatus').textContent(), '盛りどき');
           await timingPage.screenshot({ path: path.join(output, `plating-ready-${name}-${width}.png`) });
