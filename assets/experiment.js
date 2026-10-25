@@ -18,7 +18,7 @@ try{const raw=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(raw))
 let current=null,attempt=0;
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(records.slice(-300)))}catch(_){}};
 function exportJson(){
- const blob=new Blob([JSON.stringify({version:2,mode:'opt-in-local-only',exported_at:new Date().toISOString(),records},null,2)],{type:'application/json'});
+ const blob=new Blob([JSON.stringify({version:3,mode:'opt-in-local-only',exported_at:new Date().toISOString(),records},null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='emotion-games-study.json';link.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -62,17 +62,39 @@ document.querySelector('#stage')?.addEventListener('pointerdown',()=>{if(current
 document.querySelector('#action')?.addEventListener('pointerdown',()=>{if(current)current.inputs++});
 document.querySelector('#action')?.addEventListener('click',()=>{if(current&&current.inputs===0)current.inputs++});
 const prior=window.emotionTrack;
+const memoryIds=new Set(['scarf','table','promise']);
+const detailForCurrent=()=>game==='kienaide'&&current&&!current.completed?records.find(e=>e.id===current.id)?.journey_detail:null;
 window.emotionTrack=(name,payload)=>{
  if(typeof prior==='function')prior(name,payload);
  if(name==='game_start'){
   attempt++;
   current={id:Date.now()+'-'+Math.round(Math.random()*1e7),slug:game,target:document.querySelector('.game-heading .label span')?.textContent?.replace('/','').trim()||null,start:performance.now(),inputs:0,completed:false,answers:{}};
-  records.push({id:current.id,schema_version:2,game_id:game,target:current.target,mode:'blind',attempt_index:attempt,duration_ms:null,inputs:0,ending_id:null,score:null,completed:false,answered:false,felt:null,understood:null,intensity:null,replay_reason:null,...(game==='kienaide'?{route:null}:{})});
+  records.push({id:current.id,schema_version:3,game_id:game,target:current.target,mode:'blind',attempt_index:attempt,duration_ms:null,inputs:0,ending_id:null,score:null,completed:false,answered:false,felt:null,understood:null,intensity:null,replay_reason:null,...(game==='kienaide'?{route:null,journey_detail:{decisions:[],collected:[],missed:[],shelter:false,companion:false,miracle:false,window:null}}:{})});
   records=records.slice(-300);save();
   panel.hidden=true;panel.querySelector('summary').textContent='今回の体験を記録（任意・4問）';panel.querySelector('details').open=false;panel.querySelector('#study-saved').textContent='';panel.querySelectorAll('button').forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false')});
  }
  if(name==='route_selected'&&game==='kienaide'&&current&&!current.completed&&['shortcut','rest'].includes(payload?.route)){
   const entry=records.find(e=>e.id===current.id);if(entry){entry.route=payload.route;save()}
+ }
+ const detail=detailForCurrent();
+ if(detail){
+  let changed=false;
+  if(name==='decision_selected'&&((payload?.kind==='hearth'&&['feed','breathe'].includes(payload.choice))||(payload?.kind==='bridge'&&['spark','shelter'].includes(payload.choice)))&&!detail.decisions.some(x=>x.kind===payload.kind)){
+   detail.decisions.push({kind:payload.kind,choice:payload.choice});changed=true;
+  }
+  if(name==='memory_collected'&&memoryIds.has(payload?.memory_id)&&!detail.collected.includes(payload.memory_id)){
+   detail.collected.push(payload.memory_id);changed=true;
+  }
+  if(name==='memory_missed'&&memoryIds.has(payload?.memory_id)&&!detail.missed.includes(payload.memory_id)){
+   detail.missed.push(payload.memory_id);changed=true;
+  }
+  if(name==='shelter_discovered'&&!detail.shelter){detail.shelter=true;changed=true}
+  if(name==='companion_warmth'&&!detail.companion){detail.companion=true;changed=true}
+  if(name==='miracle_triggered'&&!detail.miracle){detail.miracle=true;changed=true}
+  if(name==='finale_window'&&detail.window===null&&['bright','faint','dark'].includes(payload?.level)){
+   detail.window={level:payload.level,gust_shield:Number.isFinite(payload.gust_shield)?payload.gust_shield:null,silence_release:Number.isFinite(payload.silence_release)?payload.silence_release:null};changed=true;
+  }
+  if(changed)save();
  }
  if(name==='game_complete'&&current&&!current.completed){
   current.completed=true;

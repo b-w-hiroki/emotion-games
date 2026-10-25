@@ -34,6 +34,19 @@ for(const [game,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){
   const mechanic=done.filter(x=>Number.isFinite(Number(x.memories)));
   const flames=done.map(x=>Number(x.lowest_flame)).filter(Number.isFinite);
   console.log('  flagship loop: mean memories='+fmt(mechanic.length?mechanic.reduce((a,x)=>a+Number(x.memories),0)/mechanic.length:NaN)+'/3 / miracle='+ratio(mechanic.filter(x=>x.miracle===true).length,mechanic.length)+' / mean lowest flame='+fmt(flames.length?flames.reduce((a,n)=>a+n,0)/flames.length:NaN));
+  const observed=items.filter(x=>x.journey_detail&&Array.isArray(x.journey_detail.decisions)&&Array.isArray(x.journey_detail.collected)&&Array.isArray(x.journey_detail.missed));
+  if(observed.length){
+   const details=observed.map(x=>x.journey_detail),tally=id=>details.filter(x=>x[id]===true).length;
+   const memoryTally=key=>['scarf','table','promise'].map(id=>id+' '+details.filter(x=>x[key].includes(id)).length).join('、');
+   const choices=kind=>listCounts(counts(details.flatMap(x=>x.decisions).filter(x=>x.kind===kind),'choice'));
+   const windows=details.map(x=>x.window).filter(x=>x&&['bright','faint','dark'].includes(x.level));
+   const meanWindow=key=>{const values=windows.map(x=>x[key]).filter(Number.isFinite);return fmt(values.length?values.reduce((a,n)=>a+n,0)/values.length:NaN)};
+   console.log('  journey observations: '+observed.length+'/'+items.length+' attempts (older exports excluded)');
+   console.log('  decisions: hearth '+choices('hearth')+' / bridge '+choices('bridge'));
+   console.log('  memory collected: '+memoryTally('collected')+' / missed: '+memoryTally('missed'));
+   console.log('  relationship moments: companion '+tally('companion')+' / shelter '+tally('shelter')+' / miracle '+tally('miracle'));
+   console.log('  window reply: '+listCounts(counts(windows,'level'))+' / mean gust shield='+meanWindow('gust_shield')+'s / mean silence release='+meanWindow('silence_release')+'s');
+  }
   for(const route of ['shortcut','rest']){
    const chosen=items.filter(x=>x.route===route),finished=chosen.filter(x=>x.completed===true);
    console.log('  '+route+': choices='+chosen.length+' completed='+finished.length+' ('+ratio(finished.length,chosen.length)+') / endings: '+listCounts(counts(finished,'ending_id'))+' / miracle='+ratio(finished.filter(x=>x.miracle===true).length,finished.length));

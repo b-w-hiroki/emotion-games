@@ -52,7 +52,7 @@ test('legacy titles still use their existing engine',()=>{
 });
 test('research mode is explicit opt-in and exportable',()=>{
  const study=fs.readFileSync('assets/experiment.js','utf8');
- for(const needle of ["query.get('study')!=='1'","emotion-games-study-v1","version:2","study-export","duration_ms","entry.inputs=current.inputs","window.emotionTrack","answered:false","study-clear","attempt_index","understood","intensity","replay_reason","lowest_flame","route_selected","entry.route=payload.route"])assert.ok(study.includes(needle),needle);
+ for(const needle of ["query.get('study')!=='1'","emotion-games-study-v1","version:3","study-export","duration_ms","entry.inputs=current.inputs","window.emotionTrack","answered:false","study-clear","attempt_index","understood","intensity","replay_reason","lowest_flame","route_selected","entry.route=payload.route"])assert.ok(study.includes(needle),needle);
  for(const file of ['assets/pilots.js','assets/experiment.js']){
   const r=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
  }
@@ -60,9 +60,9 @@ test('research mode is explicit opt-in and exportable',()=>{
 test('study analyzer reports comprehension, intensity, replay intent and flagship loop',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'emotion-study-'));
  const file=path.join(dir,'study.json');
- fs.writeFileSync(file,JSON.stringify({version:2,records:[{game_id:'kienaide',completed:true,duration_ms:90000,inputs:12,attempt_index:1,felt:'切なさ',understood:'immediate',intensity:4,replay_reason:'other-ending',ending_id:'dawn',memories:3,miracle:true,lowest_flame:18,route:'rest'},{game_id:'kienaide',completed:false,attempt_index:2,route:'shortcut'},{game_id:'kienaide',completed:true,attempt_index:3,ending_id:'wish',memories:2,miracle:false,lowest_flame:31}]}));
+ fs.writeFileSync(file,JSON.stringify({version:3,records:[{game_id:'kienaide',completed:true,duration_ms:90000,inputs:12,attempt_index:1,felt:'切なさ',understood:'immediate',intensity:4,replay_reason:'other-ending',ending_id:'dawn',memories:3,miracle:true,lowest_flame:18,route:'rest',journey_detail:{decisions:[{kind:'hearth',choice:'feed'},{kind:'bridge',choice:'shelter'}],collected:['scarf','table','promise'],missed:[],shelter:true,companion:true,miracle:true,window:{level:'bright',gust_shield:3.2,silence_release:.8}}},{game_id:'kienaide',completed:false,attempt_index:2,route:'shortcut'},{game_id:'kienaide',completed:true,attempt_index:3,ending_id:'wish',memories:2,miracle:false,lowest_flame:31}]}));
  const result=spawnSync(process.execPath,['scripts/analyze-study.mjs',file],{encoding:'utf8'});
  fs.rmSync(dir,{recursive:true,force:true});
  assert.equal(result.status,0,result.stderr);
- for(const text of ['full survey=1/2','immediate=100.0%','mean 4.0/5','other-ending 1','mean memories=2.5/3','miracle=50.0%','rest: choices=1 completed=1 (100.0%)','shortcut: choices=1 completed=0 (0.0%)','route unrecorded=1'])assert.ok(result.stdout.includes(text),text+'\n'+result.stdout);
+ for(const text of ['full survey=1/2','immediate=100.0%','mean 4.0/5','other-ending 1','mean memories=2.5/3','miracle=50.0%','journey observations: 1/3 attempts','hearth feed 1','bridge shelter 1','scarf 1','companion 1 / shelter 1 / miracle 1','window reply: bright 1 / mean gust shield=3.2s / mean silence release=0.8s','rest: choices=1 completed=1 (100.0%)','shortcut: choices=1 completed=0 (0.0%)','route unrecorded=1'])assert.ok(result.stdout.includes(text),text+'\n'+result.stdout);
 });
