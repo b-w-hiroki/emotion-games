@@ -90,11 +90,14 @@ test('held-line sound follows tension and stops on release, mute and retry', () 
 test('the final opening cue respects gesture unlock and mute', () => {
   const r = rig();
   assert.equal(r.audio.play('openingLate'), false);
+  assert.equal(r.audio.play('cleanOpening'), false);
   r.audio.unlock();
   assert.equal(r.audio.play('openingLate'), true);
-  assert.equal(r.voices.length, 1);
+  assert.equal(r.audio.play('cleanOpening'), true);
+  assert.equal(r.voices.length, 2);
   r.audio.setMuted(true);
   assert.equal(r.audio.play('openingLate'), false);
+  assert.equal(r.audio.play('cleanOpening'), false);
 });
 
 test('reel sound follows swipe impulse without changing phase cue volume', () => {
