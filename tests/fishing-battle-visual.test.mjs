@@ -87,6 +87,12 @@ test('camera follows held input, fish run and opposite outcomes while reduced mo
   const running = battleCamera(state, 'rage', pose);
   assert.ok(held.y > idle.y && held.zoom > idle.zoom);
   assert.ok(running.x < idle.x && running.y > idle.y);
+  const rightFish = battleCamera(state, 'calm', { ...pose, fishX: pose.fishX + 25 });
+  assert.ok(rightFish.x < idle.x);
+  const good = battleCamera(state, 'calm', pose, { impact: 'goodReel', flash: .35 });
+  const bad = battleCamera(state, 'calm', pose, { impact: 'badReel', flash: .35 });
+  assert.ok(good.y < idle.y && good.zoom > idle.zoom);
+  assert.ok(bad.y > idle.y && bad.zoom < idle.zoom);
   state.outcome = 'caught';
   const caught = battleCamera(state, 'calm', pose, { outcomeProgress: 1 });
   assert.ok(caught.y < idle.y && caught.zoom > 1);

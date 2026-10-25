@@ -69,16 +69,19 @@ export function outcomePose(pose, outcome, progress) {
 
 // Camera offsets are in the 390x844 scene. Keep them small enough that the
 // hooked fish and the fisher remain visible on the narrowest supported phone.
-export function battleCamera(state, cue, pose, { pull = 0, outcomeProgress = 0, reduced = false } = {}) {
+export function battleCamera(state, cue, pose, { pull = 0, outcomeProgress = 0, impact = '', flash = 0, reduced = false } = {}) {
   if (reduced) return { x: 0, y: 0, zoom: 1 };
   const held = clamp(pull / 110, 0, 1);
   const run = cue === 'rage' ? 1 : cue === 'warning' ? .45 : 0;
-  const fishOffset = clamp((pose.fishX - 176) * .12, -7, 7);
+  // Move against the fish's displacement to keep the line's target in view.
+  const fishOffset = clamp((176 - pose.fishX) * .26, -12, 12);
+  const hit = clamp(flash / .35, 0, 1);
+  const reelKick = impact === 'goodReel' || impact === 'goodOpening' ? -1 : impact === 'badReel' ? 1 : 0;
   if (state.outcome === 'caught') return { x: -10 * outcomeProgress, y: -17 * outcomeProgress, zoom: 1 + .055 * outcomeProgress };
   if (state.outcome === 'escaped') return { x: -20 * outcomeProgress, y: 3 * outcomeProgress, zoom: 1 - .035 * outcomeProgress };
   return {
-    x: clamp(fishOffset - run * 9 + held * 5, -16, 12),
-    y: run * 5 + held * 8,
-    zoom: 1 + held * .018 - run * .012,
+    x: clamp(fishOffset - run * 9 + held * 5 + reelKick * hit * 7, -21, 18),
+    y: run * 5 + held * 8 + reelKick * hit * 6,
+    zoom: 1 + held * .018 - run * .012 - reelKick * hit * .025,
   };
 }
