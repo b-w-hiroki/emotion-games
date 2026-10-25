@@ -1,4 +1,4 @@
-import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
+import { STAGES, createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, addSeasoning, seasoningReadiness, result } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
@@ -82,7 +82,10 @@ function updateHud() {
   const seasoning = seasoningReadiness(game), seasonButton = $('seasoning'), seasonHint = $('seasonHint');
   for (const button of document.querySelectorAll('[data-ingredient]')) button.disabled = game.phase !== 'playing' || game.ingredients[button.dataset.ingredient];
   const next = !game.ingredients.egg ? 'egg' : !game.ingredients.rice ? 'rice' : !game.ingredients.veg ? 'veg' : 'seasoning';
-  for (const button of document.querySelectorAll('.ingredient-tray button')) button.classList.toggle('suggested', button.id === next || button.dataset.ingredient === next);
+  for (const button of document.querySelectorAll('.ingredient-tray button')) button.classList.toggle('suggested', (button.id === next || button.dataset.ingredient === next) && (next !== 'rice' || game.eggCook >= .28));
+  const egg = eggReadiness(game);
+  $('eggStatus').textContent = !game.ingredients.egg ? 'ふわっと' : game.ingredients.rice ? '投入済み' : game.eggCook < .28 ? `火入れ ${Math.round(game.eggCook / .48 * 100)}%` : egg.ready ? 'ふんわり！' : '焦げ注意';
+  $('recipe').dataset.eggState = !game.ingredients.egg || game.ingredients.rice ? '' : game.eggCook < .28 ? 'raw' : egg.ready ? 'ready' : 'burnt';
   $('recipeCount').textContent = `${Number(game.ingredients.egg) + Number(game.ingredients.rice) + Number(game.ingredients.veg) + Number(game.seasoned)} / 4`;
   $('recipeHint').textContent = ingredientCue(game);
   seasonButton.disabled = game.seasoned || game.phase !== 'playing' || !game.ingredients.rice || !game.ingredients.veg;

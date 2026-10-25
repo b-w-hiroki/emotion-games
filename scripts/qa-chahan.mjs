@@ -56,6 +56,12 @@ try {
         await page.locator('[data-ingredient="egg"]').click();
         assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width), 0), 0, `${name}: egg alone does not fill the wok with rice`);
         await page.screenshot({ path: path.join(output, `egg-${name}-${width}.png`) });
+        assert.match(await page.locator('#recipeHint').textContent(), /卵を炒めよう/, `${name}: raw egg needs heat`);
+        await page.waitForTimeout(3100);
+        assert.equal(await page.locator('#eggStatus').textContent(), 'ふんわり！', `${name}: the egg reaches its heat-driven window`);
+        assert.match(await page.locator('#recipeHint').textContent(), /ごはんを入れどき/, `${name}: the cue follows egg doneness`);
+        assert.equal(await page.locator('[data-ingredient="rice"]').evaluate(el => el.classList.contains('suggested')), true, `${name}: rice is highlighted when the egg is ready`);
+        await page.screenshot({ path: path.join(output, `egg-ready-${name}-${width}.png`) });
         await page.locator('[data-ingredient="rice"]').click();
         assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)), 100, `${name}: rice is added only when selected`);
         await page.screenshot({ path: path.join(output, `rice-${name}-${width}.png`) });
@@ -145,6 +151,17 @@ try {
           await timingPage.clock.runFor(250);
           await timingPage.screenshot({ path: path.join(output, `seasoning-timed-${name}-${width}.png`) });
           await timingPage.close();
+          const eggPage = await browser.newPage({ viewport: { width, height } });
+          await eggPage.clock.install();
+          await eggPage.goto(url);
+          await eggPage.locator('#start').click();
+          await eggPage.locator('#heatControl').evaluate(el => { el.value = '100'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+          await eggPage.locator('[data-ingredient="egg"]').click();
+          await eggPage.clock.runFor(3600);
+          assert.equal(await eggPage.locator('#eggStatus').textContent(), '焦げ注意', `${name}: high heat visibly overcooks the egg`);
+          assert.match(await eggPage.locator('#recipeHint').textContent(), /焦げそう/, `${name}: rice cue becomes urgent after the egg window`);
+          await eggPage.screenshot({ path: path.join(output, `egg-burnt-${name}-${width}.png`) });
+          await eggPage.close();
         }
         if (width === 360) {
           const resultPage = await browser.newPage({ viewport: { width, height } });

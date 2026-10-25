@@ -5,12 +5,19 @@ export const STAGES = [
 ];
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, eggAt: -10, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, seasoning: 0, seasoned: false, seasonedAt: -10, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
+}
+
+export function eggReadiness(game) {
+  const cook = Math.max(0, game.eggCook);
+  const quality = Math.max(0, 1 - Math.abs(cook - .48) / .52);
+  const cue = cook < .28 ? '卵を炒めよう・火力で進む' : cook <= .72 ? '卵がふんわり！ ごはんを入れどき' : '卵が焦げそう！ ごはんを急いで';
+  return { quality, cue, ready: cook >= .28 && cook <= .72 };
 }
 
 export function ingredientCue(game) {
   if (!game.ingredients.egg) return 'まず卵を入れて、少し火を通そう';
-  if (!game.ingredients.rice) return game.time - game.eggAt < 2 ? '卵を少し炒めてからごはんを入れる' : 'ごはんを入れよう';
+  if (!game.ingredients.rice) return eggReadiness(game).cue;
   if (!game.ingredients.veg) return game.mix < .1 ? '鍋を返してから具材を入れよう' : '具材を入れよう';
   return game.seasoned ? '鍋を返して仕上げよう' : seasoningReadiness(game).cue;
 }
@@ -21,14 +28,13 @@ export function addIngredient(game, kind) {
   game.lastAdded = kind;
   game.lastAddedAt = game.time;
   if (kind === 'egg') {
-    game.eggAt = game.time;
     game.prep += game.ingredients.rice ? .04 : .25;
     game.message = '卵がジュッ！ 少し炒めてからごはんを入れよう。';
   } else if (kind === 'rice') {
     game.rice = 1;
-    const eggTime = game.time - game.eggAt;
-    game.prep += game.ingredients.egg ? .1 + .25 * Math.max(0, 1 - Math.abs(eggTime - 3) / 5) : .03;
-    game.message = 'ごはんを投入！ 手前へ引いて、卵と混ぜよう。';
+    const egg = eggReadiness(game);
+    game.prep += game.ingredients.egg ? .1 + .25 * egg.quality : .03;
+    game.message = game.ingredients.egg && egg.quality < .35 ? game.eggCook > .72 ? '卵が少し焦げた。ごはんを返して香りを整えよう。' : '卵はまだ生っぽい。火を通しながら返そう。' : 'ごはんを投入！ 手前へ引いて、卵と混ぜよう。';
   } else {
     game.prep += game.ingredients.rice ? game.mix >= .1 ? .25 : .15 : .04;
     game.message = game.ingredients.rice ? '具材を投入！ 鍋を振って全体に散らそう。' : '具材を入れた。ごはんも忘れずに。';
@@ -49,6 +55,12 @@ export function advance(game, input, dt) {
   game.rice = Math.max(0, game.rice - spill);
   game.lost += spill;
   game.heat = Math.max(0, Math.min(1, game.heat + input.heat * dt * 0.75));
+  if (game.ingredients.egg && !game.ingredients.rice) {
+    const previous = game.eggCook;
+    game.eggCook = Math.min(1.5, game.eggCook + dt * game.heat * stage.heat * .3);
+    if (previous < .28 && game.eggCook >= .28) game.message = '卵がふんわり！ 今ごはんを入れよう。';
+    if (previous <= .72 && game.eggCook > .72) game.message = '卵が焦げそう！ ごはんを急いで。';
+  }
   if (game.ingredients.rice) game.cook += dt * game.heat * stage.heat * 0.03;
   if (game.stageTime >= stage.seconds) {
     game.stageTime -= stage.seconds;
@@ -120,6 +132,8 @@ export function result(game) {
   const comment = !game.ingredients.rice ? 'ごはんが入らないまま完成。次は卵を炒めて、ごはんを入れよう。'
     : game.rice <= 0.25 ? '米が鍋から飛んでいった。次は少しやさしく、まっすぐ返そう。'
     : !game.ingredients.egg ? '卵がないと香りと食感が惜しい。最初に卵を入れてみよう。'
+    : game.eggCook > .9 ? '卵を炒めすぎた。ふんわりしたらごはんを入れよう。'
+    : game.eggCook < .14 ? '卵がまだ生っぽい。少し火を通してからごはんを入れよう。'
     : !game.ingredients.veg ? '具材がまだ入っていない。ごはんを返したら加えよう。'
     : game.mix < 0.35 ? '具と米がまだ別々。鍋を小さく、何度か返してみよう。'
     : doneness < 0.45 ? '芯が少し残った。火力を見ながら、もうひと炒め。'
