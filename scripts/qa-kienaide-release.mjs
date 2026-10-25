@@ -24,6 +24,17 @@ async function noShortTail(page,selector){
  assert.ok(lines.length<=1||lines.at(-1).length>5,selector+' has a short tail: '+JSON.stringify(lines));
 }
 try{
+ for(const size of [{width:390,height:844},{width:360,height:640}]){
+  const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001');
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);
+  assert.match(await page.locator('#open-collection').innerText(),/結末図鑑 0\/5 · 旅 0回/);
+  await page.locator('#open-collection').click();assert.match(await page.locator('#journey-progress').innerText(),/旅 0回 · 結末まで 0回/);
+  await page.screenshot({path:path.join(out,`${engine}-${size.width}-journey-progress.png`)});
+  await page.locator('#close-collection').click();await page.locator('#play').click();
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:1,completed:0});
+  await page.reload();assert.match(await page.locator('#open-collection').innerText(),/旅 1回/);
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS personal journey count, reload and collection',size.width);
+ }
  {
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/hero-body.*',async route=>{await gate;await route.continue()});
@@ -278,6 +289,7 @@ try{
   const {ctx,page,errors}=await open({width:390,height:844},'?qa=1&seed=2&speed=12&mem=3&vital=breath&utm_source=qa');
   await page.locator('#play').click();const box=await page.locator('#action').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:15000});await page.mouse.up();
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:1,completed:1});
   assert.equal(await page.locator('#distance-panel').isVisible(),false,'the journey sign must not cover ending actions');
   await noShortTail(page,'#curtain-description');
   await page.screenshot({path:path.join(out,`${engine}-ending-share-uncovered.png`)});
