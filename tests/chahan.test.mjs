@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
@@ -11,7 +11,7 @@ test('three locations alter the balance disturbance', () => {
   assert.ok(snapshots[2] < snapshots[0] - .1);
 });
 test('swipe strength and direction determine a good toss', () => {
-  const g = createGame(); g.phase = 'playing'; g.time = 1;
+  const g = createGame(); g.phase = 'playing'; addIngredient(g, 'egg'); addIngredient(g, 'rice'); g.time = 1;
   assert.equal(toss(g, { lift: .7, lean: 0 }), true); assert.ok(g.mix > 0); assert.equal(g.rice, 1);
   assert.equal(g.tossOutcome, 'caught'); assert.equal(g.tossSpill, 0);
   assert.equal(toss(g, { lift: .7, lean: 0 }), null, 'cooldown prevents button mashing');
@@ -25,6 +25,25 @@ test('swipe strength and direction determine a good toss', () => {
   assert.equal(g.rice, riceAfterSpill, 'a weak pull leaves rice in the wok');
 });
 
+test('the wok begins empty and ingredient order changes preparation quality', () => {
+  const g = createGame(); g.phase = 'playing';
+  assert.equal(g.rice, 0); assert.deepEqual(g.ingredients, { egg: false, rice: false, veg: false });
+  assert.equal(toss(g, { lift: .7, lean: 0 }), null, 'an empty wok cannot toss rice');
+  assert.match(ingredientCue(g), /卵/);
+  assert.equal(addIngredient(g, 'egg'), true); assert.equal(addIngredient(g, 'egg'), false);
+  assert.equal(g.rice, 0, 'egg does not magically create fried rice');
+  g.time = 3; assert.equal(addIngredient(g, 'rice'), true); assert.equal(g.rice, 1);
+  assert.match(ingredientCue(g), /具材/);
+  assert.equal(addSeasoning(g), null, 'seasoning waits for ingredients');
+  g.mix = .2; assert.equal(addIngredient(g, 'veg'), true); assert.equal(addIngredient(g, 'veg'), false);
+  const goodPrep = g.prep;
+  const backwards = createGame(); backwards.phase = 'playing';
+  addIngredient(backwards, 'veg'); addIngredient(backwards, 'rice'); addIngredient(backwards, 'egg');
+  assert.ok(goodPrep > backwards.prep + .4, 'order and egg timing affect the result');
+  for (let i = 0; i < 1080; i++) advance(backwards, { steer: 0, heat: 0 }, .05);
+  assert.equal(backwards.phase, 'finished', 'an incomplete recipe still reaches a result');
+});
+
 test('airborne rice layer keeps transparent space around edible detail', async () => {
   const { data, info } = await sharp('chahan/art/flight-v3.webp').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   assert.equal(info.width, 780); assert.equal(info.height, 260);
@@ -34,9 +53,9 @@ test('airborne rice layer keeps transparent space around edible detail', async (
   assert.ok(food > info.width * info.height * .15, 'the sprite must contain visible rice');
 });
 test('seasoning has one chance and scores timing plus mixing', () => {
-  const ideal = createGame(); ideal.phase = 'playing'; ideal.cook = .56; ideal.mix = .5;
+  const ideal = createGame(); ideal.phase = 'playing'; addIngredient(ideal, 'egg'); addIngredient(ideal, 'rice'); addIngredient(ideal, 'veg'); ideal.cook = .56; ideal.mix = .5;
   assert.equal(addSeasoning(ideal), 1); assert.equal(addSeasoning(ideal), null);
-  const early = createGame(); early.phase = 'playing'; early.cook = .12; early.mix = .1;
+  const early = createGame(); early.phase = 'playing'; addIngredient(early, 'egg'); addIngredient(early, 'rice'); addIngredient(early, 'veg'); early.cook = .12; early.mix = .1;
   assert.ok(addSeasoning(early) < .1);
   assert.ok(result(ideal).score > result(early).score);
   assert.equal(ideal.seasonedAt, 0);
@@ -47,25 +66,25 @@ test('seasoning has one chance and scores timing plus mixing', () => {
 });
 
 test('selected heat stays lit and can cook a meal during the full route', () => {
-  const g = createGame(); g.phase = 'playing';
+  const g = createGame(); g.phase = 'playing'; addIngredient(g, 'rice');
   for (let i = 0; i < 1080; i++) advance(g, { steer: 0, heat: 0 }, .05);
   assert.equal(g.phase, 'finished');
   assert.equal(g.heat, .48, 'the selected fire must not quietly burn out');
   assert.ok(g.cook > .7 && g.cook < .9, 'default heat should cook the rice by the end');
-  const hot = createGame(); hot.phase = 'playing'; hot.heat = 1;
+  const hot = createGame(); hot.phase = 'playing'; addIngredient(hot, 'rice'); hot.heat = 1;
   for (let i = 0; i < 1080; i++) advance(hot, { steer: 0, heat: 0 }, .05);
   assert.ok(hot.cook > 1.35, 'maximum heat can overcook the meal');
   assert.ok(result(g).doneness > result(hot).doneness);
 });
 test('heat, stirring and rice all contribute to the final meal', () => {
-  const good = createGame(); good.mix = 1; good.cook = .86;
+  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); good.mix = 1; good.cook = .86;
   const cold = { ...good, cook: 0 }, spilled = { ...good, rice: .3 }, unmixed = { ...good, mix: 0 };
   assert.ok(result(good).score > result(cold).score);
   assert.ok(result(good).score > result(spilled).score);
   assert.ok(result(good).score > result(unmixed).score);
 });
 test('ending feedback points to the actual cooking shortfall', () => {
-  const good = createGame(); Object.assign(good, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true });
+  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, prep: 1 });
   assert.match(result(good).comment, /一粒ずつ/);
   assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
@@ -73,7 +92,7 @@ test('ending feedback points to the actual cooking shortfall', () => {
   assert.match(result({ ...good, seasoning: 0 }).comment, /香りが惜しい/);
 });
 test('the plated dish reflects mixing, seasoning, doneness and remaining rice', () => {
-  const good = { ...createGame(), rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true };
+  const good = { ...createGame(), rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, ingredients: { egg: true, rice: true, veg: true } };
   const finished = dishAppearance(good);
   assert.equal(finished.portion, 1);
   assert.equal(finished.scatteredIngredients, 0);
