@@ -56,6 +56,11 @@ try{
  assert.ok(events.some(e=>e.name==='game_start'&&e.params.game_id==='micha-dame'));
  assert.ok(events.some(e=>e.name==='game_complete'&&e.params.game_id==='micha-dame'&&e.params.ending_id));
  assert.ok(events.some(e=>e.name==='ending_discovered'&&e.params.found_count===1));
+ await page.evaluate(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+ await page.goto(origin+'kienaide/');await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
+ await page.evaluate(()=>window.emotionTrack('finale_window',{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8,flame:82}));
+ const finale=await page.evaluate(()=>window.dataLayer.filter(x=>x[0]==='event'&&x[1]==='finale_window').map(x=>x[2]));
+ assert.deepEqual(finale.at(-1),{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8});
  await page.goto(origin+'chahan/');await page.locator('#start').click();
  assert.ok(await page.evaluate(()=>window.dataLayer.some(x=>x[0]==='event'&&x[1]==='game_start'&&x[2].game_id==='chahan')));
  await page.goto(origin+'fishing-battle/');await page.locator('#reel').click();

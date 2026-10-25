@@ -7,11 +7,11 @@ const query=new URL(location.href).searchParams;
 if(query.has('qa')||query.get('study')==='1')return;
 const KEY='emotion-analytics-consent-v1';
 const fields={
- game_start:[],game_complete:['ending_id','outcome','score','found_count','memories','miracle','lowest_flame','route','rice_pct','mix_pct','doneness_pct','seasoning_pct','fish_id','opening_hits','bad_reels'],
+ game_start:[],game_complete:['ending_id','outcome','score','found_count','memories','miracle','lowest_flame','route','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','fish_id','opening_hits','bad_reels'],
  ending_discovered:['ending_id','found_count'],game_retry:[],share_tap:['ending_id'],
- route_selected:['route'],memory_collected:['count'],finale_window:['level']
+ route_selected:['route'],memory_collected:['count'],finale_window:['level','gust_shield','silence_release']
 };
-const numeric=new Set(['score','found_count','memories','lowest_flame','rice_pct','mix_pct','doneness_pct','seasoning_pct','opening_hits','bad_reels','count']);
+const numeric=new Set(['score','found_count','memories','lowest_flame','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','opening_hits','bad_reels','count']);
 let consent='';try{consent=localStorage.getItem(KEY)||''}catch(_){}
 let active=false;
 const starts=new Map();

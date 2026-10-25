@@ -7,6 +7,11 @@ const core=readFileSync(new URL('../assets/kienaide-core.js',import.meta.url),'u
 test('finale phases are produced by the core and drive story, sound and analytics',()=>{
  for(const phase of ['approach','gust-warning','gust-active','silence','window-reply'])assert.ok(core.includes("'"+phase+"'"),phase);
  for(const hook of ["e.phase==='gust-warning'","e.phase==='silence'","e.type==='reply'","KA.cues.reply(e.level)","mark('finale_window'"])assert.ok(app.includes(hook),hook);
+ for(const event of ['finale_window','game_complete']){
+  const line=app.split('\n').find(part=>part.includes("mark('"+event+"'"));
+  assert.match(line,/gust_shield:[^,}]+/);
+  assert.match(line,/silence_release:[^,}]+/);
+ }
 });
 test('existing ending flow, saves and accessibility hooks remain',()=>{
  // Gallery IDs and storage keys are the save format: they must never change.

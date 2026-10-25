@@ -47,3 +47,12 @@ test('a completion without a consented start is not counted',()=>{
  window.emotionTrack('ending_discovered',{game_id:'kienaide',ending_id:'dawn',found_count:1});
  assert.equal(window.dataLayer.filter(x=>x[0]==='event').length,0);
 });
+test('Kienaide finale sends shield and release seconds on reply and result without private state',()=>{
+ const {window}=boot();
+ window.emotionTrack('game_start',{game_id:'kienaide'});
+ window.emotionTrack('finale_window',{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8,flame:82,oxygen:43});
+ window.emotionTrack('game_complete',{game_id:'kienaide',ending_id:'dawn',gust_shield:2.7,silence_release:0.8});
+ const events=Array.from(window.dataLayer,args=>Array.from(args)).filter(args=>args[0]==='event');
+ assert.deepEqual({...events[1][2]},{game_id:'kienaide',level:'bright',gust_shield:2.7,silence_release:0.8});
+ assert.deepEqual({...events[2][2]},{game_id:'kienaide',ending_id:'dawn',gust_shield:2.7,silence_release:0.8,duration_ms:0});
+});
