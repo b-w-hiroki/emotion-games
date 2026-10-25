@@ -61,13 +61,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('warning'));
       if (!await page.locator('#hint').textContent().then(t => t.includes('指を止めよう'))) throw new Error(`${name}: warning guidance missing`);
       if (await page.locator('#timingFill').getAttribute('hidden') !== null || !await page.locator('#cueText').textContent().then(t => t.includes('もうすぐ走る'))) throw new Error(`${name}: warning timer and guidance are disconnected`);
+      if (!await page.locator('.controls').evaluate(el => el.classList.contains('is-timed') && el.style.getPropertyValue('--window-color') === '#ffd18a')) throw new Error(`${name}: warning did not reach the reel dial`);
       await page.screenshot({ path: `${out}/${name}-warning.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
       if (!await page.locator('#hint').textContent().then(t => t.includes('スワイプ'))) throw new Error(`${name}: opening guidance missing`);
       if (await page.locator('#timingFill').getAttribute('hidden') !== null) throw new Error(`${name}: opening window has no visible timer`);
+      const openingDial = await page.locator('.controls').evaluate(el => ({ active: el.classList.contains('is-opening'), color: el.style.getPropertyValue('--window-color'), angle: parseFloat(el.style.getPropertyValue('--window-angle')), ring: getComputedStyle(el.querySelector('#reel'), '::after').backgroundImage }));
+      if (!openingDial.active || openingDial.color !== '#a9fff1' || !openingDial.ring.includes('conic-gradient')) throw new Error(`${name}: opening is not visible at the reel (${JSON.stringify(openingDial)})`);
       await page.screenshot({ path: `${out}/${name}-opening.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening') && parseFloat(document.querySelector('#timingFill')?.style.width) <= 35);
+      if (!await page.locator('.controls').evaluate((el, early) => parseFloat(el.style.getPropertyValue('--window-angle')) < early, openingDial.angle)) throw new Error(`${name}: reel ring did not drain with the opening`);
       await page.screenshot({ path: `${out}/${name}-opening-late.png` });
       for (const id of ['aji', 'tai', 'bass', 'buri', 'saba', 'isaki', 'hirame', 'kanpachi', 'kue']) {
         await page.locator('#fish').selectOption(id);

@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, interactionFeedback, outcomePose, timingWindow } from './visual.js';
+import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, timingWindow } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -59,6 +59,12 @@ function syncUI() {
   if ($('cueText').textContent !== cueText) $('cueText').textContent = cueText;
   $('timingFill').hidden = !timing || Boolean(finishing);
   if (timing) $('timingFill').style.width = `${Math.round(timing.fraction * 100)}%`;
+  controls.classList.toggle('is-timed', Boolean(timing) && !finishing);
+  controls.classList.toggle('is-opening', cue === 'opening' && !finishing);
+  if (timing) {
+    controls.style.setProperty('--window-angle', `${Math.round(timing.fraction * 360)}deg`);
+    controls.style.setProperty('--window-color', timing.kind === 'opening' ? '#a9fff1' : '#ffd18a');
+  }
   document.querySelector('.controls').classList.toggle('is-raging', !finishing && cue === 'rage');
   $('rageLabel').hidden = finishing || cue !== 'rage';
   const hint = finishing ? state.outcome === 'caught' ? '水面へ！' : '届かなかった…' : cue === 'rage' ? '暴れが収まるまで待とう' : cue === 'warning' ? '走りそう。指を止めよう' : pointerPull >= 34 ? '離して巻く！' : pointerPull > 8 ? '下へ引いて、離す' : cue === 'opening' ? 'いま、下へスワイプ！' : '下へスワイプして巻く';
@@ -161,12 +167,13 @@ function draw(now) {
   board.style.setProperty('--camera-y', `${(camera.y * scale / dpr).toFixed(2)}px`);
   board.style.setProperty('--camera-zoom', camera.zoom.toFixed(4));
   const { fishX, fishY } = pose;
+  const line = lineShape(fish, cue, pointerPull);
   const waterAlpha = 1 - finaleProgress;
   // AINAN's Battle composition keeps the hooked fish, player, water and line in one scene.
   ctx.strokeStyle = pointerPull > 8 ? rage ? '#ff9568' : '#a9fff1' : rage || cue === 'warning' || impact === 'badReel' ? '#ffba69' : '#e8f8ff';
   ctx.lineWidth = (rage || cue === 'warning' ? 2.3 : 1.5 + pose.pull * .055) + pose.tension * 2;
   ctx.globalAlpha = fish.alpha;
-  ctx.beginPath(); ctx.moveTo(146, 490); ctx.quadraticCurveTo(pose.lineControlX, pose.lineControlY, fish.fishX + 20, fish.fishY + 45); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(line.startX, line.startY); ctx.bezierCurveTo(line.c1x, line.c1y, line.c2x, line.c2y, line.endX, line.endY); ctx.stroke();
   ctx.globalAlpha = waterAlpha;
   ctx.fillStyle = '#00385466';
   ctx.beginPath(); ctx.ellipse(fishX + 66, fishY + 61, 75, 19, -.1, 0, Math.PI * 2); ctx.fill();

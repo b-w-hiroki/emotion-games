@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, interactionFeedback, outcomePose, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, timingWindow } from '../fishing-battle/visual.js';
 
 test('warning fills and the real opening window drains on the battle clock', () => {
   const state = createBattle('aji');
@@ -57,6 +57,17 @@ test('the same fish communicates warning, struggle and opening through the line 
   assert.ok(rage.ringWidth > calm.ringWidth);
   assert.ok(opening.lineControlY > calm.lineControlY && opening.ringWidth < calm.ringWidth);
   assert.ok(battlePose(createBattle('kue'), 'rage', 0).run > rage.run);
+});
+
+test('opening slack is visible in the line and a held pull takes it up', () => {
+  const fish = { fishX: 176, fishY: 305 };
+  const rage = lineShape(fish, 'rage');
+  const opening = lineShape(fish, 'opening');
+  const held = lineShape(fish, 'opening', 90);
+  assert.equal(rage.slack, 0);
+  assert.ok(opening.slack > held.slack && held.slack > rage.slack);
+  assert.ok(opening.c1x < held.c1x && held.c1x < rage.c1x);
+  assert.equal(opening.endX, rage.endX);
 });
 
 test('reduced motion retains state shapes without oscillation or recoil', () => {
