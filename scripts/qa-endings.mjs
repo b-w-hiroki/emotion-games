@@ -95,7 +95,15 @@ async function chooseFork(page,route='rest'){
   await t.page.screenshot({path:'artifacts/screenshots/kienaide-art-scene01-390.png'});
   console.log('PASS: all four illustrated chapter backgrounds loaded in Chromium');
   assert.equal(await t.page.locator('#sound-toggle').getAttribute('aria-pressed'),'true');
-  await t.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:5000});await chooseFork(t.page,'shortcut');
+  // Chapter art loading pauses the game clock; wait for the actual choice or
+  // an unexpected ending instead of assuming five seconds of wall time.
+  const routeState=await t.page.waitForFunction(()=>{
+    if(!document.querySelector('#route-choice')?.hidden)return 'choice';
+    const ending=document.querySelector('#stage')?.dataset.ending;
+    return ending?`ended:${ending}`:false;
+  },null,{timeout:30000}).then(handle=>handle.jsonValue());
+  assert.equal(routeState,'choice','first route must appear before the ending');
+  await chooseFork(t.page,'shortcut');
   await t.page.waitForTimeout(7600);
   await check(t,'風にさらわれた。');
   assert.ok(await t.page.locator('#moment-save').isVisible(),'candle ending must offer image card');
