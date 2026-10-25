@@ -213,7 +213,19 @@ test('catch and escape carry the fish in opposite directions before the result',
   assert.ok(escaped.fishX > pose.fishX && escaped.alpha < 1);
   assert.equal(outcomePose(pose, 'caught', 1).alpha, 1);
   assert.equal(outcomePose(pose, 'escaped', 1).alpha, 0);
-  assert.deepEqual(outcomePose(pose, null, .5), { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, scale: 1, alpha: 1 });
+  assert.deepEqual(outcomePose(pose, null, .5), { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, size: pose.fishSize, scale: 1, alpha: 1 });
+});
+
+test('fish silhouette, water ring and hook point grow together by species', () => {
+  const small = battlePose(createBattle('aji'), 'calm', 0, { reduced: true });
+  const large = battlePose(createBattle('kue'), 'calm', 0, { reduced: true });
+  assert.ok(small.fishSize < 1 && large.fishSize > 1);
+  assert.ok(large.ringWidth > small.ringWidth && large.ringHeight > small.ringHeight);
+  const smallLine = lineShape(outcomePose(small, null, 0), 'calm');
+  const largeLine = lineShape(outcomePose(large, null, 0), 'calm');
+  assert.equal(smallLine.endX, small.fishX + 70 - 50 * small.fishSize);
+  assert.equal(largeLine.endX, large.fishX + 70 - 50 * large.fishSize);
+  assert.ok(largeLine.endX < smallLine.endX);
 });
 
 test('camera follows held input, fish run and opposite outcomes while reduced motion stays still', () => {

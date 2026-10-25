@@ -242,7 +242,7 @@ function draw(now) {
   }
   ctx.globalAlpha = waterAlpha;
   ctx.fillStyle = '#00385466';
-  ctx.beginPath(); ctx.ellipse(fishX + 66, fishY + 61, 75, 19, -.1, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(fishX + 66, fishY + 61, 75 * fish.size, 19 * fish.size, -.1, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = pointerPull > 8 ? rage ? '#ffb28c' : '#b6fff3' : cue === 'opening' ? '#b6fff3' : '#e4faff'; ctx.lineWidth = (cue === 'opening' ? 5 : rage ? 5 : 4) + pose.tension * 2;
   ctx.globalAlpha = waterAlpha * (rage || cue === 'opening' ? .93 : .72);
   ctx.beginPath(); ctx.ellipse(fishX + 60, fishY + 55, pose.ringWidth, pose.ringHeight, -.1, 0, Math.PI * 2); ctx.stroke();
@@ -294,7 +294,7 @@ function draw(now) {
   }
   ctx.globalAlpha = 1;
   ctx.lineCap = 'butt';
-  ctx.save(); ctx.globalAlpha = fish.alpha; ctx.translate(fish.fishX + 70, fish.fishY + 40); ctx.rotate(fish.angle); ctx.scale(fish.scale, fish.scale);
+  ctx.save(); ctx.globalAlpha = fish.alpha; ctx.translate(fish.fishX + 70, fish.fishY + 40); ctx.rotate(fish.angle); ctx.scale(fish.scale * fish.size, fish.scale * fish.size);
   drawImage(`fish_hero_${state.fishId}`, -70, -40, 140, 80); ctx.restore();
   ctx.save(); ctx.translate(fisher.anchorX, fisher.anchorY); ctx.rotate(fisher.angle);
   drawImage('fight-mid', -92, -218, 184, 218); ctx.restore();

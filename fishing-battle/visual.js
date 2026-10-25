@@ -1,6 +1,7 @@
 import { FISH } from './core.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const FISH_VISUAL_SIZE = Object.freeze({ aji: .86, saba: .92, isaki: .94, bass: 1, tai: 1.04, hirame: 1.05, buri: 1.12, kanpachi: 1.16, kue: 1.24 });
 
 // The swipe changes the impact of a reel, never the amount of battle progress.
 export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
@@ -86,7 +87,8 @@ export function phaseAtmosphere(state, cue) {
 // takes up some slack before release, without changing AINAN's battle rules.
 export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
   const slack = Math.max(0, (cue === 'opening' ? 48 : cue === 'calm' ? 14 : cue === 'warning' ? 5 : 0) - pull * .22);
-  const endX = fish.fishX + 20, endY = fish.fishY + 45;
+  const size = fish.size ?? 1;
+  const endX = fish.fishX + 70 - 50 * size, endY = fish.fishY + 40 + 5 * size;
   return {
     startX: hand.x, startY: hand.y, endX, endY, slack,
     c1x: hand.x - slack, c1y: hand.y - 53 + slack * .28,
@@ -113,6 +115,7 @@ export function fisherPose(cue, { pull = 0, impact = '', flash = 0, strength = 1
 // Canvas-space pose. Visual pull and recoil never change the battle state.
 export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0, strength = 1 } = {}) {
   const fish = FISH[state.fishId];
+  const fishSize = FISH_VISUAL_SIZE[state.fishId];
   const rage = cue === 'rage', warning = cue === 'warning', opening = cue === 'opening';
   const speed = rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6;
   const run = rage ? 12 + fish.speed * 12 : warning ? 5 + fish.speed * 3 : 3;
@@ -124,10 +127,10 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const fishX = 176 - distance * .7 + wave * run + Math.max(0, state.escape - 45) * .16 - handPull + recoil;
   const fishY = 305 + distance * 1.05 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
   return {
-    fishX, fishY,
+    fishX, fishY, fishSize,
     angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
-    ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9,
-    ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4,
+    ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32,
+    ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11,
     lineControlX: opening ? 173 : rage || warning ? 154 : 160,
     lineControlY: opening ? 425 : rage || warning ? 383 : 400,
     pull: handPull,
@@ -154,6 +157,7 @@ export function outcomePose(pose, outcome, progress) {
     fishX: pose.fishX + (90 - pose.fishX) * ease,
     fishY: pose.fishY + (410 - pose.fishY) * ease - Math.sin(Math.PI * p) * 65,
     angle: pose.angle - .32 * ease,
+    size: pose.fishSize,
     scale: 1 + Math.sin(Math.PI * p) * .18,
     alpha: 1,
   };
@@ -161,10 +165,11 @@ export function outcomePose(pose, outcome, progress) {
     fishX: pose.fishX + 125 * ease,
     fishY: pose.fishY - 25 * ease,
     angle: pose.angle + .14 * ease,
+    size: pose.fishSize,
     scale: 1,
     alpha: 1 - p,
   };
-  return { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, scale: 1, alpha: 1 };
+  return { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, size: pose.fishSize, scale: 1, alpha: 1 };
 }
 
 // Camera offsets are in the 390x844 scene. Keep them small enough that the
