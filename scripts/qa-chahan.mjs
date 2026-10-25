@@ -33,6 +33,28 @@ try {
         }))));
         assert.deepEqual(painted, Array(9).fill(true), `${name} ${width}: painted scene assets decode`);
         if (width === 390) {
+          const cookingFrames = await page.evaluate(async () => {
+            const [{ createGame }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            const game = createGame(); Object.assign(game, { phase: 'playing', time: 2, rice: 1, mix: 1, ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3 });
+            const canvas = document.createElement('canvas'); canvas.width = 780; canvas.height = 900;
+            return Object.fromEntries([['raw', .12], ['ready', .86], ['burnt', 1.35]].map(([label, cook]) => {
+              game.cook = cook; drawScene(canvas.getContext('2d'), game, true);
+              return [label, canvas.toDataURL('image/png').split(',')[1]];
+            }));
+          });
+          assert.equal(new Set(Object.values(cookingFrames)).size, 3, `${name}: rice in the wok changes with cooking time`);
+          const riceLight = async png => {
+            const { data, info } = await sharp(Buffer.from(png, 'base64')).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+            let light = 0, count = 0;
+            for (let y = 535; y < 595; y++) for (let x = 225; x < 425; x++) {
+              const i = (y * info.width + x) * 3;
+              light += data[i] * .3 + data[i + 1] * .59 + data[i + 2] * .11; count++;
+            }
+            return light / count;
+          };
+          const rawLight = await riceLight(cookingFrames.raw), readyLight = await riceLight(cookingFrames.ready), burntLight = await riceLight(cookingFrames.burnt);
+          assert.ok(rawLight > readyLight + 2 && readyLight > burntLight + 5, `${name}: rice visibly moves from pale to golden to charred (${rawLight.toFixed(1)}, ${readyLight.toFixed(1)}, ${burntLight.toFixed(1)})`);
+          for (const [label, png] of Object.entries(cookingFrames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(png, 'base64'));
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
