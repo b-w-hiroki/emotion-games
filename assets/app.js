@@ -124,11 +124,24 @@ if(!game){
  return;
 }
 const candle=slug==='kienaide';
+const journeyKey='emotion-kienaide-journeys-v1';
+const safeJourneyCount=n=>Number.isSafeInteger(n)&&n>=0?n:0;
+function readJourneyProgress(){
+ try{const saved=JSON.parse(localStorage.getItem(journeyKey)||'{}');const started=safeJourneyCount(saved?.started);return {started,completed:Math.min(started,safeJourneyCount(saved?.completed))}}catch(_){return {started:0,completed:0}}
+}
+const journeyProgress=candle?readJourneyProgress():null;
+function saveJourneyProgress(kind){
+ if(!journeyProgress)return;
+ journeyProgress[kind]++;
+ try{localStorage.setItem(journeyKey,JSON.stringify(journeyProgress))}catch(_){}
+ renderJourneyProgress();
+}
 const landscapeMode=candle?window.matchMedia('(orientation: landscape) and (max-height: 500px)'):null;
 if(candle)document.body.insertAdjacentHTML('beforeend','<div class="orientation-notice" role="status" aria-live="polite"><span aria-hidden="true">↻</span><strong>縦向きに戻してね</strong><p>この旅は縦画面で遊べるように作られています。向きを戻すと、続きから再開します。</p></div>');
 root.innerHTML=top()+'<main class="game-shell '+game.theme+'" style="--tone:'+esc(game.accent||'#e9a76f')+'"><div class="game-heading"><div class="label">EMOTION '+game.number+' <span>/ '+game.emotion+'</span></div><h1>'+game.title+'</h1><p>'+game.subtitle+'</p></div><div class="hud"><div><small>'+(candle?'LIGHT':'RECORD')+'</small><strong id="record">—</strong></div><div><small>'+(candle?'MEMORY':'BEST')+'</small><strong id="best">'+(candle?'0 / 3':'—')+'</strong></div><div><small>'+(candle?'DAWN':'TIME')+'</small><strong id="timer">'+(candle?'01:30':'00:00')+'</strong></div></div><div class="collect-bar"><span id="collection-progress" aria-live="polite"></span><button id="open-collection" type="button">結末図鑑を見る ↗</button></div><div class="arena"><canvas id="stage" width="360" height="400" aria-label="'+game.title+' のゲーム画面"></canvas>'+(candle?'<p class="sr-only" id="memory-live" aria-live="polite"></p><div class="story-beat" id="story-beat" role="status" aria-live="polite"><small>第一章　雪の路地</small><strong>窓の灯りが、帰り道の目印だった。</strong></div><button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true">音 ON</button>':'')+'<div class="curtain" id="curtain"><span class="eyebrow" id="curtain-kicker">'+(candle?'A SHORT NIGHT JOURNEY':'ONE IDEA GAME')+'</span><h2 id="curtain-title">'+game.title+'</h2><p id="curtain-description">'+(candle?'吹雪の町を歩き、たったひとつの灯りを家まで届ける。風の線が強くなったら長押しでかばい、凪いだら離して呼吸を戻そう。':game.mechanic)+'</p>'+(candle?'<div class="ending-meaning" id="ending-meaning" hidden><small>この結末になった理由</small><strong id="ending-outcome"></strong><span id="ending-reason"></span></div>':'')+'<div class="discovery-result" id="discovery-result" role="status" aria-live="polite" hidden><span class="discovery-glyph" aria-hidden="true">✦</span><span class="discovery-info"><strong id="discovery-state">NEW ENDING</strong><small id="discovery-counter"></small><small id="discovery-milestone"></small></span><span class="discovery-sparks" aria-hidden="true">✧ ✦ ✧</span></div>'+(candle?'<p class="next-hint" id="next-hint" hidden></p>':'')+'<button class="btn'+(candle?' art-start':'')+'" id="play">'+(candle?'はじめる':'プレイ開始 →')+'</button><button class="share-btn" id="share" hidden>結果をXで共有 ↗</button>'+(candle?'<button class="moment-save" id="moment-save" type="button" hidden>結末カードを保存・共有 ↗</button>':'')+''+(candle?'<label class="volume-row">音量<input id="volume" type="range" min="0" max="100" step="5" aria-label="音量"></label>':'')+'<a class="related" id="related" href="'+('../'+games[(games.findIndex(g=>g.slug===slug)+1)%games.length].slug+'/')+'" hidden>次のゲームを遊ぶ →</a></div><section class="collection-panel" id="collection-panel" hidden role="dialog" aria-modal="true" aria-label="結末図鑑"><div class="collection-head"><strong>結末図鑑</strong><button id="close-collection" type="button">閉じる ✕</button></div><p>予想外の操作にも、結末が隠れている。</p><div class="collection-track" role="progressbar" aria-label="結末の回収率" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><span id="collection-track-fill"></span></div><ol id="collection-list"></ol><div id="collection-awards"></div></section></div><div class="play-controls"><p id="hint">'+(slug==='girigiri'?'長押しで注ぐ。離すと落下中の水が残る。':slug==='ato-hitotsu'?'タイミングよく落として高く積もう。':candle?'風が強まったら長押し。凪いだら離して、息を戻す。':window.EmotionMissions?.endings[slug]?game.mechanic:'指を離したら扉が開いてしまう。')+'</p><button class="action'+(candle?' art-hold':'')+'" id="action" disabled>'+(candle?'<span class="action-cue">凪いでいる — 息を戻す</span><span class="action-main"><i aria-hidden="true"></i><b>押さえる</b><em>灯りを守る</em></span>':slug==='girigiri'?'長押しで注ぐ':slug==='ato-hitotsu'?'ここで落とす！':window.EmotionMissions?.endings[slug]?({timing:'ここで止める！',balance:'長押しで調節',rhythm:'リズムをタップ！',choice:'左を選ぶ（右は画面）'}[game.theme]):'扉を押さえ続ける')+'</button><div class="controls-bottom"><button id="reset">最初から</button><a href="../">ゲーム一覧へ</a><a href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">新作を見る ↗</a></div></div></main>';
 const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d'),curtain=document.getElementById('curtain'),action=document.getElementById('action');
 if(candle){document.querySelector('.game-heading h1').classList.add('kienaide-lettering');document.getElementById('curtain-title').classList.add('kienaide-lettering');document.querySelector('.controls-bottom a').textContent='タイトルへ';document.getElementById('related').remove()}
+if(candle)document.getElementById('collection-panel').querySelector('.collection-head').insertAdjacentHTML('afterend','<p id="journey-progress" class="journey-progress"></p>');
 const $=id=>document.getElementById(id),record=$('record'),best=$('best'),timer=$('timer');
 const memoryTouch=candle?document.createElement('button'):null;
 if(memoryTouch){memoryTouch.id='memory-touch';memoryTouch.className='memory-touch';memoryTouch.type='button';memoryTouch.textContent='記憶にふれる';memoryTouch.hidden=true;canvas.after(memoryTouch)}
@@ -261,6 +274,7 @@ if(candle){
 }
 function renderCollection(){
  $('collection-progress').textContent='結末 '+collected.length+' / '+endingList.length;
+ renderJourneyProgress();
  const track=$('collection-panel').querySelector('.collection-track');
  track.setAttribute('aria-valuenow',String(collected.length));
  $('collection-track-fill').style.width=(collected.length/endingList.length*100)+'%';
@@ -269,6 +283,11 @@ function renderCollection(){
  $('collection-awards').innerHTML='<div class="award-card '+(earnedThree?'earned':'locked')+'"><span class="award-symbol">✧</span><div><small>3 / 5　余韻の手紙</small><strong>'+(earnedThree?esc(reward.three.title):'未解放')+'</strong><p>'+(earnedThree?esc(reward.three.text):'あと'+Math.max(0,3-collected.length)+'結末で解放')+'</p></div></div>'
   +'<div class="award-card '+(earnedAll?'earned':'locked')+'"><span class="award-symbol">'+esc(reward.all.symbol)+'</span><div><small>5 / 5　コンプリート称号</small><strong>'+(earnedAll?esc(reward.all.title):'未解放')+'</strong><p>'+(earnedAll?esc(reward.all.text):'残り'+(endingList.length-collected.length)+'結末で解放')+'</p>'+(earnedAll?'<button type="button" class="completion-share" data-share-completion>称号をXに共有 ↗</button>':'')+'</div></div>';
  $('collection-list').innerHTML=endingList.map((e,i)=>'<li class="'+(collected.includes(e.id)?'found':'locked')+'"><span class="ending-number">NO.'+String(i+1).padStart(2,'0')+'</span><span class="ending-info"><strong>'+(collected.includes(e.id)?esc(e.title):'？？？')+'</strong><small>'+(collected.includes(e.id)?esc(e.desc):'ヒント：'+esc(e.hint))+'</small></span><span class="ending-mark">'+(collected.includes(e.id)?'✓':'?')+'</span></li>').join('');
+}
+function renderJourneyProgress(){
+ if(!candle)return;
+ $('open-collection').textContent='結末図鑑 '+collected.length+'/'+endingList.length+' · 旅 '+journeyProgress.started+'回';
+ $('journey-progress').textContent='この端末の記録：旅 '+journeyProgress.started+'回 · 結末まで '+journeyProgress.completed+'回 · 発見 '+collected.length+'/'+endingList.length;
 }
 function unlock(id){
  if(collected.includes(id))return false;
@@ -315,6 +334,7 @@ function run(){mode='play';if(candle){if(candleDialog)setCandleDialog(candleDial
 function finish(id,n,description){
  if(mode!=='play')return;
  const ending=endingList.find(e=>e.id===id);if(!ending)throw Error('Unknown ending '+id);
+ if(candle)saveJourneyProgress('completed');
  lastEnding=id;points=Math.max(0,Math.floor(n));record.textContent=String(points);store(points);
  const newly=unlock(id),count=collected.length;
  display(ending.title,description||ending.desc,newly?'NEW ENDING DISCOVERED':'ENDING COLLECTED');
@@ -407,6 +427,7 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
 
 let lastShield=false;
 function startCandle(){
+ saveJourneyProgress('started');
  momentCard.reset();
  chapterLoading=false;chapterLoadingError=false;chapterLoadingTarget=-1;chapterWait.hidden=true;
  memoryTouch.hidden=true;
