@@ -17,6 +17,44 @@ const paintedFlight = new Image();
 paintedFlight.src = new URL('./art/flight-v3.webp', import.meta.url).href;
 const paintedFlightEgg = new Image();
 paintedFlightEgg.src = new URL('./art/flight-egg-v1.webp', import.meta.url).href;
+const riceFinishes = new WeakMap();
+function finishedRice(image, finish) {
+  if (!image.complete || !image.naturalWidth) return image;
+  let variants = riceFinishes.get(image);
+  if (!variants) { variants = {}; riceFinishes.set(image, variants); }
+  if (variants[finish]) return variants[finish];
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0);
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = pixels.data;
+  for (let i = 0; i < data.length; i += 4) {
+    if (!data[i + 3]) continue;
+    if (finish === 'raw') {
+      data[i] += (255 - data[i]) * .28;
+      data[i + 1] += (245 - data[i + 1]) * .47;
+      data[i + 2] += (222 - data[i + 2]) * .44;
+    } else {
+      data[i] = data[i] * .69 + 28;
+      data[i + 1] = data[i + 1] * .56 + 20;
+      data[i + 2] = data[i + 2] * .48 + 16;
+    }
+  }
+  ctx.putImageData(pixels, 0, 0);
+  variants[finish] = canvas;
+  return canvas;
+}
+function drawCookingRice(ctx, image, args, cook) {
+  ctx.drawImage(image, ...args);
+  const raw = Math.max(0, Math.min(1, (.68 - cook) / .68));
+  const burnt = Math.max(0, Math.min(1, (cook - 1.05) / .3));
+  if (raw || burnt) {
+    ctx.save(); ctx.globalAlpha *= raw || burnt;
+    ctx.drawImage(finishedRice(image, raw ? 'raw' : 'burnt'), ...args);
+    ctx.restore();
+  }
+}
 const rgba = (hex, alpha) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${alpha})`; };
 function ellipse(ctx, x, y, rx, ry, color, rotation = 0) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rotation, 0, Math.PI * 2); ctx.fill(); }
 function line(ctx, points, color, width = 2) { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(...points[0]); for (const point of points.slice(1)) ctx.lineTo(...point); ctx.stroke(); }
@@ -186,8 +224,8 @@ function wok(ctx, game, reduced) {
     ctx.rotate(-game.lastLean*fly*.14);
     const baseScale=hasFlight?1-fly*.22:1;
     const riceArgs=[-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale];
-    if(hasEggRice)ctx.drawImage(paintedRiceEgg,...riceArgs);
-    if(hasColoredRice){ctx.save();ctx.globalAlpha=hasEggRice?mixed:1;ctx.drawImage(paintedRice,...riceArgs);ctx.restore();}
+    if(hasEggRice)drawCookingRice(ctx,paintedRiceEgg,riceArgs,game.cook);
+    if(hasColoredRice){ctx.save();ctx.globalAlpha=hasEggRice?mixed:1;drawCookingRice(ctx,paintedRice,riceArgs,game.cook);ctx.restore();}
     if(game.ingredients.veg){
       for(let i=0;i<26*mixed*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
       for(let i=0;i<20*(1-mixed)*game.rice;i++){const x=77+(i%5)*12,y=12+Math.floor(i/5)*9;fillingPiece(ctx,x*amount*baseScale,y*amount*baseScale,game.filling,i,amount*baseScale,game.fillingCook);}
@@ -214,8 +252,8 @@ function wok(ctx, game, reduced) {
     ctx.save();ctx.globalAlpha=Math.min(1,fly*1.5);
     ctx.translate(game.lastLean*fly*76+(escaping?escapeSide*fly*50:0),-fly*145);
     ctx.rotate(-game.lastLean*fly*.12);
-    if(game.ingredients.egg&&paintedFlightEgg.complete&&paintedFlightEgg.naturalWidth)ctx.drawImage(paintedFlightEgg,-242,-105,484,160);
-    if(game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth){ctx.globalAlpha*=game.ingredients.egg?mixed:1;ctx.drawImage(paintedFlight,-242,-105,484,160);}ctx.restore();
+    if(game.ingredients.egg&&paintedFlightEgg.complete&&paintedFlightEgg.naturalWidth)drawCookingRice(ctx,paintedFlightEgg,[-242,-105,484,160],game.cook);
+    if(game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth){ctx.globalAlpha*=game.ingredients.egg?mixed:1;drawCookingRice(ctx,paintedFlight,[-242,-105,484,160],game.cook);}ctx.restore();
   }
   if(fly>.03) for(let i=0;i<(hasFlight?20:56)*game.rice;i++){const a=i*2.399,x=Math.cos(a)*178*amount+game.lastLean*fly*65,y=Math.sin(a)*34*amount+12-fly*(135+i%8*15);ellipse(ctx,x,y,5+i%3,2+i%2,game.ingredients.veg&&i%7===0?'#89bd68':i%5===0?'#f6c15d':'#fff0bb',a*.4);}
   if(escaping) {
