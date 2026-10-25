@@ -23,6 +23,18 @@ export function timingWindow(state, cue) {
   return null;
 }
 
+// The line relaxes only while the fish leaves an opening. Holding the reel
+// takes up some slack before release, without changing AINAN's battle rules.
+export function lineShape(fish, cue, pull = 0) {
+  const slack = Math.max(0, (cue === 'opening' ? 48 : cue === 'calm' ? 14 : cue === 'warning' ? 5 : 0) - pull * .22);
+  const endX = fish.fishX + 20, endY = fish.fishY + 45;
+  return {
+    startX: 146, startY: 490, endX, endY, slack,
+    c1x: 146 - slack, c1y: 437 + slack * .28,
+    c2x: endX - slack * .85, c2y: endY + 57 + slack * .4,
+  };
+}
+
 // Canvas-space pose. Visual pull and recoil never change the battle state.
 export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0 } = {}) {
   const fish = FISH[state.fishId];
