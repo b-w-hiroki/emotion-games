@@ -185,9 +185,10 @@ try {
           assert.equal(await page.locator('#combo').textContent(), '0', `${name}: weak pull breaks combo`);
           assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)), riceBeforeWeak, `${name}: weak pull retains rice`);
           await page.screenshot({ path: path.join(output, `weak-${name}-${width}.png`) });
-          await page.waitForTimeout(500);
+          await page.waitForTimeout(850);
           await page.mouse.move(x - 65, y); await page.mouse.down(); await page.mouse.move(x + 65, y + 110, { steps: 8 }); await page.mouse.up();
-          assert.ok(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)) < riceBeforeWeak, `${name}: diagonal pull visibly costs rice`);
+          const riceAfterDiagonal = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
+          assert.ok(riceAfterDiagonal < riceBeforeWeak, `${name}: diagonal pull visibly costs rice (${riceBeforeWeak}, ${riceAfterDiagonal})`);
           await page.waitForTimeout(160);
           await page.screenshot({ path: path.join(output, `spilled-${name}-${width}.png`) });
           assert.match(await page.locator('#seasonHint').textContent(), /米と具|火を通す/, `${name}: seasoning gives an actionable timing cue`);
@@ -268,6 +269,10 @@ try {
           await timingPage.screenshot({ path: path.join(output, `sky-gust-active-${name}-${width}.png`) });
           assert.equal(await timingPage.locator('#place').textContent(), '空中キッチン', `${name}: all locations precede plating`);
           assert.equal(await timingPage.locator('#seasoning').isEnabled(), true, `${name}: plating opens in the final location`);
+          if (await timingPage.locator('#cookTrack').getAttribute('data-state') === 'raw') {
+            await timingPage.locator('#heatControl').evaluate(el => { el.value = '100'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+            for (let i = 0; i < 40 && await timingPage.locator('#cookTrack').getAttribute('data-state') === 'raw'; i++) await timingPage.clock.runFor(250);
+          }
           assert.equal(await timingPage.locator('#cookTrack').getAttribute('data-state'), 'ready', `${name}: the gauge highlights the actual plating window`);
           assert.equal(await timingPage.locator('#cookStatus').textContent(), '盛りどき');
           await timingPage.screenshot({ path: path.join(output, `plating-ready-${name}-${width}.png`) });
