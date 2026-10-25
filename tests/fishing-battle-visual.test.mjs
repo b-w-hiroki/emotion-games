@@ -1,7 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, reelBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, reelImpulse, reelReadout, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+
+test('held control gives a safe instruction in each phase', () => {
+  assert.equal(pullGuidance('calm', 70).hint, '離して巻く！');
+  assert.equal(pullGuidance('opening', 70).hint, 'いま離して巻く！');
+  assert.equal(pullGuidance('warning', 70).color, '#ffd18a');
+  assert.equal(pullGuidance('warning', 70).hint, 'いま離して巻く！');
+  assert.equal(pullGuidance('rage', 70).hint, '上へ戻して、離す');
+  assert.equal(pullGuidance('rage', 70, true).hint, 'Escで中止。離すと危険');
+  assert.equal(pullGuidance('rage', 20).shortRelease, '魚が暴れてる。待とう');
+  assert.equal(pullGuidance('calm', 20).shortRelease, 'もう少し下へ引こう');
+});
 
 test('escape pressure remains visible between runs and releases as risk falls', () => {
   const state = createBattle('aji');

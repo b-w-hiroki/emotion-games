@@ -149,6 +149,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await input.keyboard.up('Space');
   if (await input.locator('#progressFill').evaluate(el => parseFloat(el.style.width)) !== 53 || await input.locator('.controls').evaluate(el => el.classList.contains('is-pulling'))) throw new Error(`${name}: Space release did not reel once and relax the line`);
   await input.reload();
+  await input.keyboard.down('Space'); await input.keyboard.press('Escape'); await input.keyboard.up('Space');
+  if (await input.locator('#progressValue').textContent() !== '48%' || await input.locator('.controls').evaluate(el => el.classList.contains('is-pulling'))) throw new Error(`${name}: Escape did not safely cancel a held keyboard reel`);
+  await input.reload();
   await input.locator('#reel').focus();
   await input.keyboard.down('Space');
   if (!await input.locator('.controls').evaluate(el => el.classList.contains('is-pulling'))) throw new Error(`${name}: focused reel did not preview Space hold`);
@@ -253,7 +256,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const rageBounds = await page.locator('#rageLabel').boundingBox();
   if (!rageBounds || rageBounds.y + rageBounds.height > boardBounds.y + boardBounds.height - 30) throw new Error(`${name}: rage guidance clipped by lower controls`);
   await page.screenshot({ path: `${out}/${name}-rage.png` });
-  let sawCritical = false, sawEscapeTransition = false, sawRagePull = false;
+  let sawCritical = false, sawEscapeTransition = false, sawRagePull = false, checkedRageCancel = false;
   for (let i = 0; i < 80 && await page.locator('#result').isHidden(); i++) {
     const phase = await page.locator('#cue').getAttribute('class');
     if (!sawEscapeTransition && phase?.includes('finale-escaped')) {
@@ -266,10 +269,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       if (!sawRagePull) {
         const rageFeedback = await page.locator('.controls').evaluate(el => ({ tension: Number(el.style.getPropertyValue('--tension')), glow: el.style.getPropertyValue('--pull-glow') }));
         if (rageFeedback.tension <= pullFeedback.tension || rageFeedback.glow !== '#ff976c') throw new Error(`${name}: dangerous pull did not change line tension and control color`);
+        if (!await page.locator('#hint').textContent().then(t => t.includes('上へ戻して'))) throw new Error(`${name}: rage pull did not explain how to cancel safely`);
         await page.screenshot({ path: `${out}/${name}-rage-pull.png` });
         sawRagePull = true;
+        await page.mouse.move(210, 250, { steps: 3 });
       }
       await page.mouse.up();
+      if (sawRagePull && !checkedRageCancel) {
+        await page.keyboard.down('Space');
+        if (!await page.locator('#hint').textContent().then(t => t.includes('Escで中止'))) throw new Error(`${name}: held Space during rage did not explain cancellation`);
+        await page.keyboard.press('Escape'); await page.keyboard.up('Space');
+        if (await page.locator('#action').textContent()) throw new Error(`${name}: cancelled rage hold still reeled`);
+        await page.mouse.move(210, 250); await page.mouse.down(); await page.mouse.move(210, 270); await page.mouse.up();
+        if (!await page.locator('#action').textContent().then(t => t.includes('待とう')) || await page.locator('#action').getAttribute('class') !== 'danger-action') throw new Error(`${name}: short rage pull encouraged a dangerous reel`);
+        checkedRageCancel = true;
+      }
     }
     if (!sawCritical && await page.locator('#danger').getAttribute('aria-valuenow').then(Number) >= 70) {
       sawCritical = true;
