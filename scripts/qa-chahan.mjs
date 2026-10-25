@@ -26,6 +26,7 @@ try {
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         await page.addInitScript(() => { if (window.DeviceMotionEvent) Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: () => Promise.resolve('granted') }); });
         await page.goto(url);
+        assert.equal(await page.locator('#cookTrack').getAttribute('data-state'), 'empty', `${name} ${width}: empty wok has no rice doneness`);
         const painted = await page.evaluate(async () => Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','rice-egg-v1','flight-v3','flight-egg-v1'].map(name => new Promise(resolve => {
           const image = new Image(); image.onload = () => resolve(image.width === 780 && image.height === (name.startsWith('rice-') || name.startsWith('flight-') ? 260 : name.endsWith('-v2') ? 520 : 900));
           image.onerror = () => resolve(false); image.src = `./art/${name}.webp`;
@@ -180,6 +181,8 @@ try {
           await timingPage.clock.runFor(21_000);
           assert.equal(await timingPage.locator('#place').textContent(), '空中キッチン', `${name}: all locations precede plating`);
           assert.equal(await timingPage.locator('#seasoning').isEnabled(), true, `${name}: plating opens in the final location`);
+          assert.equal(await timingPage.locator('#cookTrack').getAttribute('data-state'), 'ready', `${name}: the gauge highlights the actual plating window`);
+          assert.equal(await timingPage.locator('#cookStatus').textContent(), '盛りどき');
           await timingPage.screenshot({ path: path.join(output, `plating-ready-${name}-${width}.png`) });
           const secondsLeft = Number(await timingPage.locator('#clock').textContent());
           assert.ok(secondsLeft > 0, `${name}: plating can complete before the timer expires`);

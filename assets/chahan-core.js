@@ -160,7 +160,14 @@ export function platingReadiness(game) {
     : game.cook < .68 ? 'もう少し火を通す'
     : game.cook > 1.05 ? '焦げる前に盛り付け！'
     : '今が盛りどき！';
-  return { ready: game.mix >= .35 && game.cook >= .68 && game.cook <= 1.05, cue, quality };
+  return { ready: game.mix >= .35 && cookMeter(game).state === 'ready', cue, quality };
+}
+
+export function cookMeter(game) {
+  const cook = Math.max(0, game.cook);
+  const state = !game.ingredients.rice ? 'empty' : cook < .68 ? 'raw' : cook <= 1.05 ? 'ready' : 'burnt';
+  const label = { empty: '未投入', raw: 'もう少し', ready: '盛りどき', burnt: '焦げ注意' }[state];
+  return { state, label, fill: Math.min(100, Math.round(cook / 1.5 * 100)) };
 }
 
 export function plate(game) {
