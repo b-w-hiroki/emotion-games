@@ -2,7 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+
+test('plating is a final-location choice and preserves the chosen doneness', () => {
+  const g = createGame(); g.phase = 'playing';
+  addIngredient(g, 'egg'); addIngredient(g, 'rice'); addIngredient(g, 'veg');
+  Object.assign(g, { mix: .8, cook: .56, rice: 1, stage: 1, time: 27 });
+  assert.equal(plate(g), false, 'seasoning and final location are required');
+  addSeasoning(g);
+  assert.equal(plate(g), false, 'earlier locations remain playable');
+  assert.match(platingReadiness(g).cue, /最後の場所/);
+  g.stage = 2; g.time = 39;
+  assert.equal(platingReadiness(g).ready, false);
+  assert.match(platingReadiness(g).cue, /火を通す/);
+  const earlyScore = result(g).score;
+  g.cook = .86;
+  assert.equal(platingReadiness(g).ready, true);
+  assert.equal(platingReadiness(g).cue, '今が盛りどき！');
+  assert.ok(result(g).score > earlyScore, 'waiting until the rice is done improves the actual result');
+  assert.equal(plate(g), true);
+  assert.equal(g.phase, 'finished'); assert.equal(g.platedAt, 39);
+  assert.equal(plate(g), false, 'the result cannot be submitted twice');
+});
 import { motionToss, motionSteer } from '../assets/chahan-motion.js';
 
 test('three locations alter the balance disturbance', () => {
