@@ -11,8 +11,12 @@ const paintedWok = new Image();
 paintedWok.src = new URL('./art/wok-v2.webp', import.meta.url).href;
 const paintedRice = new Image();
 paintedRice.src = new URL('./art/rice-v2.webp', import.meta.url).href;
+const paintedRiceEgg = new Image();
+paintedRiceEgg.src = new URL('./art/rice-egg-v1.webp', import.meta.url).href;
 const paintedFlight = new Image();
 paintedFlight.src = new URL('./art/flight-v3.webp', import.meta.url).href;
+const paintedFlightEgg = new Image();
+paintedFlightEgg.src = new URL('./art/flight-egg-v1.webp', import.meta.url).href;
 const rgba = (hex, alpha) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${alpha})`; };
 function ellipse(ctx, x, y, rx, ry, color, rotation = 0) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rotation, 0, Math.PI * 2); ctx.fill(); }
 function line(ctx, points, color, width = 2) { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(...points[0]); for (const point of points.slice(1)) ctx.lineTo(...point); ctx.stroke(); }
@@ -139,7 +143,9 @@ function wok(ctx, game, reduced) {
   const inner=ctx.createRadialGradient(-100,-40,20,0,40,300);inner.addColorStop(0,'#536774');inner.addColorStop(.46,'#263842');inner.addColorStop(1,'#0a1820');ellipse(ctx,0,22,258,87,inner);
   }
   const amount=Math.sqrt(game.rice);
-  const hasFlight=hasRice&&game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth;
+  const riceSprite=game.ingredients.veg?paintedRice:game.ingredients.egg?paintedRiceEgg:null;
+  const flightSprite=game.ingredients.veg?paintedFlight:game.ingredients.egg?paintedFlightEgg:null;
+  const hasFlight=hasRice&&flightSprite?.complete&&flightSprite.naturalWidth;
   if (game.ingredients.egg) {
     const cooked=Math.max(0,Math.min(1,game.eggCook)),raw=Math.max(0,1-cooked/.28),burnt=Math.max(0,Math.min(1,(cooked-.72)/.35));
     if(cooked<.28){
@@ -161,14 +167,14 @@ function wok(ctx, game, reduced) {
     const x=-125+(i*47)%255,y=10+(i*29)%46;
     fillingPiece(ctx,x,y,game.filling,i,.9,game.fillingCook);
   }
-  if (hasRice && game.ingredients.veg && paintedRice.complete && paintedRice.naturalWidth) {
+  if (hasRice && riceSprite?.complete && riceSprite.naturalWidth) {
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
     ctx.save();
     ctx.translate(escaping?escapeSide*fly*28:0,hasFlight?0:-fly*155);
     ctx.rotate(-game.lastLean*fly*.14);
     const baseScale=hasFlight?1-fly*.22:1;
-    ctx.drawImage(paintedRice,-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale);
-    for(let i=0;i<26*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
+    ctx.drawImage(riceSprite,-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale);
+    if(game.ingredients.veg)for(let i=0;i<26*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
     ctx.restore();
   } else if (hasRice) {
   const rice=ctx.createRadialGradient(-65,-3,10,0,26,210);rice.addColorStop(0,'#ffe4a9');rice.addColorStop(.5,game.cook>.65?'#eeb574':'#f2cf8e');rice.addColorStop(1,'#b9783e');ellipse(ctx,0,23,193*amount,57*amount,rice);
@@ -182,7 +188,7 @@ function wok(ctx, game, reduced) {
     ctx.save();ctx.globalAlpha=Math.min(1,fly*1.5);
     ctx.translate(game.lastLean*fly*76+(escaping?escapeSide*fly*50:0),-fly*145);
     ctx.rotate(-game.lastLean*fly*.12);
-    ctx.drawImage(paintedFlight,-242,-105,484,160);ctx.restore();
+    ctx.drawImage(flightSprite,-242,-105,484,160);ctx.restore();
   }
   if(fly>.03) for(let i=0;i<(hasFlight?20:56)*game.rice;i++){const a=i*2.399,x=Math.cos(a)*178*amount+game.lastLean*fly*65,y=Math.sin(a)*34*amount+12-fly*(135+i%8*15);ellipse(ctx,x,y,5+i%3,2+i%2,i%7===0?'#89bd68':i%5===0?'#f6c15d':'#fff0bb',a*.4);}
   if(escaping) {
@@ -268,10 +274,11 @@ export function drawDish(ctx, game) {
   ellipse(ctx, w / 2, 179, 220, 58, '#334b51');
   ellipse(ctx, w / 2, 171, 209, 53, '#f8e8c3');
   const amount = look.portion;
-  if (game.ingredients.egg && game.ingredients.veg && paintedRice.complete && paintedRice.naturalWidth) {
+  const riceSprite = game.ingredients.veg ? paintedRice : paintedRiceEgg;
+  if (game.ingredients.egg && riceSprite.complete && riceSprite.naturalWidth) {
     ctx.save();
     ctx.filter = `saturate(${Math.max(.2, 1 - look.unmixed * .65 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
-    ctx.drawImage(paintedRice, 320 - 197 * amount, 103, 394 * amount, 132 * amount);
+    ctx.drawImage(riceSprite, 320 - 197 * amount, 103, 394 * amount, 132 * amount);
     ctx.restore();
   } else {
   const mound = ctx.createRadialGradient(280, 139, 10, 320, 174, 196);
