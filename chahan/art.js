@@ -116,6 +116,13 @@ function frontSteam(ctx, game, reduced) {
   }
   ctx.restore();
 }
+function fillingPiece(ctx,x,y,kind,i,scale=1){
+  if(kind==='pork'){
+    ctx.save();ctx.translate(x,y);ctx.rotate(i*.53);ctx.fillStyle=i%4===0?'#6d3529':'#aa4c2d';ctx.fillRect(-8*scale,-5*scale,16*scale,10*scale);ctx.fillStyle='#e59455';ctx.fillRect(-6*scale,-4*scale,12*scale,3*scale);ctx.restore();
+  }else{
+    ctx.save();ctx.strokeStyle=i%3===0?'#c7df7c':'#5d9c4d';ctx.lineWidth=3*scale;ctx.beginPath();ctx.ellipse(x,y,6*scale,3*scale,i*.4,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+}
 function wok(ctx, game, reduced) {
   const t=game.time,age=t-game.lastToss;
   const arc=reduced||age<0||age>.72?0:Math.sin(Math.PI*age/.72);
@@ -152,7 +159,7 @@ function wok(ctx, game, reduced) {
   }
   if (!hasRice && game.ingredients.veg) for(let i=0;i<28;i++) {
     const x=-125+(i*47)%255,y=10+(i*29)%46;
-    ellipse(ctx,x,y,i%3?8:11,i%3?4:6,i%3===0?'#76a853':i%3===1?'#f0bd51':'#d8734d',i*.51);
+    fillingPiece(ctx,x,y,game.filling,i,.9);
   }
   if (hasRice && game.ingredients.veg && paintedRice.complete && paintedRice.naturalWidth) {
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
@@ -161,6 +168,7 @@ function wok(ctx, game, reduced) {
     ctx.rotate(-game.lastLean*fly*.14);
     const baseScale=hasFlight?1-fly*.22:1;
     ctx.drawImage(paintedRice,-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale);
+    for(let i=0;i<26*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale);}
     ctx.restore();
   } else if (hasRice) {
   const rice=ctx.createRadialGradient(-65,-3,10,0,26,210);rice.addColorStop(0,'#ffe4a9');rice.addColorStop(.5,game.cook>.65?'#eeb574':'#f2cf8e');rice.addColorStop(1,'#b9783e');ellipse(ctx,0,23,193*amount,57*amount,rice);
@@ -302,11 +310,11 @@ export function drawDish(ctx, game) {
   for (let i = 0; i < (game.ingredients.veg ? look.mixedIngredients : 0); i++) {
     const x = 320 + Math.cos(i * 2.399) * Math.sqrt((i + .5) / 25) * 165 * amount;
     const y = 160 + Math.sin(i * 2.399) * Math.sqrt((i + .5) / 25) * 39 * amount;
-    ellipse(ctx, x, y, i % 3 ? 7 : 10, i % 3 ? 3 : 4, i % 3 === 0 ? '#75aa58' : i % 3 === 1 ? '#ffca62' : '#e88356', i * .53);
+    fillingPiece(ctx,x,y,game.filling,i,amount);
   }
   for (let i = 0; i < (game.ingredients.veg ? look.scatteredIngredients : 0); i++) {
     const x = 346 + (i % 5) * 23 * amount, y = 145 + Math.floor(i / 5) * 12 * amount;
-    ellipse(ctx, x, y, i % 3 ? 10 : 13, i % 3 ? 4 : 6, i % 3 === 0 ? '#75a754' : i % 3 === 1 ? '#f4bf48' : '#dd7347', i * .37);
+    fillingPiece(ctx,x,y,game.filling,i,amount);
   }
   for (let i = 0; i < Math.round(look.char * 23 * amount); i++) {
     const x = 320 + Math.cos(i * 2.399) * 170 * amount * Math.sqrt((i + .5) / 23);
