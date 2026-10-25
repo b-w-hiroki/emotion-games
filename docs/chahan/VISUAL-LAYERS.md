@@ -7,7 +7,7 @@
 3. **鍋と食材** — `wok-v2.webp` は空鍋から始まる。卵を入れるとスクランブル状の卵、ごはんを入れると卵入りの白い米 `rice-egg-v1.webp`、具材を入れると `rice-v2.webp` の彩りある米に変わる。成功した鍋振りでは米の一部を鍋に残し、具材投入前は `flight-egg-v1.webp`、具材投入後は `flight-v3.webp` を弧状に動かす。弱振りでは飛翔を出さず、こぼしでは外へ散る米を描く。
 4. **手前の湯気と味付け** — 鍋の前に薄い湯気を通し、調味料を入れた瞬間だけ飛沫と反応を重ねる。
 
-飛翔素材とごはん素材の原画は `chahan/art/src/` に保存。`rice-egg-v1.png` と `flight-egg-v1.png` は既存の具材入り絵を参照して、ねぎ・にんじん・調味料の焼き色を除いた透明レイヤー。`node scripts/art/build-chahan-scenes.mjs` で配信用 WebP に変換する。アニメーションの確認には `node scripts/capture-chahan-toss.mjs`、画面と操作の確認には `node scripts/qa-chahan.mjs` を使う。動きを減らす設定では光や粒の位置を固定する。
+飛翔素材とごはん素材の原画は `chahan/art/src/` に保存。`rice-egg-v1.png` と `flight-egg-v1.png` は既存の具材入り絵を参照して、ねぎ・にんじん・調味料の焼き色を除いた透明レイヤー。`node scripts/art/build-chahan-scenes.mjs` で配信用 WebP に変換し、各ファイルを 100 KB 未満に抑える。アニメーションの確認には `node scripts/capture-chahan-toss.mjs`、画面と操作の確認には `node scripts/qa-chahan.mjs` を使う。動きを減らす設定では光や粒の位置を固定する。
 
 完成皿は別の `drawDish` で描く。米の量で盛り付けを縮め、混ぜ具合で具の分布を変え、味付けで照り、火の通りで色と湯気を変える。比較用のブラウザー画像は [会心の一皿](dish-ideal.png)、[具が偏った一皿](dish-unmixed.png)、[焦げた一皿](dish-burnt.png)。
 
