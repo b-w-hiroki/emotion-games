@@ -40,13 +40,14 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const fish = FISH[state.fishId];
   const rage = cue === 'rage', warning = cue === 'warning', opening = cue === 'opening';
   const speed = rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6;
-  const run = rage ? 7 + fish.speed * 6 : warning ? 3 + fish.speed * 1.5 : 3;
+  const run = rage ? 12 + fish.speed * 12 : warning ? 5 + fish.speed * 3 : 3;
   const wave = reduced ? 0 : Math.sin(seconds * speed);
+  const swimVelocity = reduced ? 0 : Math.cos(seconds * speed) * run * speed;
   const distance = clamp(state.reel - 48, 0, 52);
   const handPull = clamp(pull, 0, 110) * .13;
   const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0);
   const fishX = 176 - distance * .7 + wave * run + Math.max(0, state.escape - 45) * .16 - handPull + recoil;
-  const fishY = 305 + distance * 1.05 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 9 : 3)) + handPull * .72 - recoil * .28;
+  const fishY = 305 + distance * 1.05 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
   return {
     fishX, fishY,
     angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1),
@@ -56,7 +57,18 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
     lineControlY: opening ? 425 : rage || warning ? 383 : 400,
     pull: handPull,
     tension,
-    run,
+    run, swimVelocity,
+  };
+}
+
+export function surfaceResponse(pose, cue, { impact = '', flash = 0, reduced = false } = {}) {
+  const wake = reduced || cue !== 'rage' ? 0 : clamp(Math.abs(pose.swimVelocity) / 450, 0, 1);
+  const splash = reduced ? 0 : clamp(flash / .35, 0, 1);
+  return {
+    wake,
+    direction: Math.sign(pose.swimVelocity) || 1,
+    splash,
+    color: impact === 'badReel' ? '#ffd4a3' : '#c9fff5',
   };
 }
 

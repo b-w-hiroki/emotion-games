@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, interactionFeedback, lineShape, outcomePose, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
 
 test('warning fills and the real opening window drains on the battle clock', () => {
   const state = createBattle('aji');
@@ -57,6 +57,27 @@ test('the same fish communicates warning, struggle and opening through the line 
   assert.ok(rage.ringWidth > calm.ringWidth);
   assert.ok(opening.lineControlY > calm.lineControlY && opening.ringWidth < calm.ringWidth);
   assert.ok(battlePose(createBattle('kue'), 'rage', 0).run > rage.run);
+});
+
+test('stronger fish make a wider, faster run and directional wake without changing reduced motion', () => {
+  const aji = battlePose(createBattle('aji'), 'rage', 0);
+  const kue = battlePose(createBattle('kue'), 'rage', 0);
+  assert.ok(kue.run > aji.run && kue.swimVelocity > aji.swimVelocity);
+  assert.ok(surfaceResponse(kue, 'rage').wake > surfaceResponse(aji, 'rage').wake);
+  const opposite = battlePose(createBattle('aji'), 'rage', Math.PI / 7);
+  assert.equal(surfaceResponse(opposite, 'rage').direction, -1);
+  assert.equal(surfaceResponse(kue, 'opening').wake, 0);
+  assert.equal(surfaceResponse(kue, 'rage', { reduced: true }).wake, 0);
+});
+
+test('accepted and dangerous reels give distinct water splashes', () => {
+  const pose = battlePose(createBattle('aji'), 'calm', 0);
+  const good = surfaceResponse(pose, 'calm', { impact: 'goodReel', flash: .35 });
+  const bad = surfaceResponse(pose, 'rage', { impact: 'badReel', flash: .35 });
+  assert.equal(good.splash, 1);
+  assert.equal(bad.splash, 1);
+  assert.notEqual(good.color, bad.color);
+  assert.equal(surfaceResponse(pose, 'calm', { impact: 'goodReel', flash: .35, reduced: true }).splash, 0);
 });
 
 test('opening slack is visible in the line and a held pull takes it up', () => {
