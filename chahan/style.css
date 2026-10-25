@@ -49,6 +49,13 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 .meters span{display:block;margin-bottom:6px;color:#eed2ae;font-size:10px;font-weight:700;white-space:nowrap}
 .bar{height:8px;overflow:hidden;border-radius:8px;background:#49362c;box-shadow:inset 0 2px 4px #0009}
 .bar i{display:block;width:0;height:100%;border-radius:8px;background:linear-gradient(90deg,#d87942,#ffc976);box-shadow:0 0 12px #efa65b88}
+.meters span small{float:right;margin-left:3px;color:#f5bd7b;font-size:8px}
+#cookTrack{position:relative;overflow:visible;background:linear-gradient(90deg,#49362c 0 45.3%,#63824c 45.3% 70%,#704239 70%)}
+#cookTrack::before,#cookTrack::after{content:'';position:absolute;z-index:1;top:-2px;bottom:-2px;width:2px;background:#ffe6aa}
+#cookTrack::before{left:45.3%}#cookTrack::after{left:70%}
+#cookTrack i{position:relative;z-index:0;background:linear-gradient(90deg,#d87942,#f6c676)}
+#cookTrack[data-state="ready"] i{background:linear-gradient(90deg,#dc9c53,#e9dc88);box-shadow:0 0 10px #d7e995aa}
+#cookTrack[data-state="burnt"] i{background:linear-gradient(90deg,#cb713f,#ba4b3a);box-shadow:0 0 10px #e2634b99}
 .recipe{padding:7px;border:1px solid #826044;border-radius:12px;background:linear-gradient(#35251d,#241b18);box-shadow:inset 0 1px #ffffff1c}
 .recipe[data-egg-state="ready"]{border-color:#f3c975;box-shadow:inset 0 1px #ffffff1c,0 0 13px #f0b56455}
 .recipe[data-egg-state="burnt"]{border-color:#cd755b}

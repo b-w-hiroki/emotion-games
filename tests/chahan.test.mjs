@@ -2,7 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+
+test('cook meter shows the plating window and continues through scorching', () => {
+  const game = createGame();
+  assert.deepEqual(cookMeter(game), { state: 'empty', label: '未投入', fill: 0 });
+  game.ingredients.rice = true;
+  game.cook = .5;
+  assert.equal(cookMeter(game).state, 'raw');
+  game.cook = .86;
+  assert.deepEqual(cookMeter(game), { state: 'ready', label: '盛りどき', fill: 57 });
+  game.cook = 1.25;
+  assert.deepEqual(cookMeter(game), { state: 'burnt', label: '焦げ注意', fill: 83 });
+  assert.ok(cookMeter(game).fill > 70, 'the gauge keeps moving after the ideal window');
+});
 
 test('plating is a final-location choice and preserves the chosen doneness', () => {
   const g = createGame(); g.phase = 'playing';
