@@ -59,10 +59,14 @@ try {
             const [{ createGame }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             const game = createGame(); Object.assign(game, { phase: 'playing', time: 2, cook: .86, rice: 1, mix: 1, lastLift: .7, tossOutcome: 'caught', ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3 });
             const canvas = document.createElement('canvas'); canvas.width = 780; canvas.height = 900;
-            return Object.fromEntries([['rest', -10], ['airborne', 1.64], ['landed', 1.2]].map(([label, lastToss]) => {
+            const frames = Object.fromEntries([['rest', -10], ['airborne', 1.64], ['landed', 1.2]].map(([label, lastToss]) => {
               game.lastToss = lastToss; drawScene(canvas.getContext('2d'), game);
               return [label, canvas.toDataURL('image/png').split(',')[1]];
             }));
+            game.rice = .3; game.lastToss = 1.64;
+            drawScene(canvas.getContext('2d'), game);
+            frames.lowRice = canvas.toDataURL('image/png').split(',')[1];
+            return frames;
           });
           const ricePixels = async (png, top, bottom) => {
             const { data, info } = await sharp(Buffer.from(png, 'base64')).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -78,6 +82,8 @@ try {
           assert.ok(panAir < panRest * .5 && panLanded > panRest * .9, `${name}: rice leaves and returns to the pan (${panRest}, ${panAir}, ${panLanded})`);
           const flightRest = await ricePixels(tossFrames.rest, 365, 485), flightAir = await ricePixels(tossFrames.airborne, 365, 485);
           assert.ok(flightAir > flightRest + 500, `${name}: the same rice appears in the air (${flightRest}, ${flightAir})`);
+          const flightLowRice = await ricePixels(tossFrames.lowRice, 365, 485);
+          assert.ok(flightLowRice - flightRest < (flightAir - flightRest) * .55, `${name}: losing rice visibly shrinks the airborne portion (${flightRest}, ${flightAir}, ${flightLowRice})`);
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             await Promise.all([...document.images].map(image => image.decode().catch(() => {})));

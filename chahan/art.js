@@ -257,6 +257,7 @@ function wok(ctx, game, reduced) {
     ctx.save();ctx.globalAlpha=Math.min(1,fly*1.5);
     ctx.translate(game.lastLean*fly*76+(escaping?escapeSide*fly*50:0),-fly*145);
     ctx.rotate(-game.lastLean*fly*.12);
+    ctx.scale(amount,amount);
     if(game.ingredients.egg&&paintedFlightEgg.complete&&paintedFlightEgg.naturalWidth)drawCookingRice(ctx,paintedFlightEgg,[-242,-105,484,160],game.cook);
     if(game.ingredients.veg&&paintedFlight.complete&&paintedFlight.naturalWidth){ctx.globalAlpha*=game.ingredients.egg?mixed:1;drawCookingRice(ctx,paintedFlight,[-242,-105,484,160],game.cook);}ctx.restore();
   }
