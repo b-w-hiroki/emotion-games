@@ -361,19 +361,25 @@ try{
    await quiet.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence',null,{timeout:3000});
    await quiet.page.locator('#action').focus();await quiet.page.keyboard.down('Space');
    await quiet.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('いま離して'),null,{timeout:3000});
+   assert.equal(await quiet.page.locator('.action-main b').innerText(),'はなす','the held control agrees with the final release cue '+finalTag);
    assert.equal(await quiet.page.locator('#stage').getAttribute('data-danger'),'flame-critical','the flame warning remains visible during the final release '+finalTag);
    await quiet.page.screenshot({path:path.join(out,`${engine}-${finalTag}-critical-final-silence.png`)});
    await quiet.page.keyboard.up('Space');
+   await quiet.page.waitForFunction(()=>document.querySelector('.action-main b').textContent==='手をひらいている',null,{timeout:3000});
+   assert.match(await quiet.page.locator('.action-main em').innerText(),/そのまま窓の返事を待つ/,'the open hand remains legible after release '+finalTag);
+   await quiet.page.screenshot({path:path.join(out,`${engine}-${finalTag}-open-hand-final-silence.png`)});
    await quiet.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
    assert.deepEqual(quiet.errors,[]);await quiet.ctx.close();done('critical flame does not hide final release '+finalTag);
    const breath=await open(finalSize,'?qa=1&seed=3&speed=.2&t=87&vital=breath');await breath.page.locator('#play').click();
    await breath.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence',null,{timeout:3000});
    assert.match(await breath.page.locator('.action-cue').innerText(),/手をひらいて/,'low breath and final reply need the same release '+finalTag);
+   assert.equal(await breath.page.locator('.action-main b').innerText(),'手をひらいている','critical breath must not invite another hold '+finalTag);
    assert.equal(await breath.page.locator('#stage').getAttribute('data-danger'),'breath-critical');
    assert.deepEqual(breath.errors,[]);await breath.ctx.close();done('critical breath keeps final release cue '+finalTag);
    const reply=await open(finalSize,'?qa=1&seed=3&speed=.2&t=88.5&vital=breath');await reply.page.locator('#play').click();
    await reply.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply',null,{timeout:3000});
    assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*手を離して息を/,'the reply keeps urgent breathing advice without hiding the scene '+finalTag);
+   assert.match(await reply.page.locator('.action-main b').innerText(),/手をひらいている/,'the window reply keeps the hand open '+finalTag);
    assert.deepEqual(reply.errors,[]);await reply.ctx.close();done('critical breath during window reply '+finalTag);
   }
   if(size.width===390){

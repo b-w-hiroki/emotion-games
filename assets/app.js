@@ -486,6 +486,12 @@ function candleCaption(s){
  if(s.routeChoice==='shortcut'&&elapsed<s.shortcutUntil&&s.wind>.5)return ['近道の風 — 長押しでかばって',true];
  return s.wind>.5&&s.flame<60&&s.memories===2?['風が来る — 長押し',true]:s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
 }
+function candleActionCopy(s){
+ if(s.finalePhase==='silence'||s.finalePhase==='window-reply'){
+  return s.shield?['はなす','窓に灯りを見せる']:['手をひらいている',s.oxygen<=22?'そのまま息を戻す':'そのまま窓の返事を待つ'];
+ }
+ return s.oxygen<=22?[s.shield?'はなす':'ひと休み','手を離して息を戻す']:s.shield?['はなす','息を戻す']:['押さえる','灯りを守る'];
+}
 function drawCandle(dt){
  if(candleDialog?.id==='kienaide-intro')return;
  const s=state;KV.resize(canvas);
@@ -497,7 +503,7 @@ function drawCandle(dt){
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);
  $('hint').textContent=text;
-  const mainText=s.oxygen<=22?(s.shield?'はなす':'ひと休み'):s.shield?'はなす':'押さえる',subText=s.oxygen<=22?'手を離して息を戻す':s.shield?'息を戻す':'灯りを守る',disableHold=chapterLoading||s.oxygen<=22&&!s.shield;
+  const [mainText,subText]=candleActionCopy(s),disableHold=chapterLoading||s.oxygen<=22&&!s.shield;
   if(actionCue.textContent!==text)actionCue.innerHTML=guidanceMarkup(text);if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;
   if(action.disabled!==disableHold){const focused=document.activeElement===action;action.disabled=disableHold;if(disableHold&&focused)pendingActionFocus=true;else if(!disableHold){if(pendingActionFocus&&!candleDialog&&(document.activeElement===document.body||document.activeElement===$('journey-menu-open')))action.focus({preventScroll:true});pendingActionFocus=false}}
   action.classList.toggle('is-held',!!s.shield);action.classList.toggle('is-warning',!!warn);
