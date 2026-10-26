@@ -1,5 +1,16 @@
 const clamp = value => Math.max(0, Math.min(1, value));
 
+// Judge the hand movement from event time, not time spent painting a frame.
+// A long, deliberate pull still moves the wok even on a slow phone.
+export function analyzePull(startX, startY, endX, endY, elapsedMs) {
+  const pull = Math.max(0, endY - startY), dx = endX - startX;
+  const ms = Math.max(60, Math.min(600, elapsedMs));
+  return {
+    lift: Math.max(0, Math.min(2, pull / 120 * (300 / ms) ** .35 * .7)),
+    lean: Math.max(-1.5, Math.min(1.5, dx / Math.max(80, pull)))
+  };
+}
+
 // A curved scoop from the outer rice toward the centre of the wok.
 export function analyzeGather(points, width, height) {
   if (points.length < 4 || width <= 0 || height <= 0) return { valid: false, quality: 0, sweep: 0, progress: 0 };
