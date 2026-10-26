@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, reelBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from '../fishing-battle/visual.js';
+
+test('only a downward stroke charges the reel and a corrected stroke can recover', () => {
+  assert.equal(verticalPull(0, 34), 34);
+  assert.equal(verticalPull(20, 40), 40);
+  assert.equal(verticalPull(80, 40), 0);
+  assert.equal(verticalPull(0, -40), 0);
+  assert.equal(verticalPull(100, 80), 0);
+  assert.equal(verticalPull(20, 80), 80);
+});
 
 test('held control gives a safe instruction in each phase', () => {
   assert.equal(pullGuidance('calm', 70).hint, '離して巻く！');
