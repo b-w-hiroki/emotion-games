@@ -22,6 +22,17 @@ test('rhythmic ladle taps separate rice and improve the plated result', () => {
   assert.ok(dishAppearance(scored).separateGrains > 0);
 });
 
+test('ladle input rhythm follows touch time when rendering advances fewer game frames', () => {
+  const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.cook = .5;
+  const first = tapLadle(game, .5, 20);
+  assert.equal(tapLadle(game, .5, 20.05), null, 'duplicate input is still ignored');
+  game.time = .05; // a busy WebKit frame can cap simulated time below the real tap interval
+  const second = tapLadle(game, .5, 20.32);
+  assert.ok(second > first, 'a real 320 ms rhythm still counts after a slow frame');
+  assert.equal(game.ladleHits, 2);
+  assert.equal(game.lastLadleAt, .05, 'the art effect remains on the game clock');
+});
+
 test('ladle timing and cooked rice matter without replacing the wok toss', () => {
   const good = createGame(), wet = createGame();
   for (const game of [good, wet]) { game.phase = 'playing'; addIngredient(game, 'rice'); game.heat = STAGES[0].idealHeat; }
