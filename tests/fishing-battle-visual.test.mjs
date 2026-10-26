@@ -242,6 +242,21 @@ test('reeling draws a fish nearer through its silhouette, water and camera', () 
   assert.deepEqual(battleCamera(state, 'calm', near, { reduced: true }), { x: 0, y: 0, zoom: 1 });
 });
 
+test('escape pressure pulls the fish back while the hook stays on its turning mouth', () => {
+  const state = createBattle('kue');
+  const safe = battlePose(state, 'rage', 0, { reduced: true });
+  state.escape = 90;
+  const danger = battlePose(state, 'rage', 0, { reduced: true });
+  assert.ok(danger.fishX > safe.fishX && danger.fishY < safe.fishY);
+  assert.ok(danger.fishSize < safe.fishSize && danger.ringWidth < safe.ringWidth);
+  assert.ok(danger.retreat > 0);
+  const fish = { ...outcomePose(danger, null, 0), angle: Math.PI / 2, scale: 1.2 };
+  const hook = lineShape(fish, 'rage');
+  assert.ok(Math.abs(hook.endX - (fish.fishX + 70 - 5 * fish.size * fish.scale)) < 1e-9);
+  assert.ok(Math.abs(hook.endY - (fish.fishY + 40 - 50 * fish.size * fish.scale)) < 1e-9);
+  assert.ok(lineShape({ ...fish, angle: 0 }, 'rage').endX < hook.endX);
+});
+
 test('camera follows held input, fish run and opposite outcomes while reduced motion stays still', () => {
   const state = createBattle('aji');
   const pose = battlePose(state, 'calm', 0);
