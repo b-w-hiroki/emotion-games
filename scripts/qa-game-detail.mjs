@@ -28,8 +28,9 @@ try{
   assert.ok(await page.locator('#home-details-open').isVisible());
   assert.ok(await page.locator('.kienaide-home-bottom').evaluate(element=>element.scrollWidth<=element.clientWidth+1),'home actions must fit viewport');
   if(size.width<600){
-   const home=await page.evaluate(()=>({height:document.documentElement.scrollHeight,viewport:innerHeight,footer:document.querySelector('.foot').getBoundingClientRect().bottom}));
-   assert.ok(home.height<=home.viewport+1&&home.footer<=home.viewport,`mobile home including art and footer must fit one screen: ${JSON.stringify(home)}`);
+   const home=await page.evaluate(()=>({viewport:innerHeight,hero:document.querySelector('.kienaide-home-art').getBoundingClientRect().bottom,shelf:document.querySelector('.chahan-shelf').getBoundingClientRect().top,footer:document.querySelector('.foot').getBoundingClientRect().bottom}));
+   assert.ok(home.hero<=home.viewport+1,`004 hero and its actions must fit one screen: ${JSON.stringify(home)}`);
+   assert.ok(home.shelf>=home.hero&&home.footer>home.shelf,`Chahan shelf follows the 004 hero: ${JSON.stringify(home)}`);
   }
   await page.screenshot({path:path.join(out,`detail-home-${engine}-${size.width}.png`)});
   assert.equal(new URL(await page.locator('.kienaide-home-play').getAttribute('href'),base).pathname,'/emotion-games/kienaide/');
