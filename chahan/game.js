@@ -122,15 +122,16 @@ draw(); updateHud();
 const venueTrack = $('venueTrack');
 const venueChoices = [...document.querySelectorAll('[data-venue]')];
 let venueUserScrollUntil = 0;
+let venueDirectUntil = 0;
 function selectVenue(index, scroll = true) {
   selectedVenue = clamp(index, 0, venueChoices.length - 1);
   venueChoices.forEach((choice, i) => choice.setAttribute('aria-pressed', String(i === selectedVenue)));
   $('venuePosition').textContent = `${selectedVenue + 1} / ${venueChoices.length} · 横にスライドして選ぶ`;
-  if (scroll) { venueUserScrollUntil = 0; venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: 'instant' }); }
+  if (scroll) { venueUserScrollUntil = 0; venueDirectUntil = performance.now() + 800; clearTimeout(venueScrollTimer); venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: 'instant' }); }
 }
 for (const button of venueChoices) button.onclick = () => selectVenue(Number(button.dataset.venue));
 let venueScrollTimer;
-for (const event of ['pointerdown', 'wheel']) venueTrack.addEventListener(event, () => { venueUserScrollUntil = performance.now() + 1200; }, { passive: true });
-venueTrack.addEventListener('scroll', () => { if (performance.now() > venueUserScrollUntil) return; clearTimeout(venueScrollTimer); venueScrollTimer = setTimeout(() => { if (performance.now() <= venueUserScrollUntil) selectVenue(Math.round(venueTrack.scrollLeft / venueTrack.clientWidth), false); }, 80); });
+for (const event of ['pointerdown', 'wheel']) venueTrack.addEventListener(event, () => { venueDirectUntil = 0; venueUserScrollUntil = performance.now() + 1200; }, { passive: true });
+venueTrack.addEventListener('scroll', () => { if (performance.now() < venueDirectUntil || performance.now() > venueUserScrollUntil) return; clearTimeout(venueScrollTimer); venueScrollTimer = setTimeout(() => { if (performance.now() >= venueDirectUntil && performance.now() <= venueUserScrollUntil) selectVenue(Math.round(venueTrack.scrollLeft / venueTrack.clientWidth), false); }, 80); });
 venueTrack.addEventListener('keydown', event => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); event.stopPropagation(); selectVenue(selectedVenue + (event.key === 'ArrowRight' ? 1 : -1)); });
 if (new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');

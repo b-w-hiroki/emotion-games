@@ -362,13 +362,56 @@ function ladleEffect(ctx, game, reduced) {
     ctx.strokeText('カン！', x, y - 115 - 20 * spread); ctx.fillText('カン！', x, y - 115 - 20 * spread); ctx.restore();
   }
 }
+export function drawRiceMascot(ctx, game, reduced = false) {
+  if (!game.ingredients.rice || game.phase !== 'playing') return;
+  const age = game.time - game.lastToss;
+  const dancing = game.tossOutcome === 'caught' && game.combo > 0 && age >= 0 && age < 2.4;
+  const beat = dancing && !reduced ? Math.sin(game.time * 17) : 0;
+  const lift = dancing && !reduced ? Math.max(0, beat) * 13 : 0;
+  const tilt = dancing && !reduced ? beat * .12 : 0;
+  const x = 205, y = 754;
+  ctx.save();
+  ellipse(ctx, x, y + 8, 54, 11, '#110e14a8');
+  ctx.translate(x, y - lift);
+  ctx.rotate(tilt);
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#43302b'; ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.moveTo(-20, -17); ctx.lineTo(-28 + (dancing ? beat * 7 : 0), 4); ctx.moveTo(20, -17); ctx.lineTo(28 - (dancing ? beat * 7 : 0), 4); ctx.stroke();
+  ctx.strokeStyle = '#f7d38c'; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(-20, -18); ctx.lineTo(-27 + (dancing ? beat * 7 : 0), 3); ctx.moveTo(20, -18); ctx.lineTo(27 - (dancing ? beat * 7 : 0), 3); ctx.stroke();
+  ctx.strokeStyle = '#493027'; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(-32, -68); ctx.lineTo(-47, -78 - (dancing ? beat * 17 : 0)); ctx.moveTo(32, -68); ctx.lineTo(47, -78 + (dancing ? beat * 17 : 0)); ctx.stroke();
+  ctx.strokeStyle = '#fff0c4'; ctx.lineWidth = 7;
+  ctx.beginPath(); ctx.moveTo(-32, -68); ctx.lineTo(-47, -78 - (dancing ? beat * 17 : 0)); ctx.moveTo(32, -68); ctx.lineTo(47, -78 + (dancing ? beat * 17 : 0)); ctx.stroke();
+  const body = ctx.createLinearGradient(-35, -95, 35, -17);
+  body.addColorStop(0, '#fff9d9'); body.addColorStop(.55, '#ffebbd'); body.addColorStop(1, '#dcae75');
+  ellipse(ctx, 0, -53, 38, 49, body, -.08);
+  ctx.strokeStyle = '#7d4e32'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(0, -53, 38, 49, -.08, 0, Math.PI * 2); ctx.stroke();
+  ellipse(ctx, -15, -58, 4.5, dancing ? 5.5 : 4.5, '#402921');
+  ellipse(ctx, 15, -58, 4.5, dancing ? 5.5 : 4.5, '#402921');
+  ellipse(ctx, -25, -45, 7, 4, '#f3a38a8a'); ellipse(ctx, 25, -45, 7, 4, '#f3a38a8a');
+  ctx.strokeStyle = '#7a3c31'; ctx.lineWidth = 3; ctx.beginPath();
+  if (dancing) { ctx.arc(0, -45, 7, 0, Math.PI); } else { ctx.arc(0, -47, 5, .1, Math.PI - .1); }
+  ctx.stroke();
+  ctx.fillStyle = '#d05a39'; ctx.beginPath(); ctx.moveTo(-30, -84); ctx.quadraticCurveTo(0, -98, 29, -84); ctx.lineTo(29, -76); ctx.quadraticCurveTo(0, -91, -29, -76); ctx.closePath(); ctx.fill();
+  ellipse(ctx, 0, -88, 7, 3, '#ffe3a0');
+  ctx.restore();
+  if (dancing && !reduced) {
+    for (let i = 0; i < 3 + Math.min(3, game.combo); i++) {
+      const phase = (game.time * 1.7 + i / 6) % 1;
+      const sx = x + (i % 2 ? 1 : -1) * (50 + i * 8), sy = y - 65 - phase * 70;
+      ellipse(ctx, sx, sy, 3 + (1 - phase) * 3, 2 + (1 - phase) * 2, i % 2 ? '#ffe595' : '#fff9d8', i);
+    }
+  }
+}
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;
   const painted = paintedScenes[stage];
   ctx.drawImage(painted.complete && painted.naturalWidth ? painted : background(stage),0,0,W,H);
   const vignette=ctx.createRadialGradient(390,420,170,390,420,610);vignette.addColorStop(0,'#0000');vignette.addColorStop(1,'#090a16a8');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   atmosphere(ctx,game,reduced);worktop(ctx);
-  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);ladleEffect(ctx,game,reduced);pullPreview(ctx,game);
+  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);ladleEffect(ctx,game,reduced);pullPreview(ctx,game);drawRiceMascot(ctx,game,reduced);
 }
 
 export function drawDish(ctx, game, reveal = 1) {
