@@ -84,6 +84,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         await page.locator('#fish').selectOption(id);
         if (!await page.locator('#fishName').textContent()) throw new Error(`${name}: ${id} has no name`);
       }
+      await page.waitForTimeout(100);
+      await page.screenshot({ path: `${out}/${name}-kue-selected.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
       await page.screenshot({ path: `${out}/${name}-kue-rage.png` });
       await page.locator('#mute').click();
