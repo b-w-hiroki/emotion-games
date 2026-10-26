@@ -57,6 +57,39 @@ function drawCookingRice(ctx, image, args, cook) {
 }
 const rgba = (hex, alpha) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${alpha})`; };
 function ellipse(ctx, x, y, rx, ry, color, rotation = 0) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rotation, 0, Math.PI * 2); ctx.fill(); }
+function riceSeparation(ctx, game, amount) {
+  const pockets = game.riceClumps || [1 - game.fluff, 1 - game.fluff, 1 - game.fluff];
+  const pale = game.cook < .28, charred = game.cook > 1.08;
+  const shadow = charred ? '#71432d' : '#a67044';
+  const body = pale ? '#f0ddaf' : charred ? '#c68d52' : '#efc481';
+  const highlights = pale ? ['#fff5d4', '#f7e7be'] : charred ? ['#dfb074', '#f1c98b'] : ['#fff1bf', '#f7d99c'];
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, 13, 187 * amount, 52 * amount, 0, 0, Math.PI * 2); ctx.clip();
+  for (let pocket = 0; pocket < 3; pocket++) {
+    const clumped = Math.max(0, Math.min(1, pockets[pocket]));
+    const x = (pocket - 1) * 111 * amount, y = 12 + (pocket % 2) * 9;
+    if (clumped > 0) {
+      ctx.save(); ctx.globalAlpha *= clumped * .94;
+      ellipse(ctx, x + 2, y + 7, 30 * amount, 11 * amount, rgba(shadow, .4), -.08);
+      for (let i = 0; i < 17; i++) {
+        const gx = x + ((i * 19) % 55 - 27) * amount;
+        const gy = y + ((i * 13) % 23 - 11) * amount;
+        ellipse(ctx, gx + 1, gy + 2, (6 + i % 3) * amount, (3 + i % 2) * amount, rgba(shadow, .55), i * .37);
+        ellipse(ctx, gx, gy, (6 + i % 3) * amount, (2.5 + i % 2) * amount, i % 5 ? highlights[i % 2] : body, i * .37);
+      }
+      ctx.restore();
+    }
+    if (clumped < 1) {
+      ctx.save(); ctx.globalAlpha *= (1 - clumped) * .9;
+      for (let i = 0; i < 22; i++) {
+        const gx = x + ((i * 37) % 85 - 42) * amount;
+        const gy = y + ((i * 23) % 43 - 21) * amount;
+        ellipse(ctx, gx, gy, (5 + i % 3) * amount, (1.8 + i % 2) * amount, highlights[i % 2], i * .41);
+      }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
 function line(ctx, points, color, width = 2) { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(...points[0]); for (const point of points.slice(1)) ctx.lineTo(...point); ctx.stroke(); }
 function glow(ctx, x, y, radius, color) { const g = ctx.createRadialGradient(x, y, 0, x, y, radius); g.addColorStop(0, rgba(color, .55)); g.addColorStop(1, rgba(color, 0)); ellipse(ctx, x, y, radius, radius, g); }
 function grain(ctx, tint, count = 80) { for (let i = 0; i < count; i++) { const x = (i * 127.7 + 13) % W, y = (i * 211.3 + 17) % H; ellipse(ctx, x, y, i % 4 ? 1 : 2, 1, rgba(tint, .055)); } }
@@ -226,6 +259,7 @@ function wok(ctx, game, reduced) {
     const riceArgs=[-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale];
     if(hasEggRice)drawCookingRice(ctx,paintedRiceEgg,riceArgs,game.cook);
     if(hasColoredRice){ctx.save();ctx.globalAlpha*=hasEggRice?mixed:1;drawCookingRice(ctx,paintedRice,riceArgs,game.cook);ctx.restore();}
+    riceSeparation(ctx, game, amount * baseScale);
     if(game.ingredients.veg){
       for(let i=0;i<26*mixed*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/26),x=Math.cos(a)*165*r*amount,y=17+Math.sin(a)*36*r*amount;fillingPiece(ctx,x,y,game.filling,i,amount*baseScale,game.fillingCook);}
       for(let i=0;i<20*(1-mixed)*game.rice;i++){const x=77+(i%5)*12,y=12+Math.floor(i/5)*9;fillingPiece(ctx,x*amount*baseScale,y*amount*baseScale,game.filling,i,amount*baseScale,game.fillingCook);}
@@ -241,6 +275,7 @@ function wok(ctx, game, reduced) {
   ctx.restore();
   // Ingredients above the rice are larger and readable at phone size.
   for(let i=0;i<(game.ingredients.veg?28:game.ingredients.egg?12:0)*game.rice;i++){const a=i*2.39,r=Math.sqrt((i+.5)/28)*184*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.26+16-fly*(55+i%4*14);if(i%3===0)ellipse(ctx,x,y,10,5,'#f9c94d',a);else if(i%3===1)ellipse(ctx,x,y,7,4,game.ingredients.veg?'#e96d4d':'#f9d47b',a);else if(game.ingredients.veg){ellipse(ctx,x,y,9,4,'#6eaa5e',a);ellipse(ctx,x+3,y-1,4,2,'#c9df78',a);}}
+  riceSeparation(ctx, game, amount);
   ctx.restore();
   }
   if(hasRice)ctx.restore();

@@ -33,6 +33,22 @@ test('ladle input rhythm follows touch time when rendering advances fewer game f
   assert.equal(game.lastLadleAt, .05, 'the art effect remains on the game clock');
 });
 
+test('ladle taps break nearby rice clumps and reward moving around the wok', () => {
+  const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.cook = .7; game.heat = STAGES[0].idealHeat;
+  for (let i = 0; i < 4; i++) tapLadle(game, .25, 10 + i * .3);
+  assert.equal(game.riceClumps[0], 0, 'the left pocket has been separated');
+  assert.deepEqual(game.riceClumps.slice(1), [1, 1], 'untouched pockets remain clumped');
+  const leftOnly = game.fluff;
+  const mixAfterLeft = game.mix;
+  tapLadle(game, .25, 11.2);
+  assert.equal(game.fluff, leftOnly, 'repeating a finished pocket does not add fluff');
+  assert.equal(game.mix, mixAfterLeft, 'an already separated pocket does not add mixing points');
+  assert.match(game.message, /別の場所/);
+  tapLadle(game, .5, 11.5);
+  tapLadle(game, .75, 11.8);
+  assert.ok(game.fluff > leftOnly, 'tapping the remaining pockets separates more rice');
+});
+
 test('ladle timing and cooked rice matter without replacing the wok toss', () => {
   const good = createGame(), wet = createGame();
   for (const game of [good, wet]) { game.phase = 'playing'; addIngredient(game, 'rice'); game.heat = STAGES[0].idealHeat; }
