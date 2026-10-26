@@ -212,13 +212,17 @@ export function battleCamera(state, cue, pose, { pull = 0, outcomeProgress = 0, 
   // Move against the fish's displacement to keep the line's target in view.
   const fishOffset = clamp((176 - pose.fishX) * .26, -12, 12);
   const pressure = escapePressure(state);
+  // The wake and the camera share the fish's actual swim velocity. Reveal a
+  // little space ahead of a run, then ease back as it turns or slows down.
+  const wake = surfaceResponse(pose, cue).wake;
+  const swimLead = Math.sign(pose.swimVelocity) * wake;
   const hit = clamp(flash / .35, 0, 1);
   const reelKick = (impact === 'goodReel' || impact === 'goodOpening' ? -1 : impact === 'badReel' ? 1 : 0) * strength;
   if (state.outcome === 'caught') return { x: -10 * outcomeProgress, y: -17 * outcomeProgress, zoom: 1 + .055 * outcomeProgress };
   if (state.outcome === 'escaped') return { x: -20 * outcomeProgress, y: 3 * outcomeProgress, zoom: 1 - .035 * outcomeProgress };
   return {
-    x: clamp(fishOffset - run * 9 + held * 5 + reelKick * hit * 7 - pressure * 5, -21, 18),
+    x: clamp(fishOffset - run * 9 - swimLead * 9 + held * 5 + reelKick * hit * 7 - pressure * 5, -25, 22),
     y: run * 5 + held * 8 + reelKick * hit * 6 - pose.proximity * 6,
-    zoom: 1 + held * .018 - run * .012 - reelKick * hit * .025 - pressure * .018 + pose.proximity * .018,
+    zoom: 1 + held * .018 - run * .012 - wake * .008 - reelKick * hit * .025 - pressure * .018 + pose.proximity * .018,
   };
 }
