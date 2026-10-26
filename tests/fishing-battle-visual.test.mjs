@@ -228,6 +228,20 @@ test('fish silhouette, water ring and hook point grow together by species', () =
   assert.ok(largeLine.endX < smallLine.endX);
 });
 
+test('reeling draws a fish nearer through its silhouette, water and camera', () => {
+  const state = createBattle('tai');
+  const far = battlePose(state, 'calm', 0, { reduced: true });
+  const farCamera = battleCamera(state, 'calm', far);
+  state.reel = 90;
+  const near = battlePose(state, 'calm', 0, { reduced: true });
+  const nearCamera = battleCamera(state, 'calm', near);
+  assert.ok(near.fishY > far.fishY && near.fishSize > far.fishSize);
+  assert.ok(near.ringWidth > far.ringWidth && near.ringHeight > far.ringHeight);
+  assert.ok(nearCamera.zoom > farCamera.zoom && nearCamera.y < farCamera.y);
+  assert.ok(lineShape(outcomePose(near, null, 0), 'calm').endX < lineShape(outcomePose(far, null, 0), 'calm').endX);
+  assert.deepEqual(battleCamera(state, 'calm', near, { reduced: true }), { x: 0, y: 0, zoom: 1 });
+});
+
 test('camera follows held input, fish run and opposite outcomes while reduced motion stays still', () => {
   const state = createBattle('aji');
   const pose = battlePose(state, 'calm', 0);
