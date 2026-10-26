@@ -99,6 +99,23 @@ test('swipe distance scales one reel impact across fish, fisher, water and camer
   assert.equal(battlePose(state, 'calm', 0, { ...options, strength: long, reduced: true }).fishX, battlePose(state, 'calm', 0, { ...options, strength: short, reduced: true }).fishX);
 });
 
+test('a faster swipe at the same reach lands harder without changing AINAN progress', () => {
+  const fast = reelImpulse(90, 80), slow = reelImpulse(90, 900);
+  assert.ok(fast > reelImpulse(90) && reelImpulse(90) > slow);
+  assert.equal(reelImpulse(90, 1), reelImpulse(90, 16));
+  assert.equal(reelImpulse(90, 9000), reelImpulse(90, 90000));
+  const quickState = createBattle('tai'), patientState = createBattle('tai');
+  reelBattle(quickState); reelBattle(patientState);
+  assert.deepEqual([quickState.reel, quickState.escape, quickState.outcome], [patientState.reel, patientState.escape, patientState.outcome]);
+  const options = { impact: 'goodReel', flash: .35 };
+  const quickFish = battlePose(quickState, 'calm', 0, { ...options, strength: fast });
+  const patientFish = battlePose(patientState, 'calm', 0, { ...options, strength: slow });
+  assert.ok(quickFish.fishX < patientFish.fishX);
+  assert.ok(fisherPose('calm', { ...options, strength: fast }).angle < fisherPose('calm', { ...options, strength: slow }).angle);
+  assert.ok(surfaceResponse(quickFish, 'calm', { ...options, strength: fast }).impactScale > surfaceResponse(patientFish, 'calm', { ...options, strength: slow }).impactScale);
+  assert.ok(battleCamera(quickState, 'calm', quickFish, { ...options, strength: fast }).y < battleCamera(patientState, 'calm', patientFish, { ...options, strength: slow }).y);
+});
+
 test('the fisher braces, pulls and recoils while the line stays on the transformed hand', () => {
   const neutral = fisherPose('calm');
   const held = fisherPose('calm', { pull: 110 });

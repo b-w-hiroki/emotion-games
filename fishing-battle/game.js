@@ -130,7 +130,7 @@ board.addEventListener('pointerdown', e => {
   if (state.outcome || keyboardPull || e.target.closest('.settings,.result') || (e.pointerType === 'mouse' && e.button !== 0)) return;
   if (pointerStart) return;
   sound.unlock();
-  pointerStart = { id: e.pointerId, x: e.clientX, y: e.clientY, onDial: Boolean(e.target.closest('#reel')) };
+  pointerStart = { id: e.pointerId, x: e.clientX, y: e.clientY, startedAt: performance.now(), onDial: Boolean(e.target.closest('#reel')) };
   offAxisPull = false;
   board.setPointerCapture(e.pointerId);
 });
@@ -146,10 +146,11 @@ board.addEventListener('pointerup', e => {
   const dy = e.clientY - pointerStart.y, dx = Math.abs(e.clientX - pointerStart.x);
   const directedPull = verticalPull(dx, dy);
   const tapDial = pointerStart.onDial && Math.hypot(dx, dy) <= 24;
+  const durationMs = performance.now() - pointerStart.startedAt;
   pointerStart = null;
   offAxisPull = false;
   setPull(0);
-  if (tapDial || directedPull >= 34) reel(tapDial ? 1 : reelImpulse(directedPull));
+  if (tapDial || directedPull >= 34) reel(tapDial ? 1 : reelImpulse(directedPull, durationMs));
   else {
     if (dy >= 34 && !directedPull) {
       $('action').textContent = '下へまっすぐ引こう';
