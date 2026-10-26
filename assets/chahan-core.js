@@ -8,7 +8,7 @@ export const FILLING_NAMES = { scallion: 'ねぎ', pork: '焼豚', shrimp: '海�
 
 export function createGame(venue = 0) {
   const stage = Number.isInteger(venue) && venue >= 0 && venue < STAGES.length ? venue : 0;
-  return { time: 0, stage, rice: 0, cook: 0, mix: 0, fluff: 0, heat: .48, heatFitSum: 0, heatTime: 0, panPush: 0, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, lastLadleAt: -10, ladleHits: 0, ladleX: .5, lastLadleQuality: 0, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を入れて、鍋をあおろう。' };
+  return { time: 0, stage, rice: 0, cook: 0, mix: 0, fluff: 0, heat: .48, heatFitSum: 0, heatTime: 0, panPush: 0, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, lastLadleAt: -10, ladleHits: 0, ladleX: .5, lastLadleQuality: 0, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, platingQuality: 0, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を入れて、鍋をあおろう。' };
 }
 
 export function heatReadiness(game) {
@@ -19,13 +19,12 @@ export function heatReadiness(game) {
 }
 
 export function tossForecast(game, gesture) {
-  const push = Math.max(0, Math.min(1.5, gesture.push ?? .7));
   const lift = Math.max(0, Math.min(2, gesture.lift));
   const lean = Math.max(-1.5, Math.min(1.5, gesture.lean));
-  const quality = Math.max(0, 1 - Math.abs(push - .7) * .4 - Math.abs(lift - .7) / .85 - Math.abs(lean) * .5);
-  const state = push < .2 ? 'setup' : lift < .28 ? 'weak' : lift > 1.25 ? 'strong' : Math.abs(lean) >= .55 ? 'sideways' : 'safe';
-  const cue = { setup: '先に鍋を奥へ押そう', weak: 'もう少し手前へ引く', strong: '強すぎる！', sideways: 'まっすぐ引こう', safe: '米がふわっと返る！' }[state];
-  return { push, lift, lean, quality, state, cue };
+  const quality = Math.max(0, 1 - Math.abs(lift - .7) / .85 - Math.abs(lean) * .5);
+  const state = lift < .28 ? 'weak' : lift > 1.25 ? 'strong' : Math.abs(lean) >= .55 ? 'sideways' : 'safe';
+  const cue = { weak: 'もう少し手前へフリック', strong: '強すぎる！', sideways: 'まっすぐフリック', safe: '米がふわっと返る！' }[state];
+  return { lift, lean, quality, state, cue };
 }
 
 export function eggReadiness(game) {
@@ -108,18 +107,17 @@ export function advance(game, input, dt) {
   return game;
 }
 
-export function toss(game, gesture = { push: .7, lift: 0.65, lean: 0 }) {
+export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
   if (game.phase !== 'playing' || game.time - game.lastToss < 0.42) return null;
   if (!game.ingredients.rice) { game.message = 'ごはんを入れてから鍋を返そう。'; return null; }
   game.lastToss = game.time;
   game.tossed++;
-  const { push, lift, lean, quality, state } = tossForecast(game, gesture);
-  game.lastPush = push;
+  const { lift, lean, quality, state } = tossForecast(game, gesture);
   game.lastLift = lift;
   game.lastLean = lean;
   const safe = state === 'safe';
   game.lastTossQuality = safe ? quality : 0;
-  game.tossOutcome = safe ? 'caught' : state === 'weak' || state === 'setup' ? 'weak' : 'spilled';
+  game.tossOutcome = safe ? 'caught' : state === 'weak' ? 'weak' : 'spilled';
   game.tossSpill = 0;
   if (safe) {
     game.combo++;
@@ -136,7 +134,7 @@ export function toss(game, gesture = { push: .7, lift: 0.65, lean: 0 }) {
     game.rice -= loss;
     game.lost += loss;
     game.tossSpill = loss;
-    game.message = state === 'setup' ? '鍋を先に奥へ押して、勢いをつけよう。' : state === 'weak' ? '引きが弱かった。米は鍋の底に残った。' : '斜めか強すぎ！ 米がこぼれた。';
+    game.message = state === 'weak' ? 'フリックが弱かった。米は鍋の底に残った。' : '斜めか強すぎ！ 米がこぼれた。';
   }
   return safe;
 }
@@ -192,8 +190,8 @@ export function platingReadiness(game) {
   const quality = Math.max(0, 1 - Math.abs(game.cook - .86) / .86);
   const cue = game.mix < .35 ? 'もう少し米と具を混ぜる'
     : game.cook < .68 ? 'もう少し火を通す'
-    : game.cook > 1.05 ? '焦げる前に盛り付け！'
-    : '今が盛りどき！';
+    : game.cook > 1.05 ? '焦げる前におたまで集めよう！'
+    : '今が盛りどき！ 円を描いて中心へ';
   return { ready: game.mix >= .35 && cookMeter(game).state === 'ready', cue, quality };
 }
 
@@ -204,12 +202,13 @@ export function cookMeter(game) {
   return { state, label, fill: Math.min(100, Math.round(cook / 1.5 * 100)) };
 }
 
-export function plate(game) {
+export function plate(game, gatherQuality = .5) {
   if (game.phase !== 'playing' || !game.seasoned || game.rice <= .25) return false;
   game.plated = true;
   game.platedAt = game.time;
+  game.platingQuality = Math.max(0, Math.min(1, gatherQuality)) * platingReadiness(game).quality;
   game.phase = 'finished';
-  game.message = '盛り付けた！';
+  game.message = game.platingQuality >= .65 ? 'おたまで丸く盛り付けた！' : 'おたまで盛り付けた。';
   return true;
 }
 
@@ -218,7 +217,7 @@ export function result(game) {
   const skill = tossReadiness(game);
   const heatFit = game.heatTime ? game.heatFitSum / game.heatTime : 0;
   const fluff = Math.max(0, Math.min(1, game.fluff || 0));
-  const score = Math.round(100 * (game.mix * 0.15 + doneness * 0.14 + game.rice * 0.12 + game.seasoning * 0.13 + game.prep * 0.08 + fillingReadiness(game).quality * 0.12 + skill * 0.07 + heatFit * 0.09 + fluff * 0.10));
+  const score = Math.round(100 * (game.mix * 0.14 + doneness * 0.13 + game.rice * 0.11 + game.seasoning * 0.12 + game.prep * 0.08 + fillingReadiness(game).quality * 0.11 + skill * 0.07 + heatFit * 0.08 + fluff * 0.10 + (game.platingQuality || 0) * 0.06));
   const title = game.rice <= 0.25 ? '空っぽの鍋' : score >= 80 ? '伝説のパラパラ' : score >= 60 ? 'うまいチャーハン' : score >= 40 ? 'まだまだ食べられる' : '次はもっとおいしく';
   const comment = !game.ingredients.rice ? 'ごはんが入らないまま完成。次は卵を炒めて、ごはんを入れよう。'
     : game.rice <= 0.25 ? '米が鍋から飛んでいった。次は少しやさしく、まっすぐ返そう。'
@@ -234,11 +233,12 @@ export function result(game) {
     : heatFit < .45 ? `${STAGES[game.stage].name}では火力を${game.heat < STAGES[game.stage].idealHeat ? '上げて' : '下げて'}炒めよう。`
     : game.plated && game.cook < .68 ? '少し早く盛り付けた。もうひと炒めすると、米がもっと香ばしくなる。'
     : game.plated && game.cook > 1.05 ? '少し遅く盛り付けた。焦げる前に皿へ移そう。'
-    : game.tossed > 0 && skill < .25 ? '鍋を奥へ押してから手前へまっすぐ引くと、米が軽くほどける。'
+    : game.tossed > 0 && skill < .25 ? '鍋を手前へまっすぐフリックすると、米が軽くほどける。'
     : fluff < .35 ? 'おたまで鍋をカンカン。米のかたまりをほぐすと、もっとパラパラになる。'
-    : score >= 80 ? '一粒ずつ香ばしく、ふわりとほどける。今日の会心のひと皿。'
+    : game.plated && game.platingQuality < .45 ? 'おたまで円を描き、中心へ集めると丸く盛れる。'
+    : score >= 80 ? '一粒ずつ香ばしく、丸く盛れた会心のひと皿。'
     : '香ばしく仕上がった。次はもっと軽やかに返せそうだ。';
-  return { score, title, doneness, seasoning: game.seasoning, skill, heatFit, fluff, comment };
+  return { score, title, doneness, seasoning: game.seasoning, skill, heatFit, fluff, plating: game.platingQuality || 0, comment };
 }
 
 export function dishAppearance(game) {
@@ -254,6 +254,7 @@ export function dishAppearance(game) {
     pale: clamp((.55 - cook) / .55),
     char: clamp((cook - 1.05) / .5),
     separateGrains: Math.round(clamp(game.fluff) * rice * 38),
+    roundness: game.plated ? clamp(game.platingQuality) : 0,
     steam: rice > .3 && cook > .48 ? clamp((cook - .48) / .38) * (1 - clamp((cook - 1.25) / .6)) : 0,
   };
 }

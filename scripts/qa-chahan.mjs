@@ -44,6 +44,7 @@ try {
           const dish = document.createElement('canvas'); dish.width = 640; dish.height = 280;
           for (const cook of [.12, .86, 1.35]) { game.cook = cook; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL()); }
           game.cook = .86; game.fluff = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
+          game.plated = true; game.platingQuality = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
           const mascot = document.createElement('canvas'); mascot.width = 780; mascot.height = 900;
           const mascotCtx = mascot.getContext('2d'), mascotFrames = {};
           const captureMascot = (label, update, reduced = false) => { Object.assign(game, update); mascotCtx.clearRect(0, 0, 780, 900); drawRiceMascot(mascotCtx, game, reduced); mascotFrames[label] = mascot.toDataURL(); };
@@ -59,7 +60,7 @@ try {
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
         assert.equal(new Set(Object.values(art.frames)).size, 6, `${name} ${width}: push, flight, ladle and cooking states have distinct art`);
-        assert.equal(new Set(art.dishes).size, 4, `${name} ${width}: doneness and separated rice change the finished dish`);
+        assert.equal(new Set(art.dishes).size, 5, `${name} ${width}: doneness, separated rice and round plating change the finished dish`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.caught, `${name} ${width}: every caught toss gets a celebration`);
         assert.notEqual(art.mascotFrames.dance, art.mascotFrames.danceLater, `${name} ${width}: dance animation changes over time`);
@@ -68,11 +69,11 @@ try {
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.empty, `${name} ${width}: the mascot appears after rice is added`);
         if (width === 390) for (const [label, data] of Object.entries(art.frames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         if (width === 390) fs.writeFileSync(path.join(output, `mascot-${name}.png`), Buffer.from(art.mascotFrames.dance.split(',')[1], 'base64'));
+        if (width === 390) fs.writeFileSync(path.join(output, `rounded-dish-${name}.png`), Buffer.from(art.dishes.at(-1).split(',')[1], 'base64'));
         assert.equal(new URL(page.url()).pathname, '/', `${name} ${width}: game shares the studio page`);
         assert.equal(await frame.locator('[data-venue]').count(), 3);
         assert.equal(await frame.locator('.venue-slide img').count(), 3);
-        await frame.locator('#venueTrack').focus();
-        await page.keyboard.press('ArrowRight');
+        await frame.locator('#venueTrack').press('ArrowRight');
         assert.equal(await frame.locator('[data-venue="1"]').getAttribute('aria-pressed'), 'true', 'keyboard advances the carousel');
         await frame.locator('[data-venue="2"]').click();
         assert.equal(await frame.locator('#venuePosition').textContent().then(x => x.startsWith('3 / 3')), true, 'thumbnail selects a venue');
@@ -105,17 +106,22 @@ try {
           assert.ok(await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > firstFluff, 'rhythmic second tap separates more rice');
           await page.screenshot({ path: path.join(output, `ladle-${venue}-${name}-${width}.png`), fullPage: true });
           await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 95, { steps: 8 }); await page.mouse.up();
-          assert.equal(await frame.locator('#combo').textContent(), '0', 'pull alone cannot flip rice');
-          await page.waitForTimeout(500);
-          await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y - 80, { steps: 8 }); await page.mouse.move(x, y + 25, { steps: 8 }); await page.mouse.up();
-          assert.equal(await frame.locator('#combo').textContent(), '1', 'push then pull catches rice');
+          assert.equal(await frame.locator('#combo').textContent(), '1', 'one flick toward the cook catches rice');
           assert.equal(new URL(page.url()).pathname, '/', 'play stays on the studio page');
           await page.screenshot({ path: path.join(output, `venue-${venue}-${name}-${width}.png`), fullPage: true });
-          if (venue < 2) {
-            await frame.locator('#seasoning').click();
-            await frame.locator('#seasoning').click();
-            await frame.locator('#overlayTitle').waitFor();
-          }
+          await frame.locator('#seasoning').click();
+          assert.equal(await frame.locator('#seasoning').isVisible(), false, 'seasoning is selected once and does not become a finish button');
+          assert.equal(await frame.locator('#platingHint').isVisible(), true, 'plating gesture is shown after seasoning');
+          const centerX = area.x + area.width * .5, centerY = area.y + area.height * .58;
+          const scale = Math.min(area.width, area.height);
+          const scoop = [[-.28, 0], [-.21, -.18], [0, -.25], [.21, -.18], [.28, 0], [0, 0]];
+          await page.mouse.move(centerX + scoop[0][0] * scale, centerY + scoop[0][1] * scale);
+          await page.mouse.down();
+          for (const [dx, dy] of scoop.slice(1)) await page.mouse.move(centerX + dx * scale, centerY + dy * scale, { steps: 5 });
+          await page.mouse.up();
+          await frame.locator('#overlayTitle').waitFor();
+          await frame.locator('#resultDish[data-revealed="true"]').waitFor();
+          await page.screenshot({ path: path.join(output, `plated-${venue}-${name}-${width}.png`), fullPage: true });
         }
         assert.deepEqual(errors, [], `${name} ${width}: no JavaScript errors`);
         await page.close();

@@ -30,7 +30,7 @@ test('ladle timing and cooked rice matter without replacing the wok toss', () =>
   good.time = wet.time = .32;
   assert.ok(tapLadle(good) > tapLadle(wet), 'wet rice is harder to separate');
   assert.equal(good.tossed, 0, 'ladle tapping does not count as a wok toss');
-  good.time += .5; assert.equal(toss(good, { push: .7, lift: .7, lean: 0 }), true);
+  good.time += .5; assert.equal(toss(good, { lift: .7, lean: 0 }), true);
   assert.equal(good.tossed, 1);
 });
 
@@ -49,14 +49,12 @@ test('precise tosses earn a visible skill result without rewarding spills', () =
   assert.equal(tossReadiness(g), 1, 'previous clean tosses remain credited');
 });
 
-test('a wok toss requires an away push followed by a controlled pull', () => {
+test('one controlled flick toward the cook tosses and catches rice', () => {
   const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.time = 1;
-  assert.equal(tossForecast(game, { push: 0, lift: .7, lean: 0 }).state, 'setup');
-  assert.equal(toss(game, { push: 0, lift: .7, lean: 0 }), false);
-  assert.equal(game.rice, 1, 'a missing setup does not spill rice');
-  game.time += .5;
-  assert.equal(toss(game, { push: .7, lift: .7, lean: 0 }), true);
+  assert.equal(tossForecast(game, { lift: .7, lean: 0 }).state, 'safe');
+  assert.equal(toss(game, { lift: .7, lean: 0 }), true);
   assert.equal(game.tossOutcome, 'caught');
+  assert.equal(game.rice, 1);
   assert.ok(game.mix > 0);
 });
 
@@ -115,6 +113,22 @@ test('plating preserves the chosen doneness in any venue', () => {
   assert.ok(result(g).score > earlyScore);
   assert.equal(plate(g), true);
   assert.equal(g.phase, 'finished'); assert.equal(g.platedAt, 27);
+  assert.ok(g.platingQuality > 0);
+});
+
+test('a well-timed rounded scoop improves the plate and finished score', () => {
+  const ready = createGame(); ready.phase = 'playing';
+  addIngredient(ready, 'egg'); addIngredient(ready, 'rice'); addIngredient(ready, 'veg');
+  Object.assign(ready, { seasoned: true, cook: .86, mix: .8, rice: 1 });
+  const early = { ...ready, cook: .3 };
+  const loose = { ...ready };
+  assert.equal(plate(ready, 1), true);
+  assert.equal(plate(early, 1), true);
+  assert.equal(plate(loose, .45), true);
+  assert.ok(ready.platingQuality > early.platingQuality);
+  assert.ok(ready.platingQuality > loose.platingQuality);
+  assert.ok(dishAppearance(ready).roundness > dishAppearance(loose).roundness);
+  assert.ok(result(ready).score > result(loose).score);
 });
 import { motionToss } from '../assets/chahan-motion.js';
 
@@ -146,7 +160,7 @@ test('the pull preview predicts the same outcome as releasing the wok', () => {
     toss(game, gesture);
     assert.equal(game.tossOutcome, outcome);
   }
-  assert.equal(tossForecast(createGame(), { push: 0, lift: .8, lean: 0 }).state, 'setup');
+  assert.equal(tossForecast(createGame(), { lift: .8, lean: 0 }).state, 'safe');
 });
 
 test('the wok begins empty and ingredient order changes preparation quality', () => {
@@ -322,7 +336,7 @@ test('the plated dish reflects mixing, seasoning, doneness and remaining rice', 
 });
 test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');
-  for(const token of ['pointerdown','pointermove','pointerup','pointercancel','minY','Space','KeyS','KeyL','visibilitychange']) assert.ok(src.includes(token),token);
+  for(const token of ['pointerdown','pointermove','pointerup','pointercancel','analyzeGather','Space','KeyS','KeyL','KeyP','visibilitychange']) assert.ok(src.includes(token),token);
 });
 test('physical pull toward the player becomes a toss with strength and lateral direction', () => {
   assert.equal(motionToss({ x: 0, y: 0, z: 1 }), null, 'hand tremor is ignored');

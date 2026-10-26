@@ -438,7 +438,9 @@ export function drawDish(ctx, game, reveal = 1) {
   if (game.ingredients.egg && paintedRiceEgg.complete && paintedRiceEgg.naturalWidth) {
     ctx.save();
     ctx.filter = `saturate(${Math.max(.2, 1 - look.pale * .2)}) brightness(${1 + look.pale * .13 - look.char * .2}) sepia(${look.char * .36})`;
-    const riceArgs=[320 - 197 * amount, 103, 394 * amount, 132 * amount];
+    const riceWidth = (394 - 130 * look.roundness) * amount;
+    const riceHeight = (132 + 72 * look.roundness) * amount;
+    const riceArgs=[320 - riceWidth / 2, 103 - 72 * look.roundness, riceWidth, riceHeight];
     ctx.drawImage(paintedRiceEgg,...riceArgs);
     if(game.ingredients.veg&&paintedRice.complete&&paintedRice.naturalWidth){ctx.globalAlpha*=1-look.unmixed;ctx.drawImage(paintedRice,...riceArgs);}
     ctx.restore();
@@ -447,13 +449,13 @@ export function drawDish(ctx, game, reveal = 1) {
   mound.addColorStop(0, look.pale < .25 ? '#ffe0a0' : '#f3d9a1');
   mound.addColorStop(.68, look.pale < .25 ? '#e9a657' : '#d7b079');
   mound.addColorStop(1, game.cook > 1.1 ? '#ad653b' : '#b77b4e');
-  ellipse(ctx, 320, 165, 190 * amount, 59 * amount, mound);
-  ctx.save(); ctx.beginPath(); ctx.ellipse(320, 163, 195 * amount, 63 * amount, 0, 0, Math.PI * 2); ctx.clip();
+  ellipse(ctx, 320, 165 - 13 * look.roundness, (190 - 42 * look.roundness) * amount, (59 + 13 * look.roundness) * amount, mound);
+  ctx.save(); ctx.beginPath(); ctx.ellipse(320, 163 - 13 * look.roundness, (195 - 42 * look.roundness) * amount, (63 + 13 * look.roundness) * amount, 0, 0, Math.PI * 2); ctx.clip();
   const count = Math.round(300 * amount * amount);
   for (let i = 0; i < count; i++) {
     const angle = i * 2.399, radius = Math.sqrt((i + .5) / Math.max(1, count));
-    const x = 320 + Math.cos(angle) * radius * 183 * amount;
-    const y = 162 + Math.sin(angle) * radius * 48 * amount;
+    const x = 320 + Math.cos(angle) * radius * (183 - 38 * look.roundness) * amount;
+    const y = 162 - 13 * look.roundness + Math.sin(angle) * radius * (48 + 10 * look.roundness) * amount;
     const color = game.ingredients.veg && i % 19 === 0 ? '#77a45c' : game.ingredients.veg && i % 17 === 0 ? '#ef7650' : game.ingredients.egg && i % 11 === 0 ? '#f9ca5a' : i % 5 === 0 ? '#f2bc74' : '#fff0ba';
     ellipse(ctx, x, y, 6 + i % 3, 2.2 + i % 2, color, angle * .22);
   }
@@ -465,7 +467,7 @@ export function drawDish(ctx, game, reveal = 1) {
   ctx.restore();
   }
   // All finishing details sit above either the painted image or the procedural fallback.
-  ctx.save(); ctx.beginPath(); ctx.ellipse(320, 165, 190 * amount, 58 * amount, 0, 0, Math.PI * 2); ctx.clip();
+  ctx.save(); ctx.beginPath(); ctx.ellipse(320, 165 - 13 * look.roundness, (190 - 42 * look.roundness) * amount, (58 + 13 * look.roundness) * amount, 0, 0, Math.PI * 2); ctx.clip();
   if (look.pale > 0) { ctx.fillStyle = rgba('#fff0ca', look.pale * .25); ctx.fillRect(118, 100, 404, 130); }
   if (look.glaze > 0) {
     ctx.globalAlpha *= look.glaze * .5;
