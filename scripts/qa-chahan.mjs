@@ -64,6 +64,7 @@ try {
         await page.screenshot({ path: path.join(output, `studio-${name}-${width}.png`), fullPage: true });
         for (const [venue, filling, target] of [[0, 'scallion', 72], [1, 'pork', 55], [2, 'shrimp', 38]]) {
           await frame.locator(`[data-venue="${venue}"]`).click();
+          assert.equal(await frame.locator(`[data-venue="${venue}"]`).getAttribute('aria-pressed'), 'true', 'thumbnail choice is stable before starting');
           await frame.locator('#start').click();
           await frame.locator('#place').getByText(['路地裏の屋台','走る列車','空中キッチン'][venue]).waitFor();
           assert.equal(await frame.locator('#heatControl').evaluate(el => el.style.getPropertyValue('--target')), `${target}%`);
