@@ -31,7 +31,7 @@ jobs:
       - run: node scripts/qa-research.mjs
       - run: node scripts/qa-art-preview.mjs
       - run: node scripts/qa-kienaide-visual.mjs chromium
-      - run: command -v ffmpeg && command -v ffprobe || sudo apt-get install -y ffmpeg
+      - run: command -v ffmpeg && command -v ffprobe || sudo apt-get install -y --no-install-recommends ffmpeg
         timeout-minutes: 20
       - run: node scripts/capture-kienaide-clip.mjs
       - if: always()

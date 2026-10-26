@@ -245,12 +245,23 @@ function wok(ctx, game, reduced) {
   for(let i=0;i<(game.ingredients.veg?28:game.ingredients.egg?12:0)*game.rice;i++){const a=i*2.39,r=Math.sqrt((i+.5)/28)*184*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.26+16-fly*(55+i%4*14);if(i%3===0)ellipse(ctx,x,y,10,5,'#f9c94d',a);else if(i%3===1)ellipse(ctx,x,y,7,4,game.ingredients.veg?'#e96d4d':'#f9d47b',a);else if(game.ingredients.veg){ellipse(ctx,x,y,9,4,'#6eaa5e',a);ellipse(ctx,x+3,y-1,4,2,'#c9df78',a);}}
   }
   if(hasRice)ctx.restore();
-  if(hasRice&&balance.state!=='steady'&&fly<.08){
+  if(hasRice&&game.rice>.25&&balance.state!=='steady'&&fly<.08){
     const side=Math.sign(game.balance)||1,severity=Math.min(1,(Math.abs(game.balance)-.42)/.7);
     const count=Math.round(4+severity*14);
     for(let i=0;i<count;i++){
       const x=side*(184+(i%7)*9+severity*20),y=-12+(i%5)*10;
       ellipse(ctx,x,y,4+i%3,2+i%2,i%6===0&&game.ingredients.veg?'#88b360':'#ffe9a8',i*.56);
+    }
+    if(balance.state==='danger'){
+      const overflow=Math.min(1,(Math.abs(game.balance)-.78)/.5);
+      const falling=Math.round((5+overflow*13)*Math.min(1,game.rice/.5));
+      for(let i=0;i<falling;i++){
+        const progress=reduced ? .12 : (game.time*1.35+(i*.618)%1)%1;
+        const x=side*(252+progress*(112+i%4*9)),y=-13+progress*(74+i%3*11)+progress*progress*94;
+        ctx.save();ctx.globalAlpha=(1-progress*.65)*(.65+overflow*.35);
+        ellipse(ctx,x,y,6+i%3,3+i%2,i%8===0&&game.ingredients.veg?'#a8ca73':i%6===0?'#f3c36c':'#fff0b5',i*.61);
+        ctx.restore();
+      }
     }
   }
   if(hasFlight&&fly>.04){
