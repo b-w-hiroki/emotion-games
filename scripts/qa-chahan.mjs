@@ -84,6 +84,31 @@ try {
           assert.ok(flightAir > flightRest + 500, `${name}: the same rice appears in the air (${flightRest}, ${flightAir})`);
           const flightLowRice = await ricePixels(tossFrames.lowRice, 365, 485);
           assert.ok(flightLowRice - flightRest < (flightAir - flightRest) * .55, `${name}: losing rice visibly shrinks the airborne portion (${flightRest}, ${flightAir}, ${flightLowRice})`);
+          const rimFrames = await page.evaluate(async () => {
+            const [{ createGame }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            const game = createGame(); Object.assign(game, { phase: 'playing', time: 2.3, cook: .86, rice: 1, mix: 1, balance: 1.1, ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3 });
+            const canvas = document.createElement('canvas'); canvas.width = 780; canvas.height = 900;
+            const frames = {};
+            for (const side of ['right', 'left']) for (const portion of ['full', 'empty']) {
+              game.balance = side === 'right' ? 1.1 : -1.1; game.rice = portion === 'full' ? 1 : 0;
+              drawScene(canvas.getContext('2d'), game);
+              frames[`${side}-${portion}`] = canvas.toDataURL('image/png').split(',')[1];
+            }
+            return frames;
+          });
+          const outsideDifference = async (full, empty, left) => {
+            const [a, b] = await Promise.all([full, empty].map(png => sharp(Buffer.from(png, 'base64')).removeAlpha().raw().toBuffer()));
+            let changed = 0;
+            for (let y = 690; y < 810; y++) for (let x = left ? 0 : 560; x < (left ? 90 : 640); x++) {
+              const i = (y * 780 + x) * 3;
+              if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 90) changed++;
+            }
+            return changed;
+          };
+          const rightSpill = await outsideDifference(rimFrames['right-full'], rimFrames['right-empty'], false);
+          const leftSpill = await outsideDifference(rimFrames['left-full'], rimFrames['left-empty'], true);
+          for (const [label, png] of Object.entries(rimFrames)) fs.writeFileSync(path.join(output, `rim-${label}-${name}.png`), Buffer.from(png, 'base64'));
+          assert.ok(rightSpill > 100 && leftSpill > 100, `${name}: dangerous balance spills visible rice from either rim (${rightSpill}, ${leftSpill})`);
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
