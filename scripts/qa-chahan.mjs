@@ -35,7 +35,7 @@ try {
           })));
           const ctx = canvas.getContext('2d'), frames = {};
           const game = createGame(); Object.assign(game, { phase: 'playing', rice: 1, mix: 1, ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3, cook: .86, time: 2 });
-          for (const [label, update] of Object.entries({ rest: { panPush: 0, lastToss: -10 }, push: { panPush: 1, lastToss: -10 }, airborne: { panPush: 0, lastToss: 1.64, lastLift: .7, tossOutcome: 'caught' }, raw: { lastToss: -10, cook: .12 }, burnt: { cook: 1.35 } })) {
+          for (const [label, update] of Object.entries({ rest: { panPush: 0, lastToss: -10 }, push: { panPush: 1, lastToss: -10 }, airborne: { panPush: 0, lastToss: 1.64, lastLift: .7, tossOutcome: 'caught' }, raw: { lastToss: -10, cook: .12 }, burnt: { cook: 1.35 }, scoop: { cook: .86, scoopProgress: 1 } })) {
             Object.assign(game, update); drawScene(ctx, game, label !== 'airborne'); frames[label] = canvas.toDataURL();
           }
           Object.assign(game, { cook: .86, lastLadleAt: 1.88, ladleX: .5, lastLadleQuality: 1 });
@@ -59,7 +59,7 @@ try {
           return { assets, frames, dishes, mascotFrames };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
-        assert.equal(new Set(Object.values(art.frames)).size, 6, `${name} ${width}: push, flight, ladle and cooking states have distinct art`);
+        assert.equal(new Set(Object.values(art.frames)).size, 7, `${name} ${width}: push, flight, ladle, scoop and cooking states have distinct art`);
         assert.equal(new Set(art.dishes).size, 5, `${name} ${width}: doneness, separated rice and round plating change the finished dish`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.caught, `${name} ${width}: every caught toss gets a celebration`);
@@ -101,7 +101,11 @@ try {
           const firstFluff = await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width));
           assert.ok(firstFluff > 0, 'a tap separates rice');
           assert.equal(await frame.locator('#combo').textContent(), '0', 'ladle tap is distinct from a wok toss');
-          await page.waitForTimeout(320);
+          await frame.locator('#swipeZone').evaluate(async zone => {
+            const start = Number(zone.dataset.gameTime), timeout = performance.now() + 5000;
+            while (Number(zone.dataset.gameTime) - start < .25 && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+            if (Number(zone.dataset.gameTime) - start < .25) throw new Error('game clock did not advance before the next ladle tap');
+          });
           await page.mouse.click(x, y);
           assert.ok(await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > firstFluff, 'rhythmic second tap separates more rice');
           await page.screenshot({ path: path.join(output, `ladle-${venue}-${name}-${width}.png`), fullPage: true });
@@ -118,6 +122,9 @@ try {
           await page.mouse.move(centerX + scoop[0][0] * scale, centerY + scoop[0][1] * scale);
           await page.mouse.down();
           for (const [dx, dy] of scoop.slice(1)) await page.mouse.move(centerX + dx * scale, centerY + dy * scale, { steps: 5 });
+          assert.equal(await frame.locator('#scoopTrace').isVisible(), true, 'the spoon follows the gathering gesture');
+          assert.match(await frame.locator('#scoopPath').getAttribute('d'), /L/, 'the gathering path stays visible under the spoon');
+          if (width === 390 && venue === 0) await page.screenshot({ path: path.join(output, `scoop-${name}.png`), fullPage: true });
           await page.mouse.up();
           await frame.locator('#overlayTitle').waitFor();
           await frame.locator('#resultDish[data-revealed="true"]').waitFor();
@@ -135,6 +142,25 @@ try {
           await kitchen.locator('#start').click();
           assert.equal(await kitchen.locator('#place').textContent(), '走る列車', `${name} ${width}: immediate start keeps the selected venue on fresh load ${repeat + 1}`);
           await fresh.close();
+        }
+        if (width === 390) {
+          const reduced = await browser.newPage({ viewport: { width, height }, hasTouch: true, reducedMotion: 'reduce' });
+          await reduced.goto(base);
+          await reduced.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          const kitchen = reduced.frameLocator('.chahan-shelf iframe');
+          await kitchen.locator('#heatControl').evaluate(async element => {
+            const timeout = performance.now() + 10000;
+            while (!element.style.getPropertyValue('--target') && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+            if (!element.style.getPropertyValue('--target')) throw new Error('game module did not initialize');
+          });
+          await kitchen.locator('#start').click();
+          for (const ingredient of ['egg', 'rice', 'veg']) await kitchen.locator(`[data-ingredient="${ingredient}"]`).click();
+          await kitchen.locator('[data-filling="scallion"]').click();
+          await kitchen.locator('#seasoning').click();
+          await kitchen.locator('#heatControl').press('p');
+          await kitchen.locator('#resultDish[data-revealed="true"]').waitFor();
+          assert.equal(await kitchen.locator('#scoopTrace').isVisible(), false, `${name}: reduced motion skips the scoop animation`);
+          await reduced.close();
         }
       }
     } finally { await browser.close(); }

@@ -219,6 +219,9 @@ function wok(ctx, game, reduced) {
     ctx.save();
     ctx.translate(escaping?escapeSide*fly*28:0,hasFlight?0:-fly*155);
     ctx.rotate(-game.lastLean*fly*.14);
+    const scoop = Math.max(0, Math.min(1, game.scoopProgress || 0));
+    ctx.translate(0, -13 * scoop);
+    ctx.scale(1 - .4 * scoop, 1 + .1 * scoop);
     const baseScale=hasFlight?1-fly*.22:1;
     const riceArgs=[-198*amount*baseScale,-46*amount*baseScale,396*amount*baseScale,132*amount*baseScale];
     if(hasEggRice)drawCookingRice(ctx,paintedRiceEgg,riceArgs,game.cook);
@@ -230,12 +233,15 @@ function wok(ctx, game, reduced) {
     ctx.restore();
     ctx.restore();
   } else if (hasRice) {
+  const scoop = Math.max(0, Math.min(1, game.scoopProgress || 0));
+  ctx.save(); ctx.translate(0, -13 * scoop); ctx.scale(1 - .4 * scoop, 1 + .1 * scoop);
   const rice=ctx.createRadialGradient(-65,-3,10,0,26,210);rice.addColorStop(0,'#ffe4a9');rice.addColorStop(.5,game.cook>.65?'#eeb574':'#f2cf8e');rice.addColorStop(1,'#b9783e');ellipse(ctx,0,23,193*amount,57*amount,rice);
   ctx.save();ctx.beginPath();ctx.ellipse(0,20,234*amount,70*amount,0,0,7);ctx.clip();
   for(let i=0;i<230*game.rice;i++){const a=i*2.399,r=Math.sqrt((i+.5)/230)*187*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.27+21;const rise=fly*(72+(i%8)*13),side=fly*game.lastLean*(i%7)*12;const color=game.ingredients.egg&&i%11===0?'#f8c658':i%5===0?'#e2a859':'#fff1c6';ellipse(ctx,x+side,y-rise,5+i%3,2+i%2,color,a*.4);}
   ctx.restore();
   // Ingredients above the rice are larger and readable at phone size.
   for(let i=0;i<(game.ingredients.veg?28:game.ingredients.egg?12:0)*game.rice;i++){const a=i*2.39,r=Math.sqrt((i+.5)/28)*184*amount,x=Math.cos(a)*r,y=Math.sin(a)*r*.26+16-fly*(55+i%4*14);if(i%3===0)ellipse(ctx,x,y,10,5,'#f9c94d',a);else if(i%3===1)ellipse(ctx,x,y,7,4,game.ingredients.veg?'#e96d4d':'#f9d47b',a);else if(game.ingredients.veg){ellipse(ctx,x,y,9,4,'#6eaa5e',a);ellipse(ctx,x+3,y-1,4,2,'#c9df78',a);}}
+  ctx.restore();
   }
   if(hasRice)ctx.restore();
   if(hasFlight&&fly>.04){
