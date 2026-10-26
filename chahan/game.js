@@ -20,7 +20,7 @@ const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = '今日の厨房'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
-function begin() { audio.unlock(); cancelAnimationFrame(dishAnimation); dishAnimation = 0; game = createGame(selectedVenue); game.phase = 'playing'; gesture = null; resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); updateHud(); draw(); animation = requestAnimationFrame(loop); showNotice(STAGES[game.stage].name, STAGES[game.stage].note + '。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
+function begin() { audio.unlock(); cancelAnimationFrame(dishAnimation); dishAnimation = 0; game = createGame(selectedVenue); game.phase = 'playing'; gesture = null; resetScoopTrace(); resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); updateHud(); draw(); animation = requestAnimationFrame(loop); showNotice(STAGES[game.stage].name, STAGES[game.stage].note + '。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
 function revealDish() {
   cancelAnimationFrame(dishAnimation);
   const dishCtx = resultDish.getContext('2d');
@@ -39,15 +39,27 @@ function revealDish() {
 function finish() { const r = result(game); $('overlayTitle').innerHTML = `${r.title}<br><span>${r.score}点</span>`; $('overlayText').textContent = r.comment; $('overlay').querySelector('.eyebrow').textContent = '完成した一皿' + (game.filling ? '・' + FILLING_NAMES[game.filling] : ''); for (const [key, value] of Object.entries({ mix: game.mix, cook: r.doneness, seasoning: r.seasoning, fluff: r.fluff, toss: r.skill })) resultStats.querySelector(`[data-stat="${key}"]`).textContent = `${Math.round(value * 100)}%`; resultCard.classList.add('result'); $('start').textContent = 'もう一度つくる'; $('stageNotice').hidden = true; $('overlay').hidden = false; revealDish(); audio.finish(r.score); window.emotionTrack?.('game_complete',{game_id:'chahan',score:r.score,rice_pct:Math.round(game.rice*100),mix_pct:Math.round(game.mix*100),doneness_pct:Math.round(r.doneness*100),seasoning_pct:Math.round(r.seasoning*100)}); }
 $('heatControl').addEventListener('input', event => { if (game.phase === 'playing') game.heat = clamp(Number(event.target.value) / 100, 0, 1); });
 const zone = $('swipeZone');
-zone.addEventListener('pointerdown', e => { if (game.phase !== 'playing' || gesture) return; e.preventDefault(); zone.setPointerCapture(e.pointerId); const rect = zone.getBoundingClientRect(); gesture = { id: e.pointerId, x: e.clientX, y: e.clientY, at: performance.now(), currentX: e.clientX, currentY: e.clientY, points: [[e.clientX - rect.left, e.clientY - rect.top]] }; });
+const scoopTrace = $('scoopTrace'), scoopPath = $('scoopPath'), scoopSpoon = $('scoopSpoon');
+function resetScoopTrace() { scoopTrace.setAttribute('hidden', ''); scoopTrace.style.opacity = ''; scoopTrace.dataset.state = ''; scoopPath.setAttribute('d', ''); }
+function drawScoopTrace(points) {
+  if (!game.seasoned) return;
+  scoopTrace.removeAttribute('hidden');
+  scoopTrace.dataset.state = 'drag';
+  scoopTrace.dataset.ready = String(platingReadiness(game).ready);
+  scoopTrace.style.opacity = '1';
+  scoopPath.setAttribute('d', points.map(([x, y], i) => `${i ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`).join(' '));
+  const [x, y] = points.at(-1);
+  scoopSpoon.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+}
+zone.addEventListener('pointerdown', e => { if (game.phase !== 'playing' || gesture) return; e.preventDefault(); zone.setPointerCapture(e.pointerId); const rect = zone.getBoundingClientRect(); gesture = { id: e.pointerId, x: e.clientX, y: e.clientY, at: performance.now(), currentX: e.clientX, currentY: e.clientY, points: [[e.clientX - rect.left, e.clientY - rect.top]] }; if (game.seasoned) { scoopTrace.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`); drawScoopTrace(gesture.points); } });
 function pullInput(x, y) { const pull = Math.max(0, y - gesture.y), dx = x - gesture.x, ms = Math.max(60, performance.now() - gesture.at); return { lift: clamp(pull / 120 * (300 / ms) ** .35 * .7, 0, 2), lean: clamp(dx / Math.max(80, pull), -1.5, 1.5) }; }
 function updatePullPreview() { game.pullPreview = gesture && game.ingredients.rice && game.time - game.lastToss >= .42 && gesture.currentY - gesture.y > 8 ? tossForecast(game, pullInput(gesture.currentX, gesture.currentY)) : null; }
-zone.addEventListener('pointermove', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.currentX = e.clientX; gesture.currentY = e.clientY; gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); game.panPush = clamp((e.clientY - gesture.y) / 90, 0, 1); updatePullPreview(); });
-zone.addEventListener('pointerup', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); const gather = game.seasoned ? analyzeGather(gesture.points, rect.width, rect.height) : { valid: false }; if (gather.valid) doPlate(gather.quality); else if (e.clientY - gesture.y > 25) doToss(pullInput(e.clientX, e.clientY)); else if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) < 14) doLadle((e.clientX - rect.left) / rect.width); else if (game.seasoned) { game.message = 'おたまで外側から円を描き、中央へ集めよう。'; updateHud(); } game.pullPreview = null; game.panPush = 0; gesture = null; });
-for (const event of ['pointercancel','lostpointercapture']) zone.addEventListener(event, () => { game.pullPreview = null; game.panPush = 0; gesture = null; });
+zone.addEventListener('pointermove', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.currentX = e.clientX; gesture.currentY = e.clientY; gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); drawScoopTrace(gesture.points); game.panPush = clamp((e.clientY - gesture.y) / 90, 0, 1); updatePullPreview(); });
+zone.addEventListener('pointerup', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); drawScoopTrace(gesture.points); const gather = game.seasoned ? analyzeGather(gesture.points, rect.width, rect.height) : { valid: false }; if (gather.valid) doPlate(gather.quality); else if (e.clientY - gesture.y > 25) doToss(pullInput(e.clientX, e.clientY)); else if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) < 14) doLadle((e.clientX - rect.left) / rect.width); else if (game.seasoned) { game.message = 'おたまで外側から円を描き、中央へ集めよう。'; updateHud(); } if (!gather.valid) resetScoopTrace(); game.pullPreview = null; game.panPush = 0; gesture = null; });
+for (const event of ['pointercancel','lostpointercapture']) zone.addEventListener(event, () => { game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
 document.addEventListener('keydown', e => { if (!document.getElementById('fillingChoices').hidden) { if (e.code === 'Escape') { e.preventDefault(); document.getElementById('fillingBack').click(); return; } if (e.code === 'Digit1' || e.code === 'Digit2') { e.preventDefault(); if (!e.repeat) document.querySelectorAll('#fillingChoices [data-filling]:not([hidden])')[e.code === 'Digit1' ? 0 : 1]?.click(); return; } } const ingredient = { Digit1: 'egg', Digit2: 'rice', Digit3: 'veg' }[e.code]; if (ingredient) { e.preventDefault(); if (!e.repeat) doIngredient(ingredient); return; } if (e.code === 'KeyS') { e.preventDefault(); if (!e.repeat) doSeasoning(); return; } if (e.code === 'KeyP') { e.preventDefault(); if (!e.repeat) doPlate(.7); return; } if (e.code === 'KeyL') { e.preventDefault(); if (!e.repeat) doLadle(); return; } const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (!k) return; e.preventDefault(); if (k === 'toss' && !e.repeat) doToss({ lift: .7, lean: 0 }); held.add(k); });
 document.addEventListener('keyup', e => { const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (k) held.delete(k); });
-window.addEventListener('blur', () => { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; });
+window.addEventListener('blur', () => { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; last = 0; audio.pause(); } else { last = performance.now(); audio.unlock(); } });
 $('sound').textContent = audio.enabled ? '音 ON' : '音 OFF';
 $('sound').onclick = () => { const enabled = audio.setEnabled(!audio.enabled); $('sound').textContent = enabled ? '音 ON' : '音 OFF'; if (enabled) audio.unlock(); };
@@ -86,9 +98,26 @@ for (const button of document.querySelectorAll('[data-ingredient]')) button.oncl
 for (const button of document.querySelectorAll('[data-filling]')) button.onclick = () => doIngredient('veg', button.dataset.filling);
 $('fillingBack').onclick = () => { closeFilling(); updateHud(); document.querySelector('[data-ingredient="veg"]').focus(); };
 function doSeasoning() { const quality = addSeasoning(game); if (quality === null) return; audio.season(quality); updateHud(); }
-function doPlate(quality) { if (!plate(game, quality)) return; cancelAnimationFrame(animation); updateHud(); draw(); finish(); }
+function doPlate(quality) {
+  if (!plate(game, quality)) return;
+  cancelAnimationFrame(animation);
+  updateHud();
+  if (reduceMotion) { resetScoopTrace(); draw(); finish(); return; }
+  const started = performance.now();
+  scoopTrace.dataset.state = 'finish';
+  function gatherFrame(now) {
+    const progress = clamp((now - started) / 480, 0, 1);
+    game.scoopProgress = 1 - (1 - progress) ** 3;
+    scoopTrace.style.opacity = String(1 - progress);
+    draw();
+    if (progress < 1) animation = requestAnimationFrame(gatherFrame);
+    else { resetScoopTrace(); finish(); }
+  }
+  animation = requestAnimationFrame(gatherFrame);
+}
 $('seasoning').onclick = doSeasoning;
 function updateHud() {
+  zone.dataset.gameTime = game.time.toFixed(3);
   const stage = STAGES[Math.min(game.stage, STAGES.length - 1)];
   $('place').textContent = stage.name; $('clock').textContent = Math.max(0, Math.ceil(COOK_SECONDS - game.time)); $('combo').textContent = game.combo;
   $('stageTag').textContent = stage.name;
