@@ -79,7 +79,7 @@ $('motionButton').onclick = async () => {
   } catch { stopMotion('許可を確認できません・スワイプで操作'); }
 };
 function doToss(input) { if (game.phase !== 'playing') return; const safe = toss(game, input); if (safe === null) return; audio.toss(safe, game.combo, game.lastTossQuality); updateHud(); }
-function doLadle(x = .5) { const quality = tapLadle(game, x); if (quality === null) { updateHud(); return; } audio.ladle(quality); updateHud(); draw(); }
+function doLadle(x = .5) { const quality = tapLadle(game, x, performance.now() / 1000); if (quality === null) { updateHud(); return; } audio.ladle(quality); updateHud(); draw(); }
 function closeFilling() { $('fillingChoices').hidden = true; $('recipe').classList.remove('choosing'); }
 function doIngredient(kind, filling) { if (kind === 'veg' && !filling) { if (game.phase !== 'playing' || game.ingredients.veg) return; $('fillingChoices').hidden = false; $('recipe').classList.add('choosing'); for (const button of $('fillingChoices').querySelectorAll('[data-filling]')) button.hidden = !STAGES[game.stage].fillings.includes(button.dataset.filling); $('recipeHint').textContent = STAGES[game.stage].note; $('fillingChoices').querySelector('[data-filling]:not([hidden])').focus(); return; } if (!addIngredient(game, kind, filling)) return; closeFilling(); audio.season(.45); updateHud(); draw(); }
 for (const button of document.querySelectorAll('[data-ingredient]')) button.onclick = () => doIngredient(button.dataset.ingredient);

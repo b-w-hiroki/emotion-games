@@ -8,7 +8,7 @@ export const FILLING_NAMES = { scallion: 'ねぎ', pork: '焼豚', shrimp: '海�
 
 export function createGame(venue = 0) {
   const stage = Number.isInteger(venue) && venue >= 0 && venue < STAGES.length ? venue : 0;
-  return { time: 0, stage, rice: 0, cook: 0, mix: 0, fluff: 0, heat: .48, heatFitSum: 0, heatTime: 0, panPush: 0, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, lastLadleAt: -10, ladleHits: 0, ladleX: .5, lastLadleQuality: 0, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, platingQuality: 0, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を入れて、鍋をあおろう。' };
+  return { time: 0, stage, rice: 0, cook: 0, mix: 0, fluff: 0, heat: .48, heatFitSum: 0, heatTime: 0, panPush: 0, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, lastLadleAt: -10, lastLadleInputAt: -10, ladleHits: 0, ladleX: .5, lastLadleQuality: 0, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, platingQuality: 0, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を入れて、鍋をあおろう。' };
 }
 
 export function heatReadiness(game) {
@@ -143,15 +143,17 @@ export function tossReadiness(game) {
   return Math.min(1, (game.tossQuality || 0) / 5);
 }
 
-export function tapLadle(game, x = .5) {
+export function tapLadle(game, x = .5, inputTime = game.time) {
   if (game.phase !== 'playing') return null;
   if (!game.ingredients.rice) { game.message = 'ごはんを入れてから、おたまでほぐそう。'; return null; }
-  const interval = game.time - game.lastLadleAt;
+  // Rendering may cap game.time during a slow frame; input cadence uses real elapsed seconds.
+  const interval = inputTime - game.lastLadleInputAt;
   if (interval < .12) return null;
   const rhythmic = interval >= .17 && interval <= .7;
   const cooked = game.cook >= .16 && game.cook <= 1.1;
   const quality = Math.min(1, (rhythmic ? 1 : .4) * (cooked ? 1 : game.cook < .16 ? .6 : .3) * (.55 + heatReadiness(game).quality * .45));
   game.lastLadleAt = game.time;
+  game.lastLadleInputAt = inputTime;
   game.ladleHits++;
   game.ladleX = Math.max(.2, Math.min(.8, Number.isFinite(x) ? x : .5));
   game.lastLadleQuality = quality;
