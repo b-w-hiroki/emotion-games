@@ -143,6 +143,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await input.waitForTimeout(40);
   await input.screenshot({ path: `${out}/${name}-short-swipe-impact.png` });
   await input.reload();
+  await input.mouse.move(100, 210); await input.mouse.down(); await input.mouse.move(290, 270, { steps: 4 });
+  if (await input.locator('.controls').evaluate(el => el.classList.contains('is-ready') || el.classList.contains('is-pulling'))) throw new Error(`${name}: sideways drag charged the reel`);
+  if (!await input.locator('#hint').textContent().then(t => t.includes('下へまっすぐ'))) throw new Error(`${name}: sideways drag lacked immediate direction guidance`);
+  await input.screenshot({ path: `${out}/${name}-sideways-pull.png` });
+  await input.mouse.up();
+  if (await input.locator('#progressValue').textContent() !== '48%' || !await input.locator('#action').textContent().then(t => t.includes('下へまっすぐ'))) throw new Error(`${name}: sideways release reeled or lacked direction guidance`);
+  await input.mouse.move(100, 210); await input.mouse.down(); await input.mouse.move(290, 270); await input.mouse.move(100, 280, { steps: 4 });
+  if (!await input.locator('.controls').evaluate(el => el.classList.contains('is-ready'))) throw new Error(`${name}: correcting a sideways drag did not charge the reel`);
+  if (await input.locator('#hint').textContent().then(t => t.includes('下へまっすぐ'))) throw new Error(`${name}: corrected stroke kept the sideways hint`);
+  await input.mouse.up();
+  if (await input.locator('#progressValue').textContent() !== '53%') throw new Error(`${name}: corrected downward stroke did not reel`);
+  await input.reload();
   await input.mouse.move(190, 210); await input.mouse.down(); await input.mouse.move(190, 230);
   const partial = await input.locator('.controls').evaluate(el => ({ ready: el.classList.contains('is-ready'), charge: el.style.getPropertyValue('--charge-angle') }));
   if (partial.ready || partial.charge !== '212deg') throw new Error(`${name}: partial pull did not show remaining distance`);

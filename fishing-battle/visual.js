@@ -6,6 +6,10 @@ const FISH_VISUAL_SIZE = Object.freeze({ aji: .86, saba: .92, isaki: .94, bass: 
 // The swipe changes the impact of a reel, never the amount of battle progress.
 export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
 
+// Only a deliberate downward stroke charges the reel. Sideways movement can
+// still be corrected before release, so the preview always matches the input.
+export const verticalPull = (dx, dy) => dy > 0 && dy >= Math.abs(dx) * 1.25 ? dy : 0;
+
 // Keep the held control's color and instruction consistent with the battle cue.
 export function pullGuidance(cue, pull, keyboard = false) {
   const ready = pull >= 34;

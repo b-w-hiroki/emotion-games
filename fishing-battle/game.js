@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow } from './visual.js';
+import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -82,7 +82,7 @@ function syncUI() {
   document.querySelector('.controls').classList.toggle('is-raging', !finishing && cue === 'rage');
   $('rageLabel').hidden = finishing || cue !== 'rage';
   const guidance = pullGuidance(cue, pointerPull, keyboardPull);
-  const hint = finishing ? state.outcome === 'caught' ? '水面へ！' : '届かなかった…' : guidance.hint;
+  const hint = finishing ? state.outcome === 'caught' ? '水面へ！' : '届かなかった…' : offAxisPull ? '下へまっすぐ引こう' : guidance.hint;
   if ($('hint').textContent !== hint) $('hint').textContent = hint;
   controls.style.setProperty('--charge-color', guidance.color);
   if ($('action').textContent && state.time >= actionUntil) $('action').textContent = '';
@@ -108,7 +108,7 @@ function reel(strength = 1) {
   sound.unlock();
   feedback(state.events, before); state.events = []; syncUI();
 }
-let pointerStart = null;
+let pointerStart = null, offAxisPull = false;
 const controls = document.querySelector('.controls');
 function setPull(value) {
   pointerPull = Math.max(0, Math.min(110, value));
@@ -129,20 +129,31 @@ board.addEventListener('pointerdown', e => {
   if (pointerStart) return;
   sound.unlock();
   pointerStart = { id: e.pointerId, x: e.clientX, y: e.clientY, onDial: Boolean(e.target.closest('#reel')) };
+  offAxisPull = false;
   board.setPointerCapture(e.pointerId);
 });
 board.addEventListener('pointermove', e => {
-  if (pointerStart?.id === e.pointerId) { setPull(e.clientY - pointerStart.y); syncUI(); }
+  if (pointerStart?.id === e.pointerId) {
+    const dy = e.clientY - pointerStart.y, directedPull = verticalPull(e.clientX - pointerStart.x, dy);
+    offAxisPull = dy >= 10 && !directedPull;
+    setPull(directedPull); syncUI();
+  }
 });
 board.addEventListener('pointerup', e => {
   if (pointerStart?.id !== e.pointerId) return;
   const dy = e.clientY - pointerStart.y, dx = Math.abs(e.clientX - pointerStart.x);
+  const directedPull = verticalPull(dx, dy);
   const tapDial = pointerStart.onDial && Math.hypot(dx, dy) <= 24;
   pointerStart = null;
+  offAxisPull = false;
   setPull(0);
-  if (tapDial || dy >= 34) reel(tapDial ? 1 : reelImpulse(dy));
+  if (tapDial || directedPull >= 34) reel(tapDial ? 1 : reelImpulse(directedPull));
   else {
-    if (dy >= 10 && dx < 36) {
+    if (dy >= 34 && !directedPull) {
+      $('action').textContent = '下へまっすぐ引こう';
+      $('action').className = 'short-action';
+      actionUntil = state.time + .9;
+    } else if (dy >= 10 && dx < 36) {
       const cue = battleCue(state);
       $('action').textContent = pullGuidance(cue, dy).shortRelease;
       $('action').className = cue === 'rage' ? 'danger-action' : cue === 'warning' ? 'warning-action' : 'short-action';
@@ -151,7 +162,7 @@ board.addEventListener('pointerup', e => {
     syncUI();
   }
 });
-function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; setPull(0); syncUI(); } }
+function cancelPointer(e) { if (pointerStart?.id === e.pointerId) { pointerStart = null; offAxisPull = false; setPull(0); syncUI(); } }
 board.addEventListener('pointercancel', cancelPointer);
 board.addEventListener('lostpointercapture', cancelPointer);
 document.addEventListener('keydown', e => {
@@ -174,7 +185,7 @@ document.addEventListener('keyup', e => {
 });
 function cancelKeyboardPull() { if (keyboardPull) { keyboardPull = false; setPull(0); syncUI(); } }
 window.addEventListener('blur', cancelKeyboardPull);
-function restart() { sound.reset(); keyboardPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; rageMistake = false; cleanOpeningAt = -Infinity; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); keyboardPull = false; offAxisPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; rageMistake = false; cleanOpeningAt = -Infinity; camera.x = camera.y = 0; camera.zoom = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
