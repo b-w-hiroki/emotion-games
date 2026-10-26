@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, reelBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, easeFacing, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from '../fishing-battle/visual.js';
+import { advanceSwimMotion, battleCamera, battlePose, createSwimMotion, easeFacing, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from '../fishing-battle/visual.js';
 
 test('only a downward stroke charges the reel and a corrected stroke can recover', () => {
   assert.equal(verticalPull(0, 34), 34);
@@ -210,6 +210,28 @@ test('small fish dart, flatfish glide and the heavy fish heaves with matching wa
   assert.ok(hirameBob < ajiBob && ajiBob < kueBob);
   assert.ok(surfaceResponse(kueStart, 'rage').wake > surfaceResponse(hirameStart, 'rage').wake);
   assert.deepEqual(battlePose(kue, 'rage', 0, { reduced: true }), battlePose(kue, 'rage', 3, { reduced: true }));
+});
+
+test('swim position stays continuous as warning becomes a run and a run becomes an opening', () => {
+  const state = createBattle('kue');
+  let motion = createSwimMotion(state);
+  for (let i = 0; i < 40; i++) motion = advanceSwimMotion(motion, state, 'warning', .016);
+  const beforeRun = battlePose(state, 'warning', 10, { motion });
+  const sameInstantRun = battlePose(state, 'rage', 10, { motion });
+  assert.equal(sameInstantRun.fishX, beforeRun.fishX);
+  assert.equal(sameInstantRun.fishY, beforeRun.fishY);
+  assert.equal(sameInstantRun.angle, beforeRun.angle);
+  const firstRun = advanceSwimMotion(motion, state, 'rage', .016);
+  const moving = battlePose(state, 'rage', 10.016, { motion: firstRun });
+  assert.ok(Math.hypot(moving.fishX - beforeRun.fishX, moving.fishY - beforeRun.fishY) < 8);
+  for (let i = 0; i < 40; i++) motion = advanceSwimMotion(motion, state, 'rage', .016);
+  const beforeOpening = battlePose(state, 'rage', 11, { motion });
+  const sameInstantOpening = battlePose(state, 'opening', 11, { motion });
+  assert.equal(sameInstantOpening.fishX, beforeOpening.fishX);
+  assert.equal(sameInstantOpening.fishY, beforeOpening.fishY);
+  assert.equal(sameInstantOpening.angle, beforeOpening.angle);
+  assert.ok(motion.run > firstRun.run);
+  assert.equal(createSwimMotion(state).phase, 0);
 });
 
 test('accepted and dangerous reels give distinct water splashes', () => {
