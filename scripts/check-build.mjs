@@ -6,3 +6,4 @@ for (const scene of ['street', 'train', 'sky', 'wok-v2', 'toss-v2', 'rice-v2', '
   assert.equal(file.toString('ascii', 8, 12), 'WEBP', `invalid Chahan painting: ${scene}`);
   assert.ok(file.length < 250_000, `Chahan painting is too large: ${scene}`);
 }
+assert.ok(fs.existsSync(`${d}assets/chahan-gesture.js`), 'missing built Chahan gesture module');

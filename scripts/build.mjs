@@ -10,6 +10,7 @@ fs.mkdirSync(path.join(dist,'assets','kienaide-detail'),{recursive:true});
 for(const file of ['title.webp','street.webp','bridge.webp'])fs.copyFileSync(path.join(root,'assets','kienaide-detail',file),path.join(dist,'assets','kienaide-detail',file));
 fs.copyFileSync(path.join(root,'assets','chahan-core.js'),path.join(dist,'assets','chahan-core.js'));
 fs.copyFileSync(path.join(root,'assets','chahan-motion.js'),path.join(dist,'assets','chahan-motion.js'));
+fs.copyFileSync(path.join(root,'assets','chahan-gesture.js'),path.join(dist,'assets','chahan-gesture.js'));
 fs.mkdirSync(path.join(dist,'chahan'),{recursive:true});
 for(const file of ['index.html','style.css','game.js','art.js','audio.js'])fs.copyFileSync(path.join(root,'chahan',file),path.join(dist,'chahan',file));
   fs.mkdirSync(path.join(dist,'chahan','art'),{recursive:true});
