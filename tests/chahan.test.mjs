@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, tossForecast, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, tossReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, tossForecast, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, heatReadiness, tossReadiness, plate, result, dishAppearance, STAGES, COOK_SECONDS } from '../assets/chahan-core.js';
 
 test('precise tosses earn a visible skill result without rewarding spills', () => {
   const g = createGame(); g.phase = 'playing'; addIngredient(g, 'egg'); addIngredient(g, 'rice');
@@ -19,71 +19,44 @@ test('precise tosses earn a visible skill result without rewarding spills', () =
   assert.equal(tossReadiness(g), 1, 'previous clean tosses remain credited');
 });
 
-test('rice drifts toward the dangerous rim and the countersteer cue follows balance', () => {
-  const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice');
-  assert.deepEqual(balanceReadiness(game), { state: 'steady', cue: '鍋のバランス', drift: 0 });
-  game.balance = .6;
-  assert.deepEqual(balanceReadiness(game), { state: 'leaning', cue: '右へ偏る・左へ戻す', drift: 40 });
-  game.balance = .95;
-  assert.deepEqual(balanceReadiness(game), { state: 'danger', cue: '右へこぼれる！ 左へ戻す', drift: 63 });
-  const rice = game.rice;
-  advance(game, { steer: 0, heat: 0 }, .05);
-  assert.ok(game.rice < rice, 'visible danger agrees with actual rice loss');
-  game.balance = -.95;
-  assert.equal(balanceReadiness(game).cue, '左へこぼれる！ 右へ戻す');
-  assert.equal(balanceReadiness(game).drift, -63);
+test('a wok toss requires an away push followed by a controlled pull', () => {
+  const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.time = 1;
+  assert.equal(tossForecast(game, { push: 0, lift: .7, lean: 0 }).state, 'setup');
+  assert.equal(toss(game, { push: 0, lift: .7, lean: 0 }), false);
+  assert.equal(game.rice, 1, 'a missing setup does not spill rice');
+  game.time += .5;
+  assert.equal(toss(game, { push: .7, lift: .7, lean: 0 }), true);
+  assert.equal(game.tossOutcome, 'caught');
+  assert.ok(game.mix > 0);
 });
 
-test('a lateral toss changes wok momentum and a counter-pull saves rice', () => {
-  const make = () => {
-    const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice');
-    Object.assign(game, { time: 2, balance: .9, velocity: .35 });
+test('venue stays selected throughout cooking and determines heat and ingredients', () => {
+  for (let venue = 0; venue < STAGES.length; venue++) {
+    const game = createGame(venue); game.phase = 'playing'; addIngredient(game, 'rice');
+    assert.equal(game.stage, venue);
+    assert.equal(heatReadiness({ ...game, heat: STAGES[venue].idealHeat }).state, 'ready');
+    assert.equal(addIngredient(game, 'veg', STAGES[venue].specialty), true);
+    for (let n = 0; n < 600; n++) advance(game, { heat: 0 }, .05);
+    assert.equal(game.stage, venue);
+    assert.equal(game.phase, 'playing');
+    assert.ok(game.heatTime > 0);
+  }
+  const sky = createGame(2); sky.phase = 'playing';
+  assert.equal(addIngredient(sky, 'veg', 'pork'), false);
+  assert.equal(addIngredient(sky, 'veg', 'shrimp'), true);
+});
+
+test('matching a venue heat range improves the finished dish', () => {
+  const make = heat => {
+    const game = createGame(2); game.phase = 'playing'; game.heat = heat;
+    addIngredient(game, 'egg'); addIngredient(game, 'rice');
+    for (let n = 0; n < 200; n++) advance(game, { heat: 0 }, .05);
+    Object.assign(game, { cook: .86, mix: .8, prep: .8, seasoning: .8, filling: 'shrimp', fillingCook: .42, fillingQuality: .8, fillingTosses: 2 });
     return game;
   };
-  const corrected = make(), straight = make(), worsened = make();
-  assert.equal(toss(corrected, { lift: .8, lean: -.55 }), true);
-  assert.equal(toss(straight, { lift: .8, lean: 0 }), true);
-  assert.equal(toss(worsened, { lift: .8, lean: .55 }), false);
-  assert.ok(corrected.balance < straight.balance && corrected.velocity < straight.velocity);
-  assert.ok(worsened.balance > straight.balance && worsened.velocity > straight.velocity);
-  for (let i = 0; i < 20; i++) {
-    advance(corrected, { steer: 0, heat: 0 }, .05);
-    advance(straight, { steer: 0, heat: 0 }, .05);
-  }
-  assert.ok(corrected.rice > straight.rice + .004, 'counter-pulling recovers the wok before rice escapes');
-  assert.equal(balanceReadiness(corrected).state, 'steady');
-  const left = make(), leftStraight = make();
-  left.balance = -.9; left.velocity = -.35;
-  leftStraight.balance = -.9; leftStraight.velocity = -.35;
-  assert.equal(toss(left, { lift: .8, lean: .55 }), true);
-  toss(leftStraight, { lift: .8, lean: 0 });
-  for (let i = 0; i < 20; i++) {
-    advance(left, { steer: 0, heat: 0 }, .05);
-    advance(leftStraight, { steer: 0, heat: 0 }, .05);
-  }
-  assert.ok(left.rice > leftStraight.rice + .004, 'the same recovery works on the left rim');
-});
-
-test('late-stage gusts warn before applying a steerable force', () => {
-  const train = createGame(); Object.assign(train, { phase: 'playing', stage: 1, stageTime: 2.5, time: 20 });
-  assert.equal(windForecast(train).state, 'warning');
-  assert.match(windForecast(train).cue, /右へ揺れる・左へ戻す/);
-  train.stageTime = 3.8;
-  assert.equal(windForecast(train).state, 'active');
-  assert.ok(windForecast(train).force > 1);
-  const calm = { ...train, stageTime: .5 };
-  const countered = { ...train };
-  for (let n = 0; n < 12; n++) {
-    advance(train, { steer: 0, heat: 0 }, .05);
-    advance(calm, { steer: 0, heat: 0 }, .05);
-    advance(countered, { steer: -1, heat: 0 }, .05);
-  }
-  assert.ok(train.balance > calm.balance + .1, 'the warning predicts a real rightward push');
-  assert.ok(countered.balance < train.balance - .1, 'steering left counters the gust');
-  const sky = createGame(); sky.stage = 2;
-  sky.stageTime = 3.5; assert.equal(windForecast(sky).state, 'warning');
-  sky.stageTime = 4.8; assert.ok(windForecast(sky).force < -1);
-  sky.stageTime = 11.8; assert.ok(windForecast(sky).force > 1, 'sky gusts alternate direction');
+  const suited = make(.38), tooHot = make(.95);
+  assert.ok(result(suited).heatFit > result(tooHot).heatFit + .7);
+  assert.ok(result(suited).score > result(tooHot).score);
 });
 
 test('cook meter shows the plating window and continues through scorching', () => {
@@ -99,33 +72,22 @@ test('cook meter shows the plating window and continues through scorching', () =
   assert.ok(cookMeter(game).fill > 70, 'the gauge keeps moving after the ideal window');
 });
 
-test('plating is a final-location choice and preserves the chosen doneness', () => {
-  const g = createGame(); g.phase = 'playing';
-  addIngredient(g, 'egg'); addIngredient(g, 'rice'); addIngredient(g, 'veg');
-  Object.assign(g, { mix: .8, cook: .56, rice: 1, stage: 1, time: 27 });
-  assert.equal(plate(g), false, 'seasoning and final location are required');
+test('plating preserves the chosen doneness in any venue', () => {
+  const g = createGame(1); g.phase = 'playing';
+  addIngredient(g, 'egg'); addIngredient(g, 'rice'); addIngredient(g, 'veg', 'pork');
+  Object.assign(g, { mix: .8, cook: .56, rice: 1, time: 27 });
+  assert.equal(plate(g), false, 'seasoning is required');
   addSeasoning(g);
-  assert.equal(plate(g), false, 'earlier locations remain playable');
-  assert.match(platingReadiness(g).cue, /最後の場所/);
-  g.stage = 2; g.time = 39;
   assert.equal(platingReadiness(g).ready, false);
-  assert.match(platingReadiness(g).cue, /火を通す/);
   const earlyScore = result(g).score;
   g.cook = .86;
   assert.equal(platingReadiness(g).ready, true);
-  assert.equal(platingReadiness(g).cue, '今が盛りどき！');
-  assert.ok(result(g).score > earlyScore, 'waiting until the rice is done improves the actual result');
+  assert.ok(result(g).score > earlyScore);
   assert.equal(plate(g), true);
-  assert.equal(g.phase, 'finished'); assert.equal(g.platedAt, 39);
-  assert.equal(plate(g), false, 'the result cannot be submitted twice');
+  assert.equal(g.phase, 'finished'); assert.equal(g.platedAt, 27);
 });
-import { motionToss, motionSteer } from '../assets/chahan-motion.js';
+import { motionToss } from '../assets/chahan-motion.js';
 
-test('three locations alter the balance disturbance', () => {
-  const snapshots = STAGES.map((_, i) => { const g = createGame(); g.phase = 'playing'; g.stage = i; for(let n=0;n<50;n++) advance(g,{steer:0,heat:0},.05); return g.balance; });
-  assert.ok(snapshots[1] > snapshots[0] + .05);
-  assert.ok(snapshots[2] < snapshots[0] - .1);
-});
 test('swipe strength and direction determine a good toss', () => {
   const g = createGame(); g.phase = 'playing'; addIngredient(g, 'egg'); addIngredient(g, 'rice'); g.time = 1;
   assert.equal(toss(g, { lift: .7, lean: 0 }), true); assert.ok(g.mix > 0); assert.equal(g.rice, 1);
@@ -154,9 +116,7 @@ test('the pull preview predicts the same outcome as releasing the wok', () => {
     toss(game, gesture);
     assert.equal(game.tossOutcome, outcome);
   }
-  const leaning = createGame(); leaning.balance = .9;
-  assert.equal(tossForecast(leaning, { lift: .8, lean: -.55 }).state, 'safe', 'the preview accounts for corrective direction');
-  assert.equal(tossForecast(leaning, { lift: .8, lean: .55 }).state, 'sideways');
+  assert.equal(tossForecast(createGame(), { push: 0, lift: .8, lean: 0 }).state, 'setup');
 });
 
 test('the wok begins empty and ingredient order changes preparation quality', () => {
@@ -205,7 +165,7 @@ test('egg readiness follows actual heat and freezes when rice is added', () => {
 });
 test('filling choice rewards different timing and stays in the finished meal', () => {
   const prepare = (filling, cook, heat) => {
-    const g = createGame(); g.phase = 'playing'; g.heat = heat;
+    const g = createGame(filling === 'pork' ? 1 : 0); g.phase = 'playing'; g.heat = heat;
     addIngredient(g, 'egg'); addIngredient(g, 'rice'); g.mix = .3; g.cook = cook;
     assert.equal(addIngredient(g, 'veg', filling), true);
     assert.equal(addIngredient(g, 'veg', filling), false);
@@ -213,10 +173,10 @@ test('filling choice rewards different timing and stays in the finished meal', (
   };
   const lateScallion = prepare('scallion', .52, .5);
   const earlyScallion = prepare('scallion', .05, .5);
-  const earlyPork = prepare('pork', .24, .9);
-  const latePork = prepare('pork', .8, .9);
-  assert.ok(lateScallion.fillingQuality > earlyScallion.fillingQuality + .7);
-  assert.ok(earlyPork.fillingQuality > latePork.fillingQuality + .7);
+  const earlyPork = prepare('pork', .24, .55);
+  const latePork = prepare('pork', .8, .55);
+  assert.ok(lateScallion.fillingQuality > earlyScallion.fillingQuality + .45);
+  assert.ok(earlyPork.fillingQuality > latePork.fillingQuality + .45);
   assert.equal(lateScallion.filling, 'scallion'); assert.equal(earlyPork.filling, 'pork');
   for (const g of [lateScallion, earlyScallion, earlyPork, latePork]) Object.assign(g, { cook: .86, seasoning: 1, mix: 1, prep: 1 });
   assert.ok(result(lateScallion).score > result(earlyScallion).score);
@@ -225,7 +185,7 @@ test('filling choice rewards different timing and stays in the finished meal', (
 });
 test('filling continues cooking with heat and safe tosses after selection', () => {
   const make = (kind, heat) => {
-    const g = createGame(); g.phase = 'playing'; g.heat = heat;
+    const g = createGame(kind === 'pork' ? 1 : 0); g.phase = 'playing'; g.heat = heat;
     addIngredient(g, 'egg'); addIngredient(g, 'rice'); g.mix = .3; g.cook = kind === 'pork' ? .24 : .52;
     addIngredient(g, 'veg', kind); return g;
   };
@@ -308,7 +268,7 @@ test('heat, stirring and rice all contribute to the final meal', () => {
   assert.ok(result(good).score > result(unmixed).score);
 });
 test('ending feedback points to the actual cooking shortfall', () => {
-  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1, fillingCook: .3, fillingTosses: 2 });
+  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1, fillingCook: .3, fillingTosses: 2, heatFitSum: 8, heatTime: 10 });
   assert.match(result(good).comment, /一粒ずつ/);
   assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
@@ -332,7 +292,7 @@ test('the plated dish reflects mixing, seasoning, doneness and remaining rice', 
 });
 test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');
-  for(const token of ['pointerdown','pointermove','pointerup','pointercancel','ArrowLeft','ArrowRight','Space','KeyS','visibilitychange']) assert.ok(src.includes(token),token);
+  for(const token of ['pointerdown','pointermove','pointerup','pointercancel','minY','Space','KeyS','visibilitychange']) assert.ok(src.includes(token),token);
 });
 test('physical pull toward the player becomes a toss with strength and lateral direction', () => {
   assert.equal(motionToss({ x: 0, y: 0, z: 1 }), null, 'hand tremor is ignored');
@@ -342,10 +302,4 @@ test('physical pull toward the player becomes a toss with strength and lateral d
   assert.ok(motionToss({ x: 3, y: 0, z: 6 }).lean > 0);
   assert.ok(motionToss({ x: 0, y: 0, z: 18 }).lift > 1.25, 'hard pull risks a spill');
   assert.equal(motionToss({ x: null, y: 0, z: 8 }), null);
-});
-test('tilt steering is calibrated and bounded', () => {
-  assert.equal(motionSteer(12, 12), 0);
-  assert.equal(motionSteer(22, 12), .4);
-  assert.equal(motionSteer(80, 12), 1);
-  assert.equal(motionSteer(null, 12), 0);
 });

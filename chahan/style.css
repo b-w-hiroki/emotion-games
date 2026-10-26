@@ -23,33 +23,13 @@ header{position:relative;z-index:5;display:flex;justify-content:space-between;al
 .stage{position:relative;flex:1;min-height:230px;max-height:560px;overflow:hidden;border:1px solid #a57851;border-radius:18px;box-shadow:0 0 0 3px #221712,0 18px 35px #0009;touch-action:none;cursor:grab;background:#171716}
 .stage:active{cursor:grabbing}
 canvas{display:block;width:100%;height:100%;object-fit:cover}
-.stage canvas,.stage-tag,.swipe-hint,.balance-label,.balance-track,.tip{pointer-events:none}
+.stage canvas,.stage-tag,.swipe-hint,.tip{pointer-events:none}
 .stage::before{content:"";position:absolute;z-index:1;left:0;right:0;bottom:40px;height:85px;background:linear-gradient(transparent,#170f12df);pointer-events:none}
 .stage::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffe3b631,inset 0 0 65px #0005;pointer-events:none}
 .stage-tag{position:absolute;top:12px;right:12px;padding:6px 10px;border:1px solid #f5d0968a;border-radius:30px;background:#151315bf;color:#ffe9bb;font-size:10px;font-weight:900;letter-spacing:.17em;backdrop-filter:blur(8px)}
 .gust-cue{position:absolute;z-index:2;top:49px;right:12px;max-width:76%;padding:7px 10px;border:1px solid #ffc983;border-radius:9px;background:#392324e8;color:#fff1cf;font-size:10px;font-weight:900;line-height:1.25;text-align:right;box-shadow:0 6px 18px #0007;pointer-events:none}
 .gust-cue[hidden]{display:none}.gust-cue[data-state="active"]{border-color:#ffe7af;background:#66352be8;color:#fff9d9}
 .swipe-hint{position:absolute;top:13px;left:13px;max-width:65%;padding:7px 12px;border-radius:20px;background:#ffedd4ec;color:#41291c;font-size:11px;font-weight:900;line-height:1.2;box-shadow:0 4px 15px #0007}
-.balance-label{z-index:2;position:absolute;bottom:77px;left:17px;right:17px;display:flex;align-items:center;justify-content:space-between;color:#f7dfad;font-size:9px;font-weight:700;text-shadow:0 2px 6px #000}
-.balance-label span{font-size:11px;font-weight:900;letter-spacing:.08em}
-.balance-label #balanceStatus{flex:1;text-align:center;white-space:nowrap;font-size:10px;letter-spacing:0}
-.stage:has(.balance-track[data-state="danger"]) #balanceStatus{color:#ffcfaa}
-.balance-track{z-index:2;position:absolute;bottom:50px;left:20px;right:20px;height:20px;border:1px solid #f2d3a5;border-radius:14px;background:linear-gradient(90deg,#b94e43,#e6a052 22%,#a9ca82 39%,#c7de9c 50%,#a9ca82 61%,#e6a052 78%,#b94e43);box-shadow:inset 0 2px 4px #41291988,0 3px 10px #0009}
-.balance-track[data-state="danger"]{border-color:#ffd1a4;box-shadow:inset 0 2px 4px #41291988,0 0 13px #ec745caa}
-.balance-track i{position:absolute;z-index:1;top:-6px;width:8px;height:30px;transform:translateX(-50%);border:1px solid #fff8dd;border-radius:6px;background:#fff;box-shadow:0 0 0 3px #433831,0 0 13px #fff}
-.balance-track em{position:absolute;left:50%;top:1px;height:16px;border-left:2px dashed #294834aa}
-.tip{position:absolute;bottom:0;left:0;right:0;min-height:40px;padding:11px 10px;text-align:center;background:linear-gradient(#1c1416e8,#110e11fa);border-top:1px solid #bc885d99;color:#ffe7b3;font-size:11px;font-weight:700;text-shadow:0 1px #000}
-.stage-notice{position:absolute;z-index:2;left:11%;right:11%;top:20%;padding:16px 14px;text-align:center;border:1px solid #f7c48c;border-radius:15px;background:linear-gradient(140deg,#3f2923f2,#1a1a27f2);box-shadow:0 14px 40px #000c;pointer-events:none;backdrop-filter:blur(12px)}
-.stage-notice[hidden]{display:none}
-.stage-notice small,.stage-notice strong,.stage-notice span{display:block}
-.stage-notice small{color:#ffc17a;font-size:10px;letter-spacing:.25em}
-.stage-notice strong{margin:4px 0;font-size:25px;color:#fff2d5}
-.stage-notice span{font-size:11px;color:#f0ceaf}
-.stage-notice.show{animation:stage-arrive 2.3s ease both}
-@keyframes stage-arrive{0%{opacity:0;transform:translateY(18px) scale(.96)}
-12%,76%{opacity:1;transform:none}
-100%{opacity:0;transform:translateY(-10px)}
-}
 .meters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:8px 10px 10px;border:1px solid #664b38;border-radius:11px;background:#211a17}
 .meters span{display:block;margin-bottom:6px;color:#eed2ae;font-size:10px;font-weight:700;white-space:nowrap}
 .bar{height:8px;overflow:hidden;border-radius:8px;background:#49362c;box-shadow:inset 0 2px 4px #0009}
@@ -130,3 +110,16 @@ canvas{display:block;width:100%;height:100%;object-fit:cover}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}
 }
+
+.venue-heat-cue{position:absolute;left:50%;bottom:43px;transform:translateX(-50%);z-index:3;width:max-content;max-width:90%;padding:6px 11px;border:1px solid #e7b66b;border-radius:20px;background:#281d1bde;color:#ffe3aa;font-size:11px;font-weight:800;text-align:center;box-shadow:0 4px 15px #0008}
+.venue-heat-cue[data-state="ready"]{border-color:#b8d88d;color:#e0f2b4}
+.venue-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0 4px}
+.card .venue-choices button{margin:0;min-height:66px;padding:7px 3px;border:1px solid #b88c67;background:#3d2b24;color:#f5dfbd;box-shadow:none;font-size:11px;line-height:1.2}
+.venue-choices button b,.venue-choices button small{display:block}.venue-choices button small{margin-top:5px;font-size:9px;color:#e5b77c}
+.card .venue-choices button[aria-pressed="true"]{border-color:#ffe2a2;background:linear-gradient(#795036,#493027);box-shadow:0 0 0 2px #f1be7666;color:#fff8de}
+.card.result .venue-choices{display:grid}
+.filling-choices [hidden]{display:none}
+#heatControl{background:linear-gradient(90deg,#f49a48 var(--heat,48%),#544037 var(--heat,48%));box-shadow:inset 0 0 0 1px #fff3,0 0 0 2px #201613}
+.heat-controls{position:relative}.heat-controls::after{content:'適正';position:absolute;left:calc(32% + var(--target,72%) * .68);top:-10px;transform:translateX(-50%);color:#dff0b1;font-size:9px;font-weight:800;text-shadow:0 1px 3px #000}
+body.embed{background:#171313}body.embed .shell{max-width:520px}body.embed header{display:none}body.embed .overlay{position:fixed}
+@media(max-height:700px){.venue-choices{margin:6px 0 2px}.card .venue-choices button{min-height:50px;padding:5px 2px}.venue-choices button small{margin-top:2px}}
