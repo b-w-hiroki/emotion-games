@@ -333,13 +333,41 @@ function ingredientEffect(ctx, game, reduced) {
   ctx.strokeText(label,390,335-rise);ctx.fillText(label,390,335-rise);
   ctx.restore();
 }
+function pullPreview(ctx, game) {
+  const preview = game.pullPreview;
+  if (!preview || !game.ingredients.rice || game.phase !== 'playing') return;
+  const safe = preview.state === 'safe';
+  const color = safe ? '#ffe4a0' : preview.state === 'weak' ? '#e9cfaa' : '#ffad89';
+  const lift = Math.min(1.4, preview.lift);
+  const startX = 390, startY = 525;
+  const endX = startX + preview.lean * 155, endY = startY - 70 - lift * 180;
+  const controlX = startX + preview.lean * 90, controlY = startY - 110 - lift * 240;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.setLineDash([12, 12]); ctx.lineWidth = 6;
+  ctx.strokeStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 15;
+  ctx.beginPath(); ctx.moveTo(startX, startY); ctx.quadraticCurveTo(controlX, controlY, endX, endY); ctx.stroke();
+  ctx.setLineDash([]); ctx.shadowBlur = 0;
+  for (const fraction of [.32, .57, .8]) {
+    const x = (1-fraction)**2*startX+2*(1-fraction)*fraction*controlX+fraction**2*endX;
+    const y = (1-fraction)**2*startY+2*(1-fraction)*fraction*controlY+fraction**2*endY;
+    ellipse(ctx, x, y, 8, 4, '#fff0c5', fraction * 2);
+  }
+  const labelX = Math.max(120, Math.min(660, endX));
+  const labelY = Math.max(195, endY - 42);
+  ctx.font = 'bold 27px sans-serif'; ctx.textAlign = 'center';
+  const labelWidth = ctx.measureText(preview.cue).width + 34;
+  ctx.fillStyle = '#2c211fdc'; ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(labelX-labelWidth/2,labelY-30,labelWidth,43,20); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.fillText(preview.cue,labelX,labelY);
+  ctx.restore();
+}
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;
   const painted = paintedScenes[stage];
   ctx.drawImage(painted.complete && painted.naturalWidth ? painted : background(stage),0,0,W,H);
   const vignette=ctx.createRadialGradient(390,420,170,390,420,610);vignette.addColorStop(0,'#0000');vignette.addColorStop(1,'#090a16a8');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   atmosphere(ctx,game,reduced);worktop(ctx);
-  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);
+  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);pullPreview(ctx,game);
 }
 
 export function drawDish(ctx, game, reveal = 1) {

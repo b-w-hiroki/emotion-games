@@ -34,7 +34,16 @@ export function balanceReadiness(game) {
 }
 
 export function createGame() {
-  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, lastLift: 0, lastLean: 0, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
+  return { time: 0, stage: 0, stageTime: 0, balance: 0, velocity: 0, rice: 0, cook: 0, mix: 0, heat: 0.48, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を選ぶとふんわり仕上がる。' };
+}
+
+export function tossForecast(game, gesture) {
+  const lift = Math.max(0, Math.min(2, gesture.lift));
+  const lean = Math.max(-1.5, Math.min(1.5, gesture.lean));
+  const quality = Math.max(0, 1 - Math.abs(lift - .7) / .65 - Math.abs(lean) * .65 - Math.abs(game.balance) * .55);
+  const state = lift < .28 ? 'weak' : lift > 1.25 ? 'strong' : Math.abs(lean + game.balance * .55) >= .55 ? 'sideways' : 'safe';
+  const cue = { weak: 'もう少し引く', strong: '強すぎる！', sideways: '横へ逸れる！', safe: 'このまま返す' }[state];
+  return { lift, lean, quality, state, cue };
 }
 
 export function eggReadiness(game) {
@@ -133,19 +142,17 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
   if (!game.ingredients.rice) { game.message = 'ごはんを入れてから鍋を返そう。'; return null; }
   game.lastToss = game.time;
   game.tossed++;
-  const lift = Math.max(0, Math.min(2, gesture.lift));
-  const lean = Math.max(-1.5, Math.min(1.5, gesture.lean));
+  const { lift, lean, quality, state } = tossForecast(game, gesture);
   game.lastLift = lift;
   game.lastLean = lean;
-  const quality = Math.max(0, 1 - Math.abs(lift - 0.7) / 0.65 - Math.abs(lean) * 0.65 - Math.abs(game.balance) * 0.55);
-  const safe = lift >= 0.28 && lift <= 1.25 && Math.abs(lean + game.balance * 0.55) < 0.55;
+  const safe = state === 'safe';
   // A lateral pull moves the wok as well as the rice. Counter-pulling can
   // recover a leaning pan; pulling with the lean makes a spill more likely.
   const lateralImpulse = lean * Math.min(1.25, lift);
   game.balance = Math.max(-1.45, Math.min(1.45, game.balance + lateralImpulse * 0.16));
   game.velocity = Math.max(-2, Math.min(2, game.velocity + lateralImpulse * 0.8));
   game.lastTossQuality = safe ? quality : 0;
-  game.tossOutcome = safe ? 'caught' : lift < 0.28 ? 'weak' : 'spilled';
+  game.tossOutcome = safe ? 'caught' : state === 'weak' ? 'weak' : 'spilled';
   game.tossSpill = 0;
   if (safe) {
     game.combo++;

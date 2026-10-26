@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, tossReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
+import { createGame, advance, toss, tossForecast, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, windForecast, balanceReadiness, tossReadiness, plate, result, dishAppearance, STAGES } from '../assets/chahan-core.js';
 
 test('precise tosses earn a visible skill result without rewarding spills', () => {
   const g = createGame(); g.phase = 'playing'; addIngredient(g, 'egg'); addIngredient(g, 'rice');
@@ -139,6 +139,24 @@ test('swipe strength and direction determine a good toss', () => {
   g.time += .5; assert.equal(toss(g, { lift: .1, lean: 0 }), false, 'weak swipe does not flip rice');
   assert.equal(g.tossOutcome, 'weak'); assert.equal(g.tossSpill, 0);
   assert.equal(g.rice, riceAfterSpill, 'a weak pull leaves rice in the wok');
+});
+
+test('the pull preview predicts the same outcome as releasing the wok', () => {
+  const gestures = [
+    [{ lift: .12, lean: 0 }, 'weak', 'weak'],
+    [{ lift: .7, lean: 0 }, 'safe', 'caught'],
+    [{ lift: 1.6, lean: 0 }, 'strong', 'spilled'],
+    [{ lift: .7, lean: 1 }, 'sideways', 'spilled'],
+  ];
+  for (const [gesture, state, outcome] of gestures) {
+    const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.time = 2;
+    assert.equal(tossForecast(game, gesture).state, state);
+    toss(game, gesture);
+    assert.equal(game.tossOutcome, outcome);
+  }
+  const leaning = createGame(); leaning.balance = .9;
+  assert.equal(tossForecast(leaning, { lift: .8, lean: -.55 }).state, 'safe', 'the preview accounts for corrective direction');
+  assert.equal(tossForecast(leaning, { lift: .8, lean: .55 }).state, 'sideways');
 });
 
 test('the wok begins empty and ingredient order changes preparation quality', () => {

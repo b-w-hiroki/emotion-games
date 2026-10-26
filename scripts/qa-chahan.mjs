@@ -33,6 +33,21 @@ try {
         }))));
         assert.deepEqual(painted, Array(9).fill(true), `${name} ${width}: painted scene assets decode`);
         if (width === 390) {
+          const previewFrames = await page.evaluate(async () => {
+            const [{ createGame, tossForecast }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+            const game = createGame(); Object.assign(game, { phase: 'playing', time: 2, rice: 1, ingredients: { egg: true, rice: true, veg: true } });
+            const canvas = document.createElement('canvas'); canvas.width = 780; canvas.height = 900;
+            const ctx = canvas.getContext('2d');
+            const frames = {};
+            for (const [key, input] of Object.entries({ rest: null, safe: { lift: .7, lean: 0 }, strong: { lift: 1.6, lean: 0 }, sideways: { lift: .7, lean: 1 } })) {
+              game.pullPreview = input && tossForecast(game, input);
+              drawScene(ctx, game, true);
+              frames[key] = canvas.toDataURL('image/png').split(',')[1];
+            }
+            return frames;
+          });
+          for (const [label, png] of Object.entries(previewFrames)) fs.writeFileSync(path.join(output, `pull-preview-${label}-${name}.png`), Buffer.from(png, 'base64'));
+          assert.equal(new Set(Object.values(previewFrames)).size, 4, `${name}: safe, strong and sideways pulls have distinct visible previews`);
           const cookingFrames = await page.evaluate(async () => {
             const [{ createGame }, { drawScene }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             const game = createGame(); Object.assign(game, { phase: 'playing', time: 2, rice: 1, mix: 1, ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3 });
@@ -183,6 +198,13 @@ try {
         await page.screenshot({ path: path.join(output, `rice-${name}-${width}.png`) });
         const box = await page.locator('#swipeZone').boundingBox();
         const x = box.x + box.width * .48, y = box.y + box.height * .35;
+        if (width === 390) {
+          await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 75, { steps: 6 });
+          await page.waitForTimeout(100);
+          await page.screenshot({ path: path.join(output, `pull-preview-live-${name}-${width}.png`) });
+          await page.mouse.move(x, y - 15, { steps: 4 }); await page.mouse.up();
+          assert.equal(await page.locator('#combo').textContent(), '0', `${name}: cancelling a pull preview does not toss rice`);
+        }
         await page.mouse.move(x, y + 115); await page.mouse.down(); await page.mouse.move(x, y, { steps: 8 }); await page.mouse.up();
         assert.equal(await page.locator('#combo').textContent(), '0', `${name} ${width}: upward swipe must not toss`);
         await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 115, { steps: 8 }); await page.mouse.up();
@@ -216,16 +238,18 @@ try {
         await page.waitForTimeout(160);
         if (width === 390) await page.screenshot({ path: path.join(output, `toss-${name}-${width}.png`) });
         if (width === 390) {
-          const riceBeforeWeak = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
           await page.waitForTimeout(500);
+          const riceBeforeWeak = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
           await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 26, { steps: 3 }); await page.mouse.up();
           assert.equal(await page.locator('#combo').textContent(), '0', `${name}: weak pull breaks combo`);
-          assert.equal(await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width)), riceBeforeWeak, `${name}: weak pull retains rice`);
+          const riceAfterWeak = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
+          assert.ok(riceAfterWeak >= riceBeforeWeak - .75, `${name}: weak pull retains rice apart from ongoing rim drift`);
           await page.screenshot({ path: path.join(output, `weak-${name}-${width}.png`) });
           await page.waitForTimeout(850);
+          const riceBeforeDiagonal = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
           await page.mouse.move(x - 65, y); await page.mouse.down(); await page.mouse.move(x + 65, y + 110, { steps: 8 }); await page.mouse.up();
           const riceAfterDiagonal = await page.locator('#riceBar').evaluate(el => parseFloat(el.style.width));
-          assert.ok(riceAfterDiagonal < riceBeforeWeak, `${name}: diagonal pull visibly costs rice (${riceBeforeWeak}, ${riceAfterDiagonal})`);
+          assert.ok(riceAfterDiagonal < riceBeforeDiagonal - 1, `${name}: diagonal pull visibly costs rice (${riceBeforeDiagonal}, ${riceAfterDiagonal})`);
           await page.waitForTimeout(160);
           await page.screenshot({ path: path.join(output, `spilled-${name}-${width}.png`) });
           assert.match(await page.locator('#seasonHint').textContent(), /米と具|火を通す/, `${name}: seasoning gives an actionable timing cue`);
