@@ -130,8 +130,11 @@ export function phaseAtmosphere(state, cue) {
 
 // The line relaxes only while the fish leaves an opening. Holding the reel
 // takes up some slack before release, without changing AINAN's battle rules.
-export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
+export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }, swimVelocity = 0) {
   const slack = Math.max(0, (cue === 'opening' ? 48 : cue === 'calm' ? 14 : cue === 'warning' ? 5 : 0) - pull * .22);
+  // A running fish drags the taut line behind it. The player's held pull
+  // straightens that bow, using the same swim velocity as the wake and camera.
+  const drag = cue === 'rage' ? clamp(swimVelocity / 450, -1, 1) * 20 * (1 - clamp(pull / 110, 0, 1) * .65) : 0;
   // Transform the hook by the same scale and rotation as the fish sprite.
   const size = (fish.size ?? 1) * (fish.scale ?? 1), angle = fish.angle ?? 0;
   const hookX = -50 * size * (fish.facing ?? 1), hookY = 5 * size;
@@ -139,8 +142,8 @@ export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
   const endY = fish.fishY + 40 + hookX * Math.sin(angle) + hookY * Math.cos(angle);
   return {
     startX: hand.x, startY: hand.y, endX, endY, slack,
-    c1x: hand.x - slack, c1y: hand.y - 53 + slack * .28,
-    c2x: endX - slack * .85, c2y: endY + 57 + slack * .4,
+    c1x: hand.x - slack - drag * .3, c1y: hand.y - 53 + slack * .28,
+    c2x: endX - slack * .85 - drag, c2y: endY + 57 + slack * .4,
   };
 }
 
