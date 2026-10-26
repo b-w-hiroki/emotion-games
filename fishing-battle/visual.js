@@ -122,15 +122,16 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const wave = reduced ? 0 : Math.sin(seconds * speed);
   const swimVelocity = reduced ? 0 : Math.cos(seconds * speed) * run * speed;
   const distance = clamp(state.reel - 48, 0, 52);
+  const proximity = distance / 52;
   const handPull = clamp(pull, 0, 110) * .13;
   const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0) * strength;
   const fishX = 176 - distance * .7 + wave * run + Math.max(0, state.escape - 45) * .16 - handPull + recoil;
   const fishY = 305 + distance * 1.05 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
   return {
-    fishX, fishY, fishSize,
+    fishX, fishY, fishSize: fishSize * (1 + proximity * .18), proximity,
     angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
-    ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32,
-    ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11,
+    ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32 + proximity * 16,
+    ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11 + proximity * 6,
     lineControlX: opening ? 173 : rage || warning ? 154 : 160,
     lineControlY: opening ? 425 : rage || warning ? 383 : 400,
     pull: handPull,
@@ -187,7 +188,7 @@ export function battleCamera(state, cue, pose, { pull = 0, outcomeProgress = 0, 
   if (state.outcome === 'escaped') return { x: -20 * outcomeProgress, y: 3 * outcomeProgress, zoom: 1 - .035 * outcomeProgress };
   return {
     x: clamp(fishOffset - run * 9 + held * 5 + reelKick * hit * 7 - pressure * 5, -21, 18),
-    y: run * 5 + held * 8 + reelKick * hit * 6,
-    zoom: 1 + held * .018 - run * .012 - reelKick * hit * .025 - pressure * .018,
+    y: run * 5 + held * 8 + reelKick * hit * 6 - pose.proximity * 6,
+    zoom: 1 + held * .018 - run * .012 - reelKick * hit * .025 - pressure * .018 + pose.proximity * .018,
   };
 }

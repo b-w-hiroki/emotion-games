@@ -241,8 +241,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     new MutationObserver(() => { const cue = document.querySelector('#cue'); if (cue?.className.includes('finale-')) window.__finales.push(cue.className); }).observe(document.querySelector('#cue'), { attributes: true, attributeFilter: ['class'] });
   });
   let sawCatchTransition = false;
+  let sawNearCatch = false;
   for (let i = 0; i < 55 && await page.locator('#result').isHidden(); i++) {
     const phase = await page.locator('#cue').getAttribute('class');
+    if (!sawNearCatch && Number(await page.locator('#progressValue').textContent().then(t => t.replace('%', ''))) >= 80) {
+      sawNearCatch = true;
+      await page.screenshot({ path: `${out}/${name}-near-catch.png` });
+    }
     if (!sawCatchTransition && phase?.includes('finale-caught')) {
       sawCatchTransition = true;
       if (await page.locator('#result').isVisible()) throw new Error(`${name}: catch result covered the fish transition`);
@@ -252,6 +257,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForTimeout(240);
   }
   if (!sawCatchTransition && !await page.evaluate(() => window.__finales.some(c => c.includes('finale-caught')))) throw new Error(`${name}: catch transition was not shown`);
+  if (!sawNearCatch) throw new Error(`${name}: near-catch state was not reached`);
   if (!await page.locator('#result').isVisible() || !await page.locator('#resultTitle').textContent().then(t => t.includes('釣り上げた'))) throw new Error(`${name}: natural catch path failed`);
   if (!await page.locator('#resultFish').isVisible()) throw new Error(`${name}: caught fish not shown`);
   await page.screenshot({ path: `${out}/${name}-caught.png` });
