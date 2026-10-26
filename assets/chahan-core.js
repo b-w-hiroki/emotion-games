@@ -139,6 +139,11 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
   game.lastLean = lean;
   const quality = Math.max(0, 1 - Math.abs(lift - 0.7) / 0.65 - Math.abs(lean) * 0.65 - Math.abs(game.balance) * 0.55);
   const safe = lift >= 0.28 && lift <= 1.25 && Math.abs(lean + game.balance * 0.55) < 0.55;
+  // A lateral pull moves the wok as well as the rice. Counter-pulling can
+  // recover a leaning pan; pulling with the lean makes a spill more likely.
+  const lateralImpulse = lean * Math.min(1.25, lift);
+  game.balance = Math.max(-1.45, Math.min(1.45, game.balance + lateralImpulse * 0.16));
+  game.velocity = Math.max(-2, Math.min(2, game.velocity + lateralImpulse * 0.8));
   game.lastTossQuality = safe ? quality : 0;
   game.tossOutcome = safe ? 'caught' : lift < 0.28 ? 'weak' : 'spilled';
   game.tossSpill = 0;

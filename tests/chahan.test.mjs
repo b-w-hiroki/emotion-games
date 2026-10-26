@@ -34,6 +34,36 @@ test('rice drifts toward the dangerous rim and the countersteer cue follows bala
   assert.equal(balanceReadiness(game).drift, -63);
 });
 
+test('a lateral toss changes wok momentum and a counter-pull saves rice', () => {
+  const make = () => {
+    const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice');
+    Object.assign(game, { time: 2, balance: .9, velocity: .35 });
+    return game;
+  };
+  const corrected = make(), straight = make(), worsened = make();
+  assert.equal(toss(corrected, { lift: .8, lean: -.55 }), true);
+  assert.equal(toss(straight, { lift: .8, lean: 0 }), true);
+  assert.equal(toss(worsened, { lift: .8, lean: .55 }), false);
+  assert.ok(corrected.balance < straight.balance && corrected.velocity < straight.velocity);
+  assert.ok(worsened.balance > straight.balance && worsened.velocity > straight.velocity);
+  for (let i = 0; i < 20; i++) {
+    advance(corrected, { steer: 0, heat: 0 }, .05);
+    advance(straight, { steer: 0, heat: 0 }, .05);
+  }
+  assert.ok(corrected.rice > straight.rice + .004, 'counter-pulling recovers the wok before rice escapes');
+  assert.equal(balanceReadiness(corrected).state, 'steady');
+  const left = make(), leftStraight = make();
+  left.balance = -.9; left.velocity = -.35;
+  leftStraight.balance = -.9; leftStraight.velocity = -.35;
+  assert.equal(toss(left, { lift: .8, lean: .55 }), true);
+  toss(leftStraight, { lift: .8, lean: 0 });
+  for (let i = 0; i < 20; i++) {
+    advance(left, { steer: 0, heat: 0 }, .05);
+    advance(leftStraight, { steer: 0, heat: 0 }, .05);
+  }
+  assert.ok(left.rice > leftStraight.rice + .004, 'the same recovery works on the left rim');
+});
+
 test('late-stage gusts warn before applying a steerable force', () => {
   const train = createGame(); Object.assign(train, { phase: 'playing', stage: 1, stageTime: 2.5, time: 20 });
   assert.equal(windForecast(train).state, 'warning');
