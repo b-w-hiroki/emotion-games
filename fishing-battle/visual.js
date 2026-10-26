@@ -87,8 +87,11 @@ export function phaseAtmosphere(state, cue) {
 // takes up some slack before release, without changing AINAN's battle rules.
 export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
   const slack = Math.max(0, (cue === 'opening' ? 48 : cue === 'calm' ? 14 : cue === 'warning' ? 5 : 0) - pull * .22);
-  const size = fish.size ?? 1;
-  const endX = fish.fishX + 70 - 50 * size, endY = fish.fishY + 40 + 5 * size;
+  // Transform the hook by the same scale and rotation as the fish sprite.
+  const size = (fish.size ?? 1) * (fish.scale ?? 1), angle = fish.angle ?? 0;
+  const hookX = -50 * size, hookY = 5 * size;
+  const endX = fish.fishX + 70 + hookX * Math.cos(angle) - hookY * Math.sin(angle);
+  const endY = fish.fishY + 40 + hookX * Math.sin(angle) + hookY * Math.cos(angle);
   return {
     startX: hand.x, startY: hand.y, endX, endY, slack,
     c1x: hand.x - slack, c1y: hand.y - 53 + slack * .28,
@@ -123,15 +126,16 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const swimVelocity = reduced ? 0 : Math.cos(seconds * speed) * run * speed;
   const distance = clamp(state.reel - 48, 0, 52);
   const proximity = distance / 52;
+  const retreat = clamp((state.escape - 55) / 45, 0, 1);
   const handPull = clamp(pull, 0, 110) * .13;
   const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0) * strength;
-  const fishX = 176 - distance * .7 + wave * run + Math.max(0, state.escape - 45) * .16 - handPull + recoil;
-  const fishY = 305 + distance * 1.05 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
+  const fishX = 176 - distance * .7 + wave * run + retreat * 22 - handPull + recoil;
+  const fishY = 305 + distance * 1.05 - retreat * 22 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
   return {
-    fishX, fishY, fishSize: fishSize * (1 + proximity * .18), proximity,
+    fishX, fishY, fishSize: fishSize * (1 + proximity * .18 - retreat * .09), proximity, retreat,
     angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
-    ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32 + proximity * 16,
-    ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11 + proximity * 6,
+    ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32 + proximity * 16 - retreat * 8,
+    ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11 + proximity * 6 - retreat * 3,
     lineControlX: opening ? 173 : rage || warning ? 154 : 160,
     lineControlY: opening ? 425 : rage || warning ? 383 : 400,
     pull: handPull,
