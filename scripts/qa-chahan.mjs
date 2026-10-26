@@ -94,6 +94,11 @@ try {
               drawScene(canvas.getContext('2d'), game);
               frames[`${side}-${portion}`] = canvas.toDataURL('image/png').split(',')[1];
             }
+            game.balance = 1.1; game.rice = 1;
+            for (const [label, time] of [['reduced-a', 2.3], ['reduced-b', 2.8]]) {
+              game.time = time; drawScene(canvas.getContext('2d'), game, true);
+              frames[label] = canvas.toDataURL('image/png').split(',')[1];
+            }
             return frames;
           });
           const outsideDifference = async (full, empty, left) => {
@@ -109,6 +114,7 @@ try {
           const leftSpill = await outsideDifference(rimFrames['left-full'], rimFrames['left-empty'], true);
           for (const [label, png] of Object.entries(rimFrames)) fs.writeFileSync(path.join(output, `rim-${label}-${name}.png`), Buffer.from(png, 'base64'));
           assert.ok(rightSpill > 100 && leftSpill > 100, `${name}: dangerous balance spills visible rice from either rim (${rightSpill}, ${leftSpill})`);
+          assert.equal(rimFrames['reduced-a'], rimFrames['reduced-b'], `${name}: reduced motion keeps the spill warning static`);
           const dishes = await page.evaluate(async () => {
             const [{ createGame }, { drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
             await Promise.all([...document.images].map(image => image.decode().catch(() => {})));
