@@ -38,14 +38,17 @@ try {
           for (const [label, update] of Object.entries({ rest: { panPush: 0, lastToss: -10 }, push: { panPush: 1, lastToss: -10 }, airborne: { panPush: 0, lastToss: 1.64, lastLift: .7, tossOutcome: 'caught' }, raw: { lastToss: -10, cook: .12 }, burnt: { cook: 1.35 } })) {
             Object.assign(game, update); drawScene(ctx, game, label !== 'airborne'); frames[label] = canvas.toDataURL();
           }
+          Object.assign(game, { cook: .86, lastLadleAt: 1.88, ladleX: .5, lastLadleQuality: 1 });
+          drawScene(ctx, game, false); frames.ladle = canvas.toDataURL();
           const dishes = [];
           const dish = document.createElement('canvas'); dish.width = 640; dish.height = 280;
           for (const cook of [.12, .86, 1.35]) { game.cook = cook; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL()); }
+          game.cook = .86; game.fluff = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
           return { assets, frames, dishes };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
-        assert.equal(new Set(Object.values(art.frames)).size, 5, `${name} ${width}: push, flight and cooking states have distinct art`);
-        assert.equal(new Set(art.dishes).size, 3, `${name} ${width}: doneness changes the finished dish`);
+        assert.equal(new Set(Object.values(art.frames)).size, 6, `${name} ${width}: push, flight, ladle and cooking states have distinct art`);
+        assert.equal(new Set(art.dishes).size, 4, `${name} ${width}: doneness and separated rice change the finished dish`);
         if (width === 390) for (const [label, data] of Object.entries(art.frames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         assert.equal(new URL(page.url()).pathname, '/', `${name} ${width}: game shares the studio page`);
         assert.equal(await frame.locator('[data-venue]').count(), 3);
@@ -64,6 +67,15 @@ try {
           assert.equal(await frame.locator('#fillingLabel').textContent().then(x => x.startsWith(['ねぎ','焼豚','海老'][venue])), true);
           const area = await frame.locator('#swipeZone').boundingBox();
           const x = area.x + area.width * .5, y = area.y + area.height * .52;
+          assert.equal(await frame.locator('#ladleHint').isVisible(), true);
+          await page.mouse.click(x, y);
+          const firstFluff = await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width));
+          assert.ok(firstFluff > 0, 'a tap separates rice');
+          assert.equal(await frame.locator('#combo').textContent(), '0', 'ladle tap is distinct from a wok toss');
+          await page.waitForTimeout(320);
+          await page.mouse.click(x, y);
+          assert.ok(await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > firstFluff, 'rhythmic second tap separates more rice');
+          await page.screenshot({ path: path.join(output, `ladle-${venue}-${name}-${width}.png`), fullPage: true });
           await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 95, { steps: 8 }); await page.mouse.up();
           assert.equal(await frame.locator('#combo').textContent(), '0', 'pull alone cannot flip rice');
           await page.waitForTimeout(500);
