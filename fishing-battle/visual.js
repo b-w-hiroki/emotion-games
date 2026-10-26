@@ -106,7 +106,7 @@ export function lineShape(fish, cue, pull = 0, hand = { x: 146, y: 490 }) {
   const slack = Math.max(0, (cue === 'opening' ? 48 : cue === 'calm' ? 14 : cue === 'warning' ? 5 : 0) - pull * .22);
   // Transform the hook by the same scale and rotation as the fish sprite.
   const size = (fish.size ?? 1) * (fish.scale ?? 1), angle = fish.angle ?? 0;
-  const hookX = -50 * size, hookY = 5 * size;
+  const hookX = -50 * size * (fish.facing ?? 1), hookY = 5 * size;
   const endX = fish.fishX + 70 + hookX * Math.cos(angle) - hookY * Math.sin(angle);
   const endY = fish.fishY + 40 + hookX * Math.sin(angle) + hookY * Math.cos(angle);
   return {
@@ -152,6 +152,7 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const fishY = 305 + distance * 1.05 - retreat * 22 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3) * swim.bob) + handPull * .72 - recoil * .28;
   return {
     fishX, fishY, fishSize: fishSize * (1 + proximity * .18 - retreat * .09), proximity, retreat,
+    facing: rage && !reduced && swimVelocity > 0 ? -1 : 1,
     angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) * swim.tilt + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
     ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32 + proximity * 16 - retreat * 8,
     ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11 + proximity * 6 - retreat * 3,
@@ -181,6 +182,7 @@ export function outcomePose(pose, outcome, progress) {
     fishX: pose.fishX + (90 - pose.fishX) * ease,
     fishY: pose.fishY + (410 - pose.fishY) * ease - Math.sin(Math.PI * p) * 65,
     angle: pose.angle - .32 * ease,
+    facing: pose.facing,
     size: pose.fishSize,
     scale: 1 + Math.sin(Math.PI * p) * .18,
     alpha: 1,
@@ -189,12 +191,17 @@ export function outcomePose(pose, outcome, progress) {
     fishX: pose.fishX + 125 * ease,
     fishY: pose.fishY - 25 * ease,
     angle: pose.angle + .14 * ease,
+    facing: pose.facing,
     size: pose.fishSize,
     scale: 1,
     alpha: 1 - p,
   };
-  return { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, size: pose.fishSize, scale: 1, alpha: 1 };
+  return { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, facing: pose.facing, size: pose.fishSize, scale: 1, alpha: 1 };
 }
+
+// Rotate through an edge-on silhouette instead of snapping the sprite at each
+// change in swim direction. Reduced motion keeps the original stable facing.
+export const easeFacing = (current, target, dt, reduced = false) => reduced ? 1 : current + (target - current) * (1 - Math.exp(-Math.max(0, dt) * 11));
 
 // Camera offsets are in the 390x844 scene. Keep them small enough that the
 // hooked fish and the fisher remain visible on the narrowest supported phone.
