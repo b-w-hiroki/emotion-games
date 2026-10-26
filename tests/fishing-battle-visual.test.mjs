@@ -316,3 +316,19 @@ test('camera follows held input, fish run and opposite outcomes while reduced mo
   assert.ok(escaped.x < caught.x && escaped.zoom < 1);
   assert.deepEqual(battleCamera(state, 'calm', pose, { outcomeProgress: 1, reduced: true }), { x: 0, y: 0, zoom: 1 });
 });
+
+test('camera reveals room ahead of a running fish using the same velocity as its wake', () => {
+  const state = createBattle('kue');
+  const pose = battlePose(state, 'rage', 0);
+  const still = { ...pose, swimVelocity: 0 };
+  const right = { ...pose, swimVelocity: 400 };
+  const left = { ...pose, swimVelocity: -400 };
+  const center = battleCamera(state, 'rage', still);
+  const followingRight = battleCamera(state, 'rage', right);
+  const followingLeft = battleCamera(state, 'rage', left);
+  assert.ok(surfaceResponse(right, 'rage').wake > 0);
+  assert.ok(followingRight.x < center.x && followingLeft.x > center.x);
+  assert.ok(followingRight.zoom < center.zoom && followingLeft.zoom < center.zoom);
+  assert.deepEqual(battleCamera(state, 'calm', right), battleCamera(state, 'calm', still));
+  assert.deepEqual(battleCamera(state, 'rage', right, { reduced: true }), { x: 0, y: 0, zoom: 1 });
+});
