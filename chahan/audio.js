@@ -54,9 +54,13 @@ export function createKitchenAudio({ Context = globalThis.AudioContext || global
     if (safe) { tone(150, .16, 'triangle', .07, 470); tone(390 + Math.min(combo, 8) * 28, .22, 'sine', .055, 240); if (quality >= .82) tone(880, .28, 'sine', .035, 1170); }
     else tone(135, .24, 'sawtooth', .055, 72);
   }
+  function ladle(quality = 0) {
+    tone(1180, .075, 'triangle', .035 + quality * .025, 650);
+    tone(1860, .11, 'sine', .018 + quality * .014, 1100);
+  }
   function season(quality) { tone(750, .42, 'triangle', .08, 230); if (quality > .6) tone(970, .5, 'sine', .045, 650); }
   function transition() { tone(420, .3, 'sine', .06, 660); tone(630, .38, 'triangle', .035, 920); }
   function finish(score) { tone(score >= 70 ? 720 : 310, .55, 'triangle', .09, score >= 70 ? 1050 : 180); update({ playing: false }); }
   function pause() { if (context?.state === 'running') context.suspend(); }
-  return { unlock, setEnabled, update, toss, season, transition, finish, pause, get enabled() { return enabled; }, get active() { return !!context; } };
+  return { unlock, setEnabled, update, toss, ladle, season, transition, finish, pause, get enabled() { return enabled; }, get active() { return !!context; } };
 }

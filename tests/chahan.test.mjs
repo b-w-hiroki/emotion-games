@@ -2,7 +2,37 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { createGame, advance, toss, tossForecast, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, heatReadiness, tossReadiness, plate, result, dishAppearance, STAGES, COOK_SECONDS } from '../assets/chahan-core.js';
+import { createGame, advance, toss, tossForecast, tapLadle, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, heatReadiness, tossReadiness, plate, result, dishAppearance, STAGES, COOK_SECONDS } from '../assets/chahan-core.js';
+
+test('rhythmic ladle taps separate rice and improve the plated result', () => {
+  const game = createGame(); game.phase = 'playing';
+  assert.equal(tapLadle(game), null, 'the empty wok cannot be fluffed');
+  addIngredient(game, 'rice'); game.cook = .5; game.heat = STAGES[0].idealHeat;
+  const first = tapLadle(game, .35);
+  assert.ok(first > 0 && game.fluff > 0);
+  const afterFirst = game.fluff;
+  assert.equal(tapLadle(game), null, 'rapid duplicate input is ignored');
+  game.time += .32;
+  const rhythmic = tapLadle(game, .65);
+  assert.ok(rhythmic > first && game.fluff > afterFirst);
+  assert.equal(game.ladleX, .65);
+  assert.match(game.message, /カンカン/);
+  const scored = { ...game, mix: .8, cook: .86, seasoning: .8, prep: .8, filling: 'scallion', fillingQuality: .8, fillingCook: .3, fillingTosses: 2, heatFitSum: 8, heatTime: 10 };
+  assert.ok(result(scored).score > result({ ...scored, fluff: 0 }).score);
+  assert.ok(dishAppearance(scored).separateGrains > 0);
+});
+
+test('ladle timing and cooked rice matter without replacing the wok toss', () => {
+  const good = createGame(), wet = createGame();
+  for (const game of [good, wet]) { game.phase = 'playing'; addIngredient(game, 'rice'); game.heat = STAGES[0].idealHeat; }
+  good.cook = .5;
+  tapLadle(good); tapLadle(wet);
+  good.time = wet.time = .32;
+  assert.ok(tapLadle(good) > tapLadle(wet), 'wet rice is harder to separate');
+  assert.equal(good.tossed, 0, 'ladle tapping does not count as a wok toss');
+  good.time += .5; assert.equal(toss(good, { push: .7, lift: .7, lean: 0 }), true);
+  assert.equal(good.tossed, 1);
+});
 
 test('precise tosses earn a visible skill result without rewarding spills', () => {
   const g = createGame(); g.phase = 'playing'; addIngredient(g, 'egg'); addIngredient(g, 'rice');
@@ -268,7 +298,7 @@ test('heat, stirring and rice all contribute to the final meal', () => {
   assert.ok(result(good).score > result(unmixed).score);
 });
 test('ending feedback points to the actual cooking shortfall', () => {
-  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1, fillingCook: .3, fillingTosses: 2, heatFitSum: 8, heatTime: 10 });
+  const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, fluff: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1, fillingCook: .3, fillingTosses: 2, heatFitSum: 8, heatTime: 10 });
   assert.match(result(good).comment, /一粒ずつ/);
   assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
@@ -292,7 +322,7 @@ test('the plated dish reflects mixing, seasoning, doneness and remaining rice', 
 });
 test('the standalone game has touch and keyboard controls', () => {
   const src = fs.readFileSync('chahan/game.js','utf8');
-  for(const token of ['pointerdown','pointermove','pointerup','pointercancel','minY','Space','KeyS','visibilitychange']) assert.ok(src.includes(token),token);
+  for(const token of ['pointerdown','pointermove','pointerup','pointercancel','minY','Space','KeyS','KeyL','visibilitychange']) assert.ok(src.includes(token),token);
 });
 test('physical pull toward the player becomes a toss with strength and lateral direction', () => {
   assert.equal(motionToss({ x: 0, y: 0, z: 1 }), null, 'hand tremor is ignored');

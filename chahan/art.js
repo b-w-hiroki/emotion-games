@@ -335,13 +335,40 @@ function pullPreview(ctx, game) {
   ctx.fillStyle = color; ctx.fillText(preview.cue,labelX,labelY);
   ctx.restore();
 }
+function ladleEffect(ctx, game, reduced) {
+  const age = game.time - game.lastLadleAt;
+  if (!game.ingredients.rice || age < 0 || age > .48) return;
+  const x = 180 + game.ladleX * 400, y = 562;
+  const strike = reduced ? 1 : Math.sin(Math.PI * Math.min(1, age / .36));
+  ctx.save();
+  ctx.translate(x, y - 55 * (1 - strike));
+  ctx.rotate(-.48 + strike * .28);
+  ctx.strokeStyle = '#432b20'; ctx.lineWidth = 27; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(18, -15); ctx.lineTo(115, -220); ctx.stroke();
+  ctx.strokeStyle = '#d5c4a9'; ctx.lineWidth = 17;
+  ctx.beginPath(); ctx.moveTo(7, -13); ctx.lineTo(96, -193); ctx.stroke();
+  const metal = ctx.createLinearGradient(-36, -18, 45, 26);
+  metal.addColorStop(0, '#fff5cf'); metal.addColorStop(.48, '#889ca0'); metal.addColorStop(1, '#edf0df');
+  ellipse(ctx, 0, 0, 52, 25, metal, -.1);
+  ellipse(ctx, -7, -7, 27, 7, '#f7e6bc', -.1);
+  ctx.restore();
+  if (age < .32) {
+    const spread = reduced ? .5 : age / .32;
+    for (let i = 0; i < 18 * game.lastLadleQuality; i++) {
+      const angle = i * 2.399, radius = (22 + i % 5 * 8) * spread;
+      ellipse(ctx, x + Math.cos(angle) * radius, y - 25 + Math.sin(angle) * radius * .45 - 25 * spread, 6 + i % 3, 2.5, i % 4 ? '#fff0bd' : '#edb86a', angle);
+    }
+    ctx.save(); ctx.textAlign = 'center'; ctx.font = 'bold 34px sans-serif'; ctx.lineWidth = 6; ctx.strokeStyle = '#322022'; ctx.fillStyle = '#fff4bc';
+    ctx.strokeText('カン！', x, y - 115 - 20 * spread); ctx.fillText('カン！', x, y - 115 - 20 * spread); ctx.restore();
+  }
+}
 export function drawScene(ctx, game, reduced = false) {
   const stage=Math.min(game.stage,2),t=reduced?0:game.time;
   const painted = paintedScenes[stage];
   ctx.drawImage(painted.complete && painted.naturalWidth ? painted : background(stage),0,0,W,H);
   const vignette=ctx.createRadialGradient(390,420,170,390,420,610);vignette.addColorStop(0,'#0000');vignette.addColorStop(1,'#090a16a8');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   atmosphere(ctx,game,reduced);worktop(ctx);
-  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);pullPreview(ctx,game);
+  burner(ctx,game.heat);steam(ctx,t,game.heat,reduced);wok(ctx,game,reduced);frontSteam(ctx,game,reduced);ingredientEffect(ctx,game,reduced);seasoningEffect(ctx,game,reduced);ladleEffect(ctx,game,reduced);pullPreview(ctx,game);
 }
 
 export function drawDish(ctx, game, reveal = 1) {
@@ -420,6 +447,12 @@ export function drawDish(ctx, game, reveal = 1) {
     const x = 320 + Math.cos(i * 2.399) * 170 * amount * Math.sqrt((i + .5) / 23);
     const y = 165 + Math.sin(i * 2.399) * 43 * amount * Math.sqrt((i + .5) / 23);
     ellipse(ctx, x, y, 8, 2.5, rgba('#59352a', .35 + look.char * .55), i * .4);
+  }
+  for (let i = 0; i < look.separateGrains; i++) {
+    const angle = i * 2.399, radius = Math.sqrt((i + .5) / Math.max(1, look.separateGrains));
+    const x = 320 + Math.cos(angle) * radius * 180 * amount;
+    const y = 165 + Math.sin(angle) * radius * 49 * amount;
+    ellipse(ctx, x, y, 5 + i % 3, 2, i % 6 ? '#fff1bd' : '#edb666', angle);
   }
   ctx.restore();
   if (look.steam > 0) {
