@@ -234,7 +234,7 @@ function draw(now) {
   board.style.setProperty('--water-edge-opacity', atmosphere.edge.toFixed(3));
   const { fishX, fishY } = pose;
   const fisher = fisherPose(cue, { pull: pointerPull, impact, flash, strength: impactStrength, reduced: reduced.matches });
-  const line = lineShape(fish, cue, pointerPull, { x: fisher.handX, y: fisher.handY });
+  const line = lineShape(fish, cue, pointerPull, { x: fisher.handX, y: fisher.handY }, state.outcome ? 0 : pose.swimVelocity);
   const surface = surfaceResponse(pose, cue, { impact, flash, strength: impactStrength, reduced: reduced.matches });
   const pressure = escapePressure(state);
   const waterAlpha = 1 - finaleProgress;

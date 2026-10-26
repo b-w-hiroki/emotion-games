@@ -255,6 +255,22 @@ test('opening slack is visible in the line and a held pull takes it up', () => {
   assert.equal(opening.endX, rage.endX);
 });
 
+test('the taut line bows behind the fish run and a held pull straightens it', () => {
+  const state = createBattle('kue');
+  const fish = outcomePose(battlePose(state, 'rage', 0), null, 0);
+  const velocity = battlePose(state, 'rage', 0).swimVelocity;
+  const still = lineShape(fish, 'rage');
+  const right = lineShape(fish, 'rage', 0, { x: 146, y: 490 }, velocity);
+  const left = lineShape(fish, 'rage', 0, { x: 146, y: 490 }, -velocity);
+  const held = lineShape(fish, 'rage', 110, { x: 146, y: 490 }, velocity);
+  assert.ok(right.c2x < still.c2x && left.c2x > still.c2x);
+  assert.ok(held.c2x > right.c2x && held.c2x < still.c2x);
+  assert.equal(right.endX, left.endX);
+  assert.equal(lineShape(fish, 'opening', 0, { x: 146, y: 490 }, velocity).c2x, lineShape(fish, 'opening').c2x);
+  const quiet = battlePose(state, 'rage', 0, { reduced: true });
+  assert.equal(lineShape(outcomePose(quiet, null, 0), 'rage', 0, { x: 146, y: 490 }, quiet.swimVelocity).c2x, lineShape(outcomePose(quiet, null, 0), 'rage').c2x);
+});
+
 test('reduced motion retains state shapes without oscillation or recoil', () => {
   const state = createBattle('tai');
   const first = battlePose(state, 'warning', 0, { reduced: true, impact: 'badReel', flash: .35 });
