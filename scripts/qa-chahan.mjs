@@ -36,7 +36,7 @@ try {
           const ctx = canvas.getContext('2d'), frames = {};
           const game = createGame(); Object.assign(game, { phase: 'playing', rice: 1, mix: 1, ingredients: { egg: true, rice: true, veg: true }, filling: 'scallion', fillingCook: .3, cook: .86, time: 2 });
           for (const [label, update] of Object.entries({ rest: { panPush: 0, lastToss: -10 }, push: { panPush: 1, lastToss: -10 }, airborne: { panPush: 0, lastToss: 1.64, lastLift: .7, tossOutcome: 'caught' }, raw: { lastToss: -10, cook: .12 }, burnt: { cook: 1.35 } })) {
-            Object.assign(game, update); drawScene(ctx, game, true); frames[label] = canvas.toDataURL();
+            Object.assign(game, update); drawScene(ctx, game, label !== 'airborne'); frames[label] = canvas.toDataURL();
           }
           const dishes = [];
           const dish = document.createElement('canvas'); dish.width = 640; dish.height = 280;
