@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeGather } from '../assets/chahan-gesture.js';
+import { analyzeGather, analyzePull } from '../assets/chahan-gesture.js';
+
+test('a straight wok pull remains catchable when frames are delayed', () => {
+  const ordinary = analyzePull(150, 100, 150, 195, 280);
+  const delayed = analyzePull(150, 100, 150, 195, 1800);
+  assert.ok(ordinary.lift >= .28 && ordinary.lift <= 1.25);
+  assert.ok(delayed.lift >= .28 && delayed.lift <= 1.25);
+  assert.equal(delayed.lean, 0);
+  assert.ok(analyzePull(150, 100, 150, 115, 1800).lift < .28, 'a tiny drag is not a toss');
+  assert.ok(analyzePull(150, 100, 300, 195, 280).lean > .55, 'a sideways pull still spills');
+});
 
 const curve = [[60, 174], [85, 125], [150, 101], [215, 125], [240, 174], [150, 174]];
 
