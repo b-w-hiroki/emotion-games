@@ -38,10 +38,13 @@ try {
           for (const [label, update] of Object.entries({ rest: { panPush: 0, lastToss: -10 }, push: { panPush: 1, lastToss: -10 }, airborne: { panPush: 0, lastToss: 1.64, lastLift: .7, tossOutcome: 'caught' }, raw: { lastToss: -10, cook: .12 }, burnt: { cook: 1.35 }, scoop: { cook: .86, scoopProgress: 1 } })) {
             Object.assign(game, update); drawScene(ctx, game, label !== 'airborne'); frames[label] = canvas.toDataURL();
           }
-          Object.assign(game, { cook: .86, lastLadleAt: 1.88, ladleX: .5, lastLadleQuality: 1 });
+          Object.assign(game, { cook: .86, scoopProgress: 0, riceClumps: [0, 0, 0], fluff: 1 });
+          drawScene(ctx, game, true); frames.separated = canvas.toDataURL();
+          Object.assign(game, { lastLadleAt: 1.88, ladleX: .5, lastLadleQuality: 1 });
           drawScene(ctx, game, false); frames.ladle = canvas.toDataURL();
           const dishes = [];
           const dish = document.createElement('canvas'); dish.width = 640; dish.height = 280;
+          game.fluff = 0;
           for (const cook of [.12, .86, 1.35]) { game.cook = cook; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL()); }
           game.cook = .86; game.fluff = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
           game.plated = true; game.platingQuality = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
@@ -59,7 +62,7 @@ try {
           return { assets, frames, dishes, mascotFrames };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
-        assert.equal(new Set(Object.values(art.frames)).size, 7, `${name} ${width}: push, flight, ladle, scoop and cooking states have distinct art`);
+        assert.equal(new Set(Object.values(art.frames)).size, 8, `${name} ${width}: push, flight, ladle, scoop, separated rice and cooking states have distinct art`);
         assert.equal(new Set(art.dishes).size, 5, `${name} ${width}: doneness, separated rice and round plating change the finished dish`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.caught, `${name} ${width}: every caught toss gets a celebration`);
@@ -108,9 +111,21 @@ try {
           });
           await page.mouse.click(x, y);
           assert.ok(await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > firstFluff, 'rhythmic second tap separates more rice');
+          if (width === 390 && venue === 0) {
+            const centreFluff = await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width));
+            for (const side of [.25, .75]) {
+              await frame.locator('#swipeZone').evaluate(async zone => {
+                const start = Number(zone.dataset.gameTime), timeout = performance.now() + 5000;
+                while (Number(zone.dataset.gameTime) - start < .25 && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+                if (Number(zone.dataset.gameTime) - start < .25) throw new Error('game clock did not advance before the next ladle tap');
+              });
+              await page.mouse.click(area.x + area.width * side, y);
+            }
+            assert.ok(await frame.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > centreFluff, 'tapping other rice pockets separates more grains');
+          }
           await page.screenshot({ path: path.join(output, `ladle-${venue}-${name}-${width}.png`), fullPage: true });
           await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 95, { steps: 8 }); await page.mouse.up();
-          assert.equal(await frame.locator('#combo').textContent(), '1', 'one flick toward the cook catches rice');
+          assert.equal(await frame.locator('#combo').textContent(), '1', `one flick toward the cook catches rice: ${await frame.locator('#tip').textContent()}`);
           assert.equal(new URL(page.url()).pathname, '/', 'play stays on the studio page');
           await page.screenshot({ path: path.join(output, `venue-${venue}-${name}-${width}.png`), fullPage: true });
           await frame.locator('#seasoning').click();

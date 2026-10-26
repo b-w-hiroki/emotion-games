@@ -8,7 +8,7 @@ export const FILLING_NAMES = { scallion: 'ねぎ', pork: '焼豚', shrimp: '海�
 
 export function createGame(venue = 0) {
   const stage = Number.isInteger(venue) && venue >= 0 && venue < STAGES.length ? venue : 0;
-  return { time: 0, stage, rice: 0, cook: 0, mix: 0, fluff: 0, heat: .48, heatFitSum: 0, heatTime: 0, panPush: 0, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, lastLadleAt: -10, lastLadleInputAt: -10, ladleHits: 0, ladleX: .5, lastLadleQuality: 0, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, platingQuality: 0, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を入れて、鍋をあおろう。' };
+  return { time: 0, stage, rice: 0, cook: 0, mix: 0, fluff: 0, riceClumps: [1, 1, 1], heat: .48, heatFitSum: 0, heatTime: 0, panPush: 0, ingredients: { egg: false, rice: false, veg: false }, filling: null, fillingQuality: 0, fillingCook: 0, fillingTosses: 0, eggCook: 0, prep: 0, lastAdded: '', lastAddedAt: -10, lastToss: -10, lastLadleAt: -10, lastLadleInputAt: -10, ladleHits: 0, ladleX: .5, lastLadleQuality: 0, tossed: 0, lost: 0, combo: 0, bestCombo: 0, tossQuality: 0, perfectTosses: 0, lastTossQuality: 0, seasoning: 0, seasoned: false, seasonedAt: -10, plated: false, platedAt: null, platingQuality: 0, lastLift: 0, lastLean: 0, pullPreview: null, tossOutcome: 'none', tossSpill: 0, phase: 'ready', message: '空の鍋から始めよう。まず卵を入れて、鍋をあおろう。' };
 }
 
 export function heatReadiness(game) {
@@ -69,7 +69,7 @@ export function addIngredient(game, kind, filling = 'scallion') {
     game.rice = 1;
     const egg = eggReadiness(game);
     game.prep += game.ingredients.egg ? .1 + .25 * egg.quality : .03;
-    game.message = game.ingredients.egg && egg.quality < .35 ? game.eggCook > .72 ? '卵が少し焦げた。ごはんを返して香りを整えよう。' : '卵はまだ生っぽい。火を通しながら返そう。' : 'ごはんを投入！ 鍋をあおり、タップでおたまをカンカン。';
+    game.message = game.ingredients.egg && egg.quality < .35 ? game.eggCook > .72 ? '卵が少し焦げた。ごはんを返して香りを整えよう。' : '卵はまだ生っぽい。火を通しながら返そう。' : 'ごはんを投入！ 鍋をあおり、かたまりをタップでほぐそう。';
   } else {
     game.filling = filling;
     game.fillingCook = 0;
@@ -157,9 +157,14 @@ export function tapLadle(game, x = .5, inputTime = game.time) {
   game.ladleHits++;
   game.ladleX = Math.max(.2, Math.min(.8, Number.isFinite(x) ? x : .5));
   game.lastLadleQuality = quality;
-  game.fluff = Math.min(1, game.fluff + .17 * quality);
-  game.mix = Math.min(1, game.mix + .012 * quality);
-  game.message = !cooked ? game.cook < .16 ? 'カン！ まだ米が湿っている。少し炒めよう。' : 'カン！ 焦げる前に盛り付けよう。'
+  const pocket = Math.min(2, Math.floor((game.ladleX - .2) / .2));
+  const wasClumped = game.riceClumps[pocket];
+  game.riceClumps[pocket] = Math.max(0, wasClumped - .5 * quality);
+  const separated = wasClumped - game.riceClumps[pocket];
+  game.fluff = 1 - game.riceClumps.reduce((sum, clump) => sum + clump, 0) / game.riceClumps.length;
+  game.mix = Math.min(1, game.mix + .024 * separated);
+  game.message = wasClumped < .05 && game.fluff < .9 ? 'そこはほぐれた！ 別の場所もカンカン。'
+    : !cooked ? game.cook < .16 ? 'カン！ まだ米が湿っている。少し炒めよう。' : 'カン！ 焦げる前に盛り付けよう。'
     : rhythmic ? game.fluff >= .7 ? 'カンカン！ 米がパラパラにほどけた。' : 'カンカン！ 米のかたまりがほぐれてきた。'
     : 'カン！ 少し間をあけて、リズムよくほぐそう。';
   return quality;
