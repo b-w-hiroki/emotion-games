@@ -2,6 +2,19 @@ import { FISH } from './core.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const FISH_VISUAL_SIZE = Object.freeze({ aji: .86, saba: .92, isaki: .94, bass: 1, tai: 1.04, hirame: 1.05, buri: 1.12, kanpachi: 1.16, kue: 1.24 });
+// Visual swim signatures only. AINAN's battle speed, timing and reel values
+// remain in core.js; the derivative below also drives the directional wake.
+const FISH_SWIM = Object.freeze({
+  aji: { tempo: 1.2, run: .9, dart: .2, bob: .7, tilt: .85 },
+  saba: { tempo: 1.25, run: .95, dart: .18, bob: .8, tilt: .9 },
+  isaki: { tempo: 1.1, run: .9, dart: .12, bob: .8, tilt: .85 },
+  tai: { tempo: .92, run: .95, dart: .04, bob: .9, tilt: 1 },
+  hirame: { tempo: .75, run: .95, dart: 0, bob: .45, tilt: .6 },
+  bass: { tempo: 1.05, run: 1, dart: .12, bob: 1, tilt: 1 },
+  buri: { tempo: 1.07, run: 1, dart: .08, bob: .9, tilt: .9 },
+  kanpachi: { tempo: 1.12, run: 1, dart: .16, bob: 1, tilt: 1 },
+  kue: { tempo: .68, run: 1.05, dart: 0, bob: 1.05, tilt: .7 },
+});
 
 // The swipe changes the impact of a reel, never the amount of battle progress.
 export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
@@ -123,21 +136,23 @@ export function fisherPose(cue, { pull = 0, impact = '', flash = 0, strength = 1
 export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0, strength = 1 } = {}) {
   const fish = FISH[state.fishId];
   const fishSize = FISH_VISUAL_SIZE[state.fishId];
+  const swim = FISH_SWIM[state.fishId];
   const rage = cue === 'rage', warning = cue === 'warning', opening = cue === 'opening';
-  const speed = rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6;
-  const run = rage ? 12 + fish.speed * 12 : warning ? 5 + fish.speed * 3 : 3;
-  const wave = reduced ? 0 : Math.sin(seconds * speed);
-  const swimVelocity = reduced ? 0 : Math.cos(seconds * speed) * run * speed;
+  const speed = (rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6) * swim.tempo;
+  const run = (rage ? 12 + fish.speed * 12 : warning ? 5 + fish.speed * 3 : 3) * swim.run;
+  const phase = seconds * speed;
+  const wave = reduced ? 0 : (Math.sin(phase) + swim.dart * Math.sin(phase * 2)) / (1 + swim.dart);
+  const swimVelocity = reduced ? 0 : run * speed * (Math.cos(phase) + 2 * swim.dart * Math.cos(phase * 2)) / (1 + swim.dart);
   const distance = clamp(state.reel - 48, 0, 52);
   const proximity = distance / 52;
   const retreat = clamp((state.escape - 55) / 45, 0, 1);
   const handPull = clamp(pull, 0, 110) * .13;
   const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0) * strength;
   const fishX = 176 - distance * .7 + wave * run + retreat * 22 - handPull + recoil;
-  const fishY = 305 + distance * 1.05 - retreat * 22 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3)) + handPull * .72 - recoil * .28;
+  const fishY = 305 + distance * 1.05 - retreat * 22 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3) * swim.bob) + handPull * .72 - recoil * .28;
   return {
     fishX, fishY, fishSize: fishSize * (1 + proximity * .18 - retreat * .09), proximity, retreat,
-    angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
+    angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) * swim.tilt + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
     ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32 + proximity * 16 - retreat * 8,
     ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11 + proximity * 6 - retreat * 3,
     lineControlX: opening ? 173 : rage || warning ? 154 : 160,

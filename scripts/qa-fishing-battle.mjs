@@ -83,6 +83,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       for (const id of ['aji', 'tai', 'bass', 'buri', 'saba', 'isaki', 'hirame', 'kanpachi', 'kue']) {
         await page.locator('#fish').selectOption(id);
         if (!await page.locator('#fishName').textContent()) throw new Error(`${name}: ${id} has no name`);
+        if (id === 'hirame') {
+          await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
+          await page.screenshot({ path: `${out}/${name}-hirame-rage.png` });
+        }
       }
       await page.waitForTimeout(100);
       await page.screenshot({ path: `${out}/${name}-kue-selected.png` });

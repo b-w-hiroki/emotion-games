@@ -184,6 +184,19 @@ test('stronger fish make a wider, faster run and directional wake without changi
   assert.equal(surfaceResponse(kue, 'rage', { reduced: true }).wake, 0);
 });
 
+test('small fish dart, flatfish glide and the heavy fish heaves with matching water motion', () => {
+  const aji = createBattle('aji'), hirame = createBattle('hirame'), kue = createBattle('kue');
+  const ajiStart = battlePose(aji, 'rage', 0), hirameStart = battlePose(hirame, 'rage', 0), kueStart = battlePose(kue, 'rage', 0);
+  assert.ok(ajiStart.swimVelocity > hirameStart.swimVelocity);
+  assert.ok(kueStart.run > hirameStart.run && kueStart.swimVelocity > ajiStart.swimVelocity);
+  const ajiBob = battlePose(aji, 'rage', .2).fishY - ajiStart.fishY;
+  const hirameBob = battlePose(hirame, 'rage', .2).fishY - hirameStart.fishY;
+  const kueBob = battlePose(kue, 'rage', .2).fishY - kueStart.fishY;
+  assert.ok(hirameBob < ajiBob && ajiBob < kueBob);
+  assert.ok(surfaceResponse(kueStart, 'rage').wake > surfaceResponse(hirameStart, 'rage').wake);
+  assert.deepEqual(battlePose(kue, 'rage', 0, { reduced: true }), battlePose(kue, 'rage', 3, { reduced: true }));
+});
+
 test('accepted and dangerous reels give distinct water splashes', () => {
   const pose = battlePose(createBattle('aji'), 'calm', 0);
   const good = surfaceResponse(pose, 'calm', { impact: 'goodReel', flash: .35 });
