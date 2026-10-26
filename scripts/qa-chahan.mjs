@@ -121,9 +121,18 @@ try {
           const scoop = [[-.28, 0], [-.21, -.18], [0, -.25], [.21, -.18], [.28, 0], [0, 0]];
           await page.mouse.move(centerX + scoop[0][0] * scale, centerY + scoop[0][1] * scale);
           await page.mouse.down();
-          for (const [dx, dy] of scoop.slice(1)) await page.mouse.move(centerX + dx * scale, centerY + dy * scale, { steps: 5 });
+          for (const [index, [dx, dy]] of scoop.entries()) {
+            if (!index) continue;
+            await page.mouse.move(centerX + dx * scale, centerY + dy * scale, { steps: 5 });
+            if (index === 3) {
+              const progress = Number(await frame.locator('#scoopTrace').getAttribute('data-progress'));
+              assert.ok(progress > .2 && progress < 1, `the rice gathers while the spoon curves around the wok (${progress})`);
+              if (width === 390 && venue === 0) await page.screenshot({ path: path.join(output, `scoop-progress-${name}.png`), fullPage: true });
+            }
+          }
           assert.equal(await frame.locator('#scoopTrace').isVisible(), true, 'the spoon follows the gathering gesture');
           assert.match(await frame.locator('#scoopPath').getAttribute('d'), /L/, 'the gathering path stays visible under the spoon');
+          assert.ok(Number(await frame.locator('#scoopTrace').getAttribute('data-progress')) > .9, 'the rice reaches the centre before release');
           if (width === 390 && venue === 0) await page.screenshot({ path: path.join(output, `scoop-${name}.png`), fullPage: true });
           await page.mouse.up();
           await frame.locator('#overlayTitle').waitFor();
