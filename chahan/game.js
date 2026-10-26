@@ -125,7 +125,7 @@ function selectVenue(index, scroll = true) {
   selectedVenue = clamp(index, 0, venueChoices.length - 1);
   venueChoices.forEach((choice, i) => choice.setAttribute('aria-pressed', String(i === selectedVenue)));
   $('venuePosition').textContent = `${selectedVenue + 1} / ${venueChoices.length} · 横にスライドして選ぶ`;
-  if (scroll) venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: reduceMotion ? 'instant' : 'smooth' });
+  if (scroll) venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: 'instant' });
 }
 for (const button of venueChoices) button.onclick = () => selectVenue(Number(button.dataset.venue));
 let venueScrollTimer;
