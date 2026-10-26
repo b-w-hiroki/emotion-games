@@ -28,7 +28,7 @@ try {
         const frame = page.frameLocator('.chahan-shelf iframe');
         await frame.locator('#overlayTitle').waitFor();
         const art = await frame.locator('#scene').evaluate(async canvas => {
-          const [{ createGame }, { drawScene, drawDish }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+          const [{ createGame }, { drawScene, drawDish, drawRiceMascot }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
           const assets = await Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','rice-egg-v1','flight-v3','flight-egg-v1'].map(name => new Promise(resolve => {
             const image = new Image(); image.onload = () => resolve(image.width === 780); image.onerror = () => resolve(false);
             image.src = `./art/${name}.webp`;
@@ -44,12 +44,30 @@ try {
           const dish = document.createElement('canvas'); dish.width = 640; dish.height = 280;
           for (const cook of [.12, .86, 1.35]) { game.cook = cook; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL()); }
           game.cook = .86; game.fluff = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
-          return { assets, frames, dishes };
+          const mascot = document.createElement('canvas'); mascot.width = 780; mascot.height = 900;
+          const mascotCtx = mascot.getContext('2d'), mascotFrames = {};
+          const captureMascot = (label, update, reduced = false) => { Object.assign(game, update); mascotCtx.clearRect(0, 0, 780, 900); drawRiceMascot(mascotCtx, game, reduced); mascotFrames[label] = mascot.toDataURL(); };
+          captureMascot('idle', { phase: 'playing', time: 3, lastToss: -10, combo: 0, tossOutcome: 'none' });
+          captureMascot('dance', { time: 3, lastToss: 2.8, combo: 2, tossOutcome: 'caught', lastTossQuality: .9 });
+          captureMascot('caught', { lastTossQuality: .5 });
+          captureMascot('danceLater', { time: 3.1 }, false);
+          captureMascot('reduced', { time: 3 }, true);
+          captureMascot('reducedLater', { time: 3.1 }, true);
+          captureMascot('miss', { time: 3, combo: 0, tossOutcome: 'spilled', lastTossQuality: 0 });
+          captureMascot('empty', { ingredients: { egg: false, rice: false, veg: false } });
+          return { assets, frames, dishes, mascotFrames };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
         assert.equal(new Set(Object.values(art.frames)).size, 6, `${name} ${width}: push, flight, ladle and cooking states have distinct art`);
         assert.equal(new Set(art.dishes).size, 4, `${name} ${width}: doneness and separated rice change the finished dish`);
+        assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
+        assert.notEqual(art.mascotFrames.idle, art.mascotFrames.caught, `${name} ${width}: every caught toss gets a celebration`);
+        assert.notEqual(art.mascotFrames.dance, art.mascotFrames.danceLater, `${name} ${width}: dance animation changes over time`);
+        assert.equal(art.mascotFrames.reduced, art.mascotFrames.reducedLater, `${name} ${width}: reduced motion holds a still celebration pose`);
+        assert.equal(art.mascotFrames.idle, art.mascotFrames.miss, `${name} ${width}: a spill stops the dance`);
+        assert.notEqual(art.mascotFrames.idle, art.mascotFrames.empty, `${name} ${width}: the mascot appears after rice is added`);
         if (width === 390) for (const [label, data] of Object.entries(art.frames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
+        if (width === 390) fs.writeFileSync(path.join(output, `mascot-${name}.png`), Buffer.from(art.mascotFrames.dance.split(',')[1], 'base64'));
         assert.equal(new URL(page.url()).pathname, '/', `${name} ${width}: game shares the studio page`);
         assert.equal(await frame.locator('[data-venue]').count(), 3);
         assert.equal(await frame.locator('.venue-slide img').count(), 3);
@@ -101,12 +119,13 @@ try {
         }
         assert.deepEqual(errors, [], `${name} ${width}: no JavaScript errors`);
         await page.close();
-        for (let repeat = 0; repeat < 3; repeat++) {
+        for (let repeat = 0; repeat < 8; repeat++) {
           const fresh = await browser.newPage({ viewport: { width, height }, hasTouch: true });
           await fresh.goto(base);
           await fresh.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
           const kitchen = fresh.frameLocator('.chahan-shelf iframe');
           await kitchen.locator('[data-venue="1"]').click();
+          assert.equal(await kitchen.locator('[data-venue="1"]').getAttribute('aria-pressed'), 'true', `${name} ${width}: thumbnail is selected on fresh load ${repeat + 1}`);
           await kitchen.locator('#start').click();
           assert.equal(await kitchen.locator('#place').textContent(), '走る列車', `${name} ${width}: immediate start keeps the selected venue on fresh load ${repeat + 1}`);
           await fresh.close();
