@@ -92,6 +92,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await page.screenshot({ path: `${out}/${name}-kue-selected.png` });
       await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
       await page.screenshot({ path: `${out}/${name}-kue-rage.png` });
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage') && Number(document.querySelector('.board').style.getPropertyValue('--fish-facing')) < -.85);
+      await page.screenshot({ path: `${out}/${name}-kue-facing-right.png` });
+      await page.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage') && Number(document.querySelector('.board').style.getPropertyValue('--fish-facing')) > .85);
+      await page.screenshot({ path: `${out}/${name}-kue-facing-left.png` });
       await page.locator('#mute').click();
       await page.reload();
       if (await page.locator('#mute').getAttribute('aria-pressed') !== 'true') throw new Error(`${name}: mute did not persist`);
@@ -210,6 +214,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const stillCamera = await quiet.locator('.board').evaluate(el => [el.style.getPropertyValue('--camera-x'), el.style.getPropertyValue('--camera-y'), el.style.getPropertyValue('--camera-zoom')]);
   if (stillCamera.join(',') !== '0.00px,0.00px,1.0000') throw new Error(`${name}: reduced motion moved the camera (${stillCamera})`);
   if (!await quiet.locator('#cue').isVisible() || await quiet.locator('#mute').getAttribute('aria-pressed') !== 'true') throw new Error(`${name}: warning lost with reduced motion and sound off`);
+  await quiet.waitForFunction(() => document.querySelector('#cue')?.classList.contains('rage'));
+  if (!await quiet.locator('.board').evaluate(el => el.style.getPropertyValue('--fish-facing') === '1.000')) throw new Error(`${name}: reduced motion still turned the fish`);
   await quiet.waitForFunction(() => document.querySelector('#cue')?.classList.contains('opening'));
   if (!await quiet.locator('#cue').isVisible()) throw new Error(`${name}: opening lost with reduced motion and sound off`);
   await quiet.screenshot({ path: `${out}/${name}-quiet-opening.png` });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, reelBattle } from '../fishing-battle/core.js';
-import { battleCamera, battlePose, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from '../fishing-battle/visual.js';
+import { battleCamera, battlePose, easeFacing, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from '../fishing-battle/visual.js';
 
 test('only a downward stroke charges the reel and a corrected stroke can recover', () => {
   assert.equal(verticalPull(0, 34), 34);
@@ -184,6 +184,21 @@ test('stronger fish make a wider, faster run and directional wake without changi
   assert.equal(surfaceResponse(kue, 'rage', { reduced: true }).wake, 0);
 });
 
+test('a running fish turns toward travel while its mouth remains hooked', () => {
+  const state = createBattle('aji');
+  const right = battlePose(state, 'rage', 0);
+  const left = battlePose(state, 'rage', Math.PI / 7);
+  assert.equal(right.facing, -1);
+  assert.equal(left.facing, 1);
+  assert.equal(battlePose(state, 'rage', 0, { reduced: true }).facing, 1);
+  const midway = easeFacing(1, -1, .05);
+  assert.ok(midway < 1 && midway > -1);
+  assert.equal(easeFacing(midway, -1, .05, true), 1);
+  const rightHook = lineShape(outcomePose(right, null, 0), 'rage');
+  const leftHook = lineShape({ ...outcomePose(right, null, 0), facing: 1 }, 'rage');
+  assert.ok(rightHook.endX > right.fishX + 70 && leftHook.endX < right.fishX + 70);
+});
+
 test('small fish dart, flatfish glide and the heavy fish heaves with matching water motion', () => {
   const aji = createBattle('aji'), hirame = createBattle('hirame'), kue = createBattle('kue');
   const ajiStart = battlePose(aji, 'rage', 0), hirameStart = battlePose(hirame, 'rage', 0), kueStart = battlePose(kue, 'rage', 0);
@@ -235,7 +250,7 @@ test('catch and escape carry the fish in opposite directions before the result',
   assert.ok(escaped.fishX > pose.fishX && escaped.alpha < 1);
   assert.equal(outcomePose(pose, 'caught', 1).alpha, 1);
   assert.equal(outcomePose(pose, 'escaped', 1).alpha, 0);
-  assert.deepEqual(outcomePose(pose, null, .5), { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, size: pose.fishSize, scale: 1, alpha: 1 });
+  assert.deepEqual(outcomePose(pose, null, .5), { fishX: pose.fishX, fishY: pose.fishY, angle: pose.angle, facing: pose.facing, size: pose.fishSize, scale: 1, alpha: 1 });
 });
 
 test('fish silhouette, water ring and hook point grow together by species', () => {
