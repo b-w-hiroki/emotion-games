@@ -1,6 +1,6 @@
 import { FISH, battleCue, createBattle, reelBattle, stepBattle } from './core.js';
 import { BattleAudio } from './audio.js';
-import { battleCamera, battlePose, easeFacing, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from './visual.js';
+import { advanceSwimMotion, battleCamera, battlePose, createSwimMotion, easeFacing, escapePressure, fisherPose, interactionFeedback, lineShape, outcomePose, phaseAtmosphere, pullGuidance, reelImpulse, reelReadout, surfaceResponse, timingWindow, verticalPull } from './visual.js';
 
 const $ = id => document.getElementById(id);
 const board = document.querySelector('.board'), canvas = $('sea'), ctx = canvas.getContext('2d');
@@ -23,6 +23,7 @@ let lastReadout = null, readoutAt = 0;
 let rageMistake = false, cleanOpeningAt = -Infinity;
 const camera = { x: 0, y: 0, zoom: 1 };
 let fishFacing = 1;
+let swimMotion = createSwimMotion(state);
 let muted = (() => { try { return localStorage.getItem('fishing-battle-muted') === '1'; } catch { return false; } })();
 const sound = new BattleAudio(() => new (window.AudioContext || window.webkitAudioContext)());
 sound.setMuted(muted);
@@ -186,7 +187,7 @@ document.addEventListener('keyup', e => {
 });
 function cancelKeyboardPull() { if (keyboardPull) { keyboardPull = false; setPull(0); syncUI(); } }
 window.addEventListener('blur', cancelKeyboardPull);
-function restart() { sound.reset(); keyboardPull = false; offAxisPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; rageMistake = false; cleanOpeningAt = -Infinity; camera.x = camera.y = 0; camera.zoom = 1; fishFacing = 1; started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
+function restart() { sound.reset(); keyboardPull = false; offAxisPull = false; setPull(0); state = createBattle($('fish').value, Date.now()); outcomeAt = null; flash = 0; impact = ''; impactStrength = 1; lastReadout = null; rageMistake = false; cleanOpeningAt = -Infinity; camera.x = camera.y = 0; camera.zoom = 1; fishFacing = 1; swimMotion = createSwimMotion(state); started = false; actions = { openingHits: 0, badReels: 0 }; previousCue = 'calm'; openingLatePlayed = false; $('action').textContent = ''; $('result').hidden = true; syncUI(); }
 $('retry').addEventListener('click', restart);
 $('fish').addEventListener('change', restart);
 $('reel').addEventListener('click', e => { if (e.detail === 0) reel(); });
@@ -207,7 +208,8 @@ function draw(now) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const dt = last ? Math.min((now - last) / 1000, .05) : 0;
   const t = now / 1000, cue = battleCue(state), rage = cue === 'rage';
-  const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash, strength: impactStrength });
+  if (!document.hidden && !state.outcome) swimMotion = advanceSwimMotion(swimMotion, state, cue, dt);
+  const pose = battlePose(state, cue, t, { reduced: reduced.matches, pull: pointerPull * 844 / rect.height, tension: interactionFeedback(state, pointerPull).tension, impact, flash, strength: impactStrength, motion: swimMotion });
   const finaleProgress = state.outcome && outcomeAt !== null ? Math.min(1, Math.max(0, (now - outcomeAt) / (state.outcome === 'caught' ? 650 : 500))) : 0;
   const fish = outcomePose(pose, state.outcome, finaleProgress);
   fishFacing = easeFacing(fishFacing, state.outcome ? fishFacing : fish.facing, dt, reduced.matches);

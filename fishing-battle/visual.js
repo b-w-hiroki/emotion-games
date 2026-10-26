@@ -16,6 +16,34 @@ const FISH_SWIM = Object.freeze({
   kue: { tempo: .68, run: 1.05, dart: 0, bob: 1.05, tilt: .7 },
 });
 
+function swimTargets(state, cue) {
+  const fish = FISH[state.fishId], swim = FISH_SWIM[state.fishId];
+  const rage = cue === 'rage', warning = cue === 'warning';
+  return {
+    rate: (rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6) * swim.tempo,
+    run: (rage ? 12 + fish.speed * 12 : warning ? 5 + fish.speed * 3 : 3) * swim.run,
+    bobRate: rage ? 7 : 4,
+    bob: (rage ? 12 + fish.speed * 2 : 3) * swim.bob,
+    tilt: (rage ? .1 : warning ? .045 : .017) * swim.tilt,
+  };
+}
+
+// Integrate the visual motion rather than multiplying wall time by a new rate
+// at each phase change. The fish cannot teleport when a run starts or ends.
+export function createSwimMotion(state) {
+  return { phase: 0, bobPhase: 0, ...swimTargets(state, 'calm') };
+}
+
+export function advanceSwimMotion(motion, state, cue, dt) {
+  const elapsed = clamp(dt, 0, .05), blend = 1 - Math.exp(-elapsed * 8);
+  const target = swimTargets(state, cue);
+  const next = { ...motion };
+  for (const key of ['rate', 'run', 'bobRate', 'bob', 'tilt']) next[key] += (target[key] - next[key]) * blend;
+  next.phase += (motion.rate + next.rate) * .5 * elapsed;
+  next.bobPhase += (motion.bobRate + next.bobRate) * .5 * elapsed;
+  return next;
+}
+
 // The swipe changes the impact of a reel, never the amount of battle progress.
 export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
 
@@ -133,14 +161,15 @@ export function fisherPose(cue, { pull = 0, impact = '', flash = 0, strength = 1
 }
 
 // Canvas-space pose. Visual pull and recoil never change the battle state.
-export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0, strength = 1 } = {}) {
+export function battlePose(state, cue, seconds, { reduced = false, pull = 0, tension = interactionFeedback(state, pull).tension, impact = '', flash = 0, strength = 1, motion = null } = {}) {
   const fish = FISH[state.fishId];
   const fishSize = FISH_VISUAL_SIZE[state.fishId];
   const swim = FISH_SWIM[state.fishId];
   const rage = cue === 'rage', warning = cue === 'warning', opening = cue === 'opening';
-  const speed = (rage ? 5 + fish.speed * 2 : warning ? 3.8 : 2.6) * swim.tempo;
-  const run = (rage ? 12 + fish.speed * 12 : warning ? 5 + fish.speed * 3 : 3) * swim.run;
-  const phase = seconds * speed;
+  const target = swimTargets(state, cue);
+  const speed = motion?.rate ?? target.rate;
+  const run = motion?.run ?? target.run;
+  const phase = motion?.phase ?? seconds * speed;
   const wave = reduced ? 0 : (Math.sin(phase) + swim.dart * Math.sin(phase * 2)) / (1 + swim.dart);
   const swimVelocity = reduced ? 0 : run * speed * (Math.cos(phase) + 2 * swim.dart * Math.cos(phase * 2)) / (1 + swim.dart);
   const distance = clamp(state.reel - 48, 0, 52);
@@ -149,11 +178,11 @@ export function battlePose(state, cue, seconds, { reduced = false, pull = 0, ten
   const handPull = clamp(pull, 0, 110) * .13;
   const recoil = reduced ? 0 : clamp(flash, 0, .35) * (impact === 'badReel' ? 52 : impact ? -48 : 0) * strength;
   const fishX = 176 - distance * .7 + wave * run + retreat * 22 - handPull + recoil;
-  const fishY = 305 + distance * 1.05 - retreat * 22 + (reduced ? 0 : Math.sin(seconds * (rage ? 7 : 4)) * (rage ? 12 + fish.speed * 2 : 3) * swim.bob) + handPull * .72 - recoil * .28;
+  const fishY = 305 + distance * 1.05 - retreat * 22 + (reduced ? 0 : Math.sin(motion?.bobPhase ?? seconds * target.bobRate) * (motion?.bob ?? target.bob)) + handPull * .72 - recoil * .28;
   return {
     fishX, fishY, fishSize: fishSize * (1 + proximity * .18 - retreat * .09), proximity, retreat,
     facing: rage && !reduced && swimVelocity > 0 ? -1 : 1,
-    angle: reduced ? 0 : wave * (rage ? .1 : warning ? .045 : .017) * swim.tilt + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
+    angle: reduced ? 0 : wave * (motion?.tilt ?? target.tilt) + (impact === 'badReel' ? .08 : impact ? -.06 : 0) * clamp(flash / .35, 0, 1) * strength,
     ringWidth: (rage ? 128 + fish.strength * 4 : warning ? 124 : opening ? 107 : 118) + tension * 9 + (fishSize - 1) * 32 + proximity * 16 - retreat * 8,
     ringHeight: (rage ? 52 : warning ? 47 : opening ? 38 : 43) + tension * 4 + (fishSize - 1) * 11 + proximity * 6 - retreat * 3,
     lineControlX: opening ? 173 : rage || warning ? 154 : 160,
