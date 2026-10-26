@@ -112,7 +112,24 @@ test("near-extinction recovery comes from the player's timely release, not RNG",
  assert.equal(eligible({...base,journey:82,releaseAt:83},83.5),false,'the shortcut cannot trigger a rescue after arrival');
  const s=K.create({seed:2});Object.assign(s,{flame:20,oxygen:60,memories:2});
  K.step(s,75,DT,{shield:true,wasShield:false});K.step(s,75.1,DT,{shield:false,wasShield:true});
- assert.equal(s.releaseAt,75.1,'releasing the button records the moment');
+ assert.equal(s.releaseAt,-100,'a forced release does not count as a deliberate rescue');
+ K.step(s,75.2,DT,{shield:true,wasShield:false});K.step(s,75.3,DT,{shield:false,wasShield:true,releaseIntent:true});
+ assert.equal(s.releaseAt,75.3,'deliberately releasing the button records the moment');
+});
+test('blur or canceled input cannot trigger the near-extinction rescue',()=>{
+ for(const releaseIntent of [false,undefined]){
+  const s=K.create({seed:2});s.events=[];s.routeChoice='rest';s.decisionIndex=2;
+  Object.assign(s,{flame:20,oxygen:60,memories:2,chapter:3});
+  s.journey=98;
+  const events=K.step(s,84,DT,{shield:false,wasShield:true,releaseIntent});
+  assert.equal(events.some(e=>e.type==='miracle'),false);
+  assert.equal(s.rescue,false);
+ }
+ const s=K.create({seed:2});s.events=[];s.routeChoice='rest';s.decisionIndex=2;
+ Object.assign(s,{flame:20,oxygen:60,memories:2,chapter:3});
+ s.journey=98;
+ const events=K.step(s,84,DT,{shield:false,wasShield:true,releaseIntent:true});
+ assert.equal(events.some(e=>e.type==='miracle'),true);
 });
 test('chapters change play conditions: tunnel shelter, bridge exposure, foreshadowed rescue',()=>{
  assert.deepEqual([0,19.9,20,44.9,45,70].map(t=>K.chapterAt(t)),[0,0,1,1,2,3]);
