@@ -58,7 +58,7 @@ try {
         assert.equal(await frame.locator('[data-venue="1"]').getAttribute('aria-pressed'), 'true', 'keyboard advances the carousel');
         await frame.locator('[data-venue="2"]').click();
         assert.equal(await frame.locator('#venuePosition').textContent().then(x => x.startsWith('3 / 3')), true, 'thumbnail selects a venue');
-        await frame.locator('#venueTrack').evaluate(el => { el.scrollLeft = 0; el.dispatchEvent(new Event('scroll')); });
+        await frame.locator('#venueTrack').evaluate(el => { el.dispatchEvent(new WheelEvent('wheel', { bubbles: true })); el.scrollLeft = 0; });
         await page.waitForTimeout(150);
         assert.equal(await frame.locator('[data-venue="0"]').getAttribute('aria-pressed'), 'true', 'swiping the carousel updates the selected venue');
         await page.screenshot({ path: path.join(output, `studio-${name}-${width}.png`), fullPage: true });
@@ -101,6 +101,16 @@ try {
         }
         assert.deepEqual(errors, [], `${name} ${width}: no JavaScript errors`);
         await page.close();
+        for (let repeat = 0; repeat < 3; repeat++) {
+          const fresh = await browser.newPage({ viewport: { width, height }, hasTouch: true });
+          await fresh.goto(base);
+          await fresh.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          const kitchen = fresh.frameLocator('.chahan-shelf iframe');
+          await kitchen.locator('[data-venue="1"]').click();
+          await kitchen.locator('#start').click();
+          assert.equal(await kitchen.locator('#place').textContent(), '走る列車', `${name} ${width}: immediate start keeps the selected venue on fresh load ${repeat + 1}`);
+          await fresh.close();
+        }
       }
     } finally { await browser.close(); }
   }
