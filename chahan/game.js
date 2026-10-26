@@ -119,5 +119,16 @@ function draw() { drawScene(ctx, game, reduceMotion); }
 function loop(now) { const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { heat: Number(held.has('up')) - Number(held.has('down')) }, dt); if (now - audioTick > 130) { audio.update({ stage: game.stage, heat: game.heat, playing: game.phase === 'playing' }); audioTick = now; } updatePullPreview(); draw(); updateHud(); if (game.phase === 'finished') { closeFilling(); finish(); } else animation = requestAnimationFrame(loop); }
 draw(); updateHud();
 
-for (const button of document.querySelectorAll('[data-venue]')) button.onclick = () => { selectedVenue = Number(button.dataset.venue); for (const choice of document.querySelectorAll('[data-venue]')) choice.setAttribute('aria-pressed', String(choice === button)); };
+const venueTrack = $('venueTrack');
+const venueChoices = [...document.querySelectorAll('[data-venue]')];
+function selectVenue(index, scroll = true) {
+  selectedVenue = clamp(index, 0, venueChoices.length - 1);
+  venueChoices.forEach((choice, i) => choice.setAttribute('aria-pressed', String(i === selectedVenue)));
+  $('venuePosition').textContent = `${selectedVenue + 1} / ${venueChoices.length} · 横にスライドして選ぶ`;
+  if (scroll) venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: reduceMotion ? 'instant' : 'smooth' });
+}
+for (const button of venueChoices) button.onclick = () => selectVenue(Number(button.dataset.venue));
+let venueScrollTimer;
+venueTrack.addEventListener('scroll', () => { clearTimeout(venueScrollTimer); venueScrollTimer = setTimeout(() => selectVenue(Math.round(venueTrack.scrollLeft / venueTrack.clientWidth), false), 80); });
+venueTrack.addEventListener('keydown', event => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); event.stopPropagation(); selectVenue(selectedVenue + (event.key === 'ArrowRight' ? 1 : -1)); });
 if (new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');

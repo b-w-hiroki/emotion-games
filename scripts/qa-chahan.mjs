@@ -52,6 +52,15 @@ try {
         if (width === 390) for (const [label, data] of Object.entries(art.frames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         assert.equal(new URL(page.url()).pathname, '/', `${name} ${width}: game shares the studio page`);
         assert.equal(await frame.locator('[data-venue]').count(), 3);
+        assert.equal(await frame.locator('.venue-slide img').count(), 3);
+        await frame.locator('#venueTrack').focus();
+        await page.keyboard.press('ArrowRight');
+        assert.equal(await frame.locator('[data-venue="1"]').getAttribute('aria-pressed'), 'true', 'keyboard advances the carousel');
+        await frame.locator('[data-venue="2"]').click();
+        assert.equal(await frame.locator('#venuePosition').textContent().then(x => x.startsWith('3 / 3')), true, 'thumbnail selects a venue');
+        await frame.locator('#venueTrack').evaluate(el => { el.scrollLeft = 0; el.dispatchEvent(new Event('scroll')); });
+        await page.waitForTimeout(150);
+        assert.equal(await frame.locator('[data-venue="0"]').getAttribute('aria-pressed'), 'true', 'swiping the carousel updates the selected venue');
         await page.screenshot({ path: path.join(output, `studio-${name}-${width}.png`), fullPage: true });
         for (const [venue, filling, target] of [[0, 'scallion', 72], [1, 'pork', 55], [2, 'shrimp', 38]]) {
           await frame.locator(`[data-venue="${venue}"]`).click();
