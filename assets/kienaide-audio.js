@@ -13,6 +13,7 @@ function breathProfile(oxygen){if(oxygen>36)return null;const urgency=1-Math.max
 function create(){
  const prefs=load();
  let ac=null,master=null,bus=null,wind=null,fire=null,steps=null,pad=null,nextNote=0,noteIndex=0,lastStep=0,nextBreath=0,chapter=-1;
+ let shouldPlay=false,transport=null;
  function init(){
   if(ac)return true;
   const AC=root.AudioContext||root.webkitAudioContext;if(!AC)return false;
@@ -31,8 +32,20 @@ function create(){
   pad={voices:[]};
   return true;
  }
- function resume(){if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}
- function suspend(){if(ac&&ac.state==='running')ac.suspend().catch(()=>{})}
+ // WebKit can finish resume() after a pause request, or suspend() after returning to play.
+ // Serialize context transitions and apply the most recent screen state after each settles.
+ function syncTransport(){
+  if(!ac||transport)return;
+  const method=shouldPlay?(ac.state!=='running'?'resume':null):(ac.state==='running'?'suspend':null);
+  if(!method)return;
+  try{
+   const requestedPlay=shouldPlay,before=ac.state;
+   transport=Promise.resolve(ac[method]());
+   transport.then(()=>{transport=null;if(shouldPlay!==requestedPlay||ac.state!==before)syncTransport()},()=>{transport=null});
+  }catch(_){transport=null}
+ }
+ function resume(){shouldPlay=true;syncTransport()}
+ function suspend(){shouldPlay=false;syncTransport()}
  // Simulation time returns to zero on retry; audio preferences and the context do not.
  function startJourney(){nextNote=0;noteIndex=0;lastStep=0;nextBreath=0;chapter=-1}
  function setMuted(m){prefs.muted=!!m;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}

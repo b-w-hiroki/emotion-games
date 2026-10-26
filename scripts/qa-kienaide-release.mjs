@@ -36,6 +36,25 @@ try{
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS personal journey count, reload and collection',size.width);
  }
  {
+  const ctx=await browser.newContext({viewport:{width:360,height:640}});
+  await ctx.addInitScript(()=>{
+   localStorage.setItem('emotion-kienaide-intro-v1','1');
+   const AC=window.AudioContext||window.webkitAudioContext;
+   if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.quickAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}
+  });
+  const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=.01');
+  await page.waitForFunction(()=>!document.querySelector('#play').disabled);
+  await page.locator('#play').click();await page.locator('#journey-menu-open').click();
+  const audioAvailable=await page.evaluate(()=>!!window.quickAudio);
+  if(audioAvailable)await page.waitForFunction(()=>window.quickAudio.state==='suspended');
+  await page.waitForTimeout(400);
+  if(audioAvailable)assert.equal(await page.evaluate(()=>window.quickAudio.state),'suspended','an immediate pause must remain silent after gesture unlock');
+  else assert.equal(await page.evaluate(()=>!!(window.AudioContext||window.webkitAudioContext)),false,'this runner has no Web Audio API to exercise');
+  await page.screenshot({path:path.join(out,`${engine}-immediate-pause.png`)});
+  await page.locator('#pause-resume').click();if(audioAvailable)await page.waitForFunction(()=>window.quickAudio.state==='running');
+  await ctx.close();console.log(audioAvailable?'PASS immediate pause settles audio before resuming':'PASS immediate pause; Web Audio unavailable in this runner');
+ }
+ {
   const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/hero-body.*',async route=>{await gate;await route.continue()});
   const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=1',{waitUntil:'domcontentloaded'});

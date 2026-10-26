@@ -5,14 +5,16 @@ import vm from 'node:vm';
 
 const source=fs.readFileSync('assets/kienaide-audio.js','utf8');
 
-function audioRig(saved='{}'){
+function audioRig(saved='{}',opts={}){
  const stats={bufferStarts:0,oscillatorStarts:0,melodyStarts:0,gainTargets:[]};
+ const pending=[];
  const param=onTarget=>({value:0,setValueAtTime(v){this.value=v},setTargetAtTime(v){this.value=v;onTarget?.(v)},exponentialRampToValueAtTime(){}});
  const node=extra=>Object.assign({connect(){return this}},extra);
  class AudioContext{
-  constructor(){this.currentTime=0;this.sampleRate=16;this.destination={};this.state='running'}
-  resume(){this.state='running';return Promise.resolve()}
-  suspend(){this.state='suspended';return Promise.resolve()}
+  constructor(){this.currentTime=0;this.sampleRate=16;this.destination={};this.state=opts.initialState||'running'}
+  resume(){return this.transition('running')}
+  suspend(){return this.transition('suspended')}
+  transition(next){if(!opts.defer){this.state=next;return Promise.resolve()}return new Promise(resolve=>pending.push({next,finish:()=>{this.state=next;resolve()}}))}
   createGain(){return node({gain:param(v=>stats.gainTargets.push(v))})}
   createDelay(){return node({delayTime:param()})}
   createBiquadFilter(){return node({frequency:param(),Q:param()})}
@@ -24,7 +26,7 @@ function audioRig(saved='{}'){
  const scope={AudioContext,localStorage:{getItem(){return saved},setItem(){}}};
  vm.runInNewContext(source,scope);
  const audio=scope.KienaideAudio.create();audio.init();
- return {audio,stats};
+ return {audio,stats,pending};
 }
 
 function state(oxygen,finalePhase='approach'){
@@ -123,7 +125,7 @@ test('pausing mutes the scene and schedules no footsteps, breath or melody until
 test('audio follows the active journey, modal dialogs and background state',async()=>{
  const {audio}=audioRig();
  audio.suspend();assert.equal(audio.state,'suspended');
- audio.resume();await Promise.resolve();assert.equal(audio.state,'running');
+ audio.resume();await new Promise(setImmediate);assert.equal(audio.state,'running');
  const app=fs.readFileSync('assets/app.js','utf8');
  const lifecycle=app.match(/function syncCandleAudio\(\)\{([^\n]+)\}/)[1];
  for(const [mode,candleDialog,expected] of [['intro',null,'resume'],['intro',{id:'kienaide-intro'},'resume'],['play',null,'resume'],['play',{id:'journey-menu'},'suspend'],['play',{id:'collection-panel'},'suspend'],['play',{id:'route-choice'},'suspend'],['end',null,null]]){
@@ -136,4 +138,23 @@ test('audio follows the active journey, modal dialogs and background state',asyn
  assert.ok(app.includes("document.addEventListener('visibilitychange',()=>{last=0;syncCandleAudio()})"),'visibility changes must apply the shared audio policy');
  assert.ok(app.includes('((wasHidden?hiddenAt:now)-t0)/1000*speed'),'time spent in a background tab must not skip the intro');
  assert.ok(app.includes('skipped:introTime<iv.INTRO_LENGTH'),'background time must not distort the intro skip metric');
+});
+
+test('a pause while resume is pending still suspends after the gesture resolves',async()=>{
+ const {audio,pending}=audioRig('{}',{defer:true,initialState:'suspended'});
+ audio.resume();assert.deepEqual(pending.map(x=>x.next),['running']);
+ audio.suspend();assert.equal(audio.state,'suspended');
+ pending.shift().finish();await new Promise(setImmediate);
+ assert.deepEqual(pending.map(x=>x.next),['suspended']);
+ pending.shift().finish();await new Promise(setImmediate);
+ assert.equal(audio.state,'suspended');assert.deepEqual(pending,[]);
+});
+
+test('returning to play during a pending suspend resumes after the pause settles',async()=>{
+ const {audio,pending}=audioRig('{}',{defer:true});
+ audio.suspend();assert.deepEqual(pending.map(x=>x.next),['suspended']);
+ audio.resume();pending.shift().finish();await new Promise(setImmediate);
+ assert.deepEqual(pending.map(x=>x.next),['running']);
+ pending.shift().finish();await new Promise(setImmediate);
+ assert.equal(audio.state,'running');assert.deepEqual(pending,[]);
 });
