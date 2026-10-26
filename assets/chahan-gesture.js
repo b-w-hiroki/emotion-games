@@ -2,7 +2,7 @@ const clamp = value => Math.max(0, Math.min(1, value));
 
 // A curved scoop from the outer rice toward the centre of the wok.
 export function analyzeGather(points, width, height) {
-  if (points.length < 4 || width <= 0 || height <= 0) return { valid: false, quality: 0, sweep: 0 };
+  if (points.length < 4 || width <= 0 || height <= 0) return { valid: false, quality: 0, sweep: 0, progress: 0 };
   const scale = Math.min(width, height), centerX = width * .5, centerY = height * .58;
   const polar = ([x, y]) => ({ radius: Math.hypot(x - centerX, y - centerY) / scale, angle: Math.atan2(y - centerY, x - centerX) });
   const start = polar(points[0]), end = polar(points.at(-1));
@@ -16,7 +16,12 @@ export function analyzeGather(points, width, height) {
     if (delta < -Math.PI) delta += Math.PI * 2;
     sweep += delta; turns += Math.abs(delta);
   }
-  const valid = start.radius >= .17 && end.radius <= .18 && Math.abs(sweep) >= 1.3 && Math.abs(sweep) / Math.max(.01, turns) >= .65 && distance >= .38;
+  const consistency = Math.abs(sweep) / Math.max(.01, turns);
+  const arc = clamp((Math.abs(sweep) - .3) / 1);
+  const inward = clamp((start.radius - end.radius) / Math.max(.08, start.radius - .18));
+  const progress = start.radius >= .17 && consistency >= .65 && arc > 0 && distance >= .15
+    ? clamp((arc * .45 + inward * .55) * clamp(distance / .38)) : 0;
+  const valid = start.radius >= .17 && end.radius <= .18 && Math.abs(sweep) >= 1.3 && consistency >= .65 && distance >= .38;
   const quality = valid ? clamp(.45 + Math.min(1, Math.abs(sweep) / Math.PI) * .3 + clamp((.18 - end.radius) / .18) * .25) : 0;
-  return { valid, quality, sweep };
+  return { valid, quality, sweep, progress };
 }
