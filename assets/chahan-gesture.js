@@ -1,5 +1,10 @@
 const clamp = value => Math.max(0, Math.min(1, value));
 
+// A wok toss has one active direction. Returning the finger cannot undo its pull.
+export function forwardPeak(peak, sample) {
+  return sample.y > peak.y ? sample : peak;
+}
+
 // Judge the hand movement from event time, not time spent painting a frame.
 // A long, deliberate pull still moves the wok even on a slow phone.
 export function analyzePull(startX, startY, endX, endY, elapsedMs) {

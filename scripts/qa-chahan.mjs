@@ -126,6 +126,19 @@ try {
           await page.screenshot({ path: path.join(output, `ladle-${venue}-${name}-${width}.png`), fullPage: true });
           await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 95, { steps: 8 }); await page.mouse.up();
           assert.equal(await frame.locator('#combo').textContent(), '1', `one flick toward the cook catches rice: ${await frame.locator('#tip').textContent()}`);
+          if (width === 390 && venue === 0) {
+            await frame.locator('#swipeZone').evaluate(async zone => {
+              const start = Number(zone.dataset.gameTime), timeout = performance.now() + 5000;
+              while (Number(zone.dataset.gameTime) - start < .5 && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+            });
+            await page.mouse.move(x, y); await page.mouse.down();
+            await page.mouse.move(x, y + 95, { steps: 8 });
+            await page.mouse.move(x, y + 10, { steps: 8 }); await page.mouse.up();
+            assert.equal(await frame.locator('#combo').textContent(), '2', 'returning the finger is optional after one forward wok pull');
+            await page.mouse.move(x, y + 95); await page.mouse.down();
+            await page.mouse.move(x, y, { steps: 8 }); await page.mouse.up();
+            assert.equal(await frame.locator('#combo').textContent(), '2', 'a back swipe alone never tosses the wok');
+          }
           assert.equal(new URL(page.url()).pathname, '/', 'play stays on the studio page');
           await page.screenshot({ path: path.join(output, `venue-${venue}-${name}-${width}.png`), fullPage: true });
           await frame.locator('#seasoning').click();

@@ -273,7 +273,15 @@ try{
   await page.screenshot({path:path.join(out,`${engine}-chapter-transition.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('chapter transition');
   if(size.width===390)for(const [route,boundary] of [['shortcut',62],['rest',78]]){
-   const fork=await open(size,'?qa=1&seed=4&speed=3&t=27&vital=flame-full');await fork.page.locator('#play').click();
+   const fork=await open(size,'?qa=1&seed=4&speed=3&t=27&vital=flame-full');
+   await fork.page.evaluate(()=>{
+    const stage=document.querySelector('#stage');
+    window.__firstFinalEntry=null;
+    new MutationObserver(()=>{
+     if(!window.__firstFinalEntry&&stage.dataset.chapter==='4') window.__firstFinalEntry=Number(stage.dataset.elapsed);
+    }).observe(stage,{attributes:true,attributeFilter:['data-chapter']});
+   });
+   await fork.page.locator('#play').click();
    await fork.page.locator('#route-choice [data-route="'+route+'"]').waitFor({state:'visible',timeout:10000});await fork.page.locator('#route-choice [data-route="'+route+'"]').click();
    let held=false,scene=null;
    for(let i=0;i<700;i++){
@@ -286,7 +294,8 @@ try{
     await fork.page.waitForTimeout(40);
    }
    assert.equal(scene.chapter,'4',route+' must reach the last painting before the flame goes out');
-   assert.ok(scene.elapsed>=boundary&&scene.elapsed<boundary+.7,route+' chapter begins at '+scene.elapsed);
+   const entry=await fork.page.evaluate(()=>window.__firstFinalEntry);
+   assert.ok(entry>=boundary&&entry<boundary+.7,route+' chapter begins at '+entry+' (observed later at '+scene.elapsed+')');
    assert.doesNotMatch(await fork.page.locator('#story-beat small').innerText(),/最終章/,'the next chapter text waits until its painting appears');
    await fork.page.screenshot({path:path.join(out,`${engine}-route-final-entry-${route}.png`)});
    await fork.page.waitForFunction(target=>Number(document.querySelector('#stage').dataset.elapsed)>=target,boundary+1.4,{timeout:3000});
@@ -394,11 +403,14 @@ try{
    await window.page.screenshot({path:path.join(out,`${engine}-rescue-release-cue.png`)});
    await window.page.keyboard.up('Space');await window.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
    assert.deepEqual(window.errors,[]);await window.ctx.close();done('critical flame rescue cue and actual release');
-   const gust=await open(size,'?qa=1&seed=2&speed=.5&t=80.8&mem=2&vital=flame');await gust.page.locator('#play').click();
+   const gust=await open(size,'?qa=1&seed=2&speed=.25&t=80.8&mem=2&vital=flame');await gust.page.locator('#play').click();
    await gust.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)>.55,null,{timeout:3000});
-   await gust.page.locator('#action').focus();await gust.page.keyboard.down('Space');await gust.page.waitForTimeout(150);await gust.page.keyboard.up('Space');
-   assert.ok(Number(await gust.page.locator('#stage').getAttribute('data-wind'))>.46,'the first release happens in strong wind');
-   await gust.page.waitForFunction(()=>{const s=document.querySelector('#stage').dataset;return Number(s.elapsed)>81.65&&Number(s.wind)<.4},null,{timeout:6000});
+   await gust.page.locator('#action').focus();await gust.page.keyboard.down('Space');await gust.page.waitForTimeout(150);
+   const beforeRelease=Number(await gust.page.locator('#stage').getAttribute('data-elapsed'));
+   await gust.page.keyboard.up('Space');
+   await gust.page.waitForFunction(before=>Number(document.querySelector('#stage').dataset.elapsed)>before,beforeRelease,{timeout:3000});
+   assert.ok(Number(await gust.page.locator('#stage').getAttribute('data-wind'))>.46,'the processed release happens in strong wind');
+   await gust.page.waitForFunction(()=>{const s=document.querySelector('#stage').dataset;return Number(s.elapsed)>81.65&&Number(s.wind)<.4},null,{timeout:9000});
    assert.doesNotMatch(await gust.page.locator('#story-beat strong').innerText(),/手を離した瞬間/,'a later lull cannot retroactively rescue the gust release');
    await gust.page.screenshot({path:path.join(out,`${engine}-gust-release-no-rescue.png`)});
    assert.deepEqual(gust.errors,[]);await gust.ctx.close();
