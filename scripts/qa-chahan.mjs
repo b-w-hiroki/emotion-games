@@ -180,6 +180,53 @@ try {
         }
         assert.deepEqual(errors, [], `${name} ${width}: no JavaScript errors`);
         await page.close();
+        for (const mode of ['settled', 'immediate', 'thumbnail']) {
+          const slow = await browser.newPage({ viewport: { width, height }, hasTouch: true });
+          await slow.goto(base);
+          await slow.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          const kitchen = slow.frameLocator('.chahan-shelf iframe'), track = kitchen.locator('#venueTrack');
+          await kitchen.locator('#heatControl').evaluate(async element => {
+            const timeout = performance.now() + 10000;
+            while (!element.style.getPropertyValue('--target') && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+            if (!element.style.getPropertyValue('--target')) throw new Error('game module did not initialize');
+          });
+          await track.evaluate(el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' })));
+          await slow.waitForTimeout(1350);
+          await track.evaluate((el, startNow) => {
+            el.scrollLeft = el.clientWidth * 2;
+            el.dispatchEvent(new Event('scroll'));
+            if (startNow) document.querySelector('#start').click();
+          }, mode === 'immediate');
+          if (mode !== 'immediate') {
+            await kitchen.locator('[data-venue="2"][aria-pressed="true"]').waitFor({ timeout: 3000 });
+            if (mode === 'thumbnail') await kitchen.locator('[data-venue="1"]').click();
+            await kitchen.locator('#start').click();
+          }
+          assert.equal(await kitchen.locator('#place').textContent(), mode === 'thumbnail' ? '走る列車' : '空中キッチン', `${name} ${width}: ${mode} selection after a slow swipe`);
+          await slow.close();
+        }
+        if (name === 'chromium' && width === 390) {
+          const touch = await browser.newPage({ viewport: { width, height }, hasTouch: true });
+          await touch.goto(base);
+          await touch.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          const kitchen = touch.frameLocator('.chahan-shelf iframe'), track = kitchen.locator('#venueTrack');
+          await kitchen.locator('#heatControl').evaluate(async element => {
+            const timeout = performance.now() + 10000;
+            while (!element.style.getPropertyValue('--target') && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+            if (!element.style.getPropertyValue('--target')) throw new Error('game module did not initialize');
+          });
+          await track.scrollIntoViewIfNeeded();
+          const box = await track.boundingBox(), x = box.x + box.width * .85, y = box.y + box.height * .5;
+          const cdp = await touch.context().newCDPSession(touch);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+          await touch.waitForTimeout(1350);
+          for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - box.width * .7 * i / 8, y }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await kitchen.locator('[data-venue="1"][aria-pressed="true"]').waitFor({ timeout: 5000 });
+          await kitchen.locator('#start').click();
+          assert.equal(await kitchen.locator('#place').textContent(), '走る列車', 'native touch after a long hold starts the visible kitchen');
+          await touch.close();
+        }
         for (let repeat = 0; repeat < 8; repeat++) {
           const fresh = await browser.newPage({ viewport: { width, height }, hasTouch: true });
           await fresh.goto(base);
