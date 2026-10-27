@@ -94,7 +94,7 @@ window.addEventListener('blur', () => { held.clear(); game.pullPreview = null; g
 document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); last = 0; audio.pause(); } else { last = performance.now(); audio.unlock(); } });
 $('sound').textContent = audio.enabled ? '音 ON' : '音 OFF';
 $('sound').onclick = () => { const enabled = audio.setEnabled(!audio.enabled); $('sound').textContent = enabled ? '音 ON' : '音 OFF'; if (enabled) audio.unlock(); };
-$('start').onclick = () => { closeFilling(); begin(); };
+$('start').onclick = () => { commitVenueScroll(); closeFilling(); begin(); };
 function stopMotion(status = 'タップで再開') {
   motionEnabled = false; motionSeen = false;
   clearTimeout(motionTimeout);
@@ -183,17 +183,23 @@ draw(); updateHud();
 
 const venueTrack = $('venueTrack');
 const venueChoices = [...document.querySelectorAll('[data-venue]')];
-let venueUserScrollUntil = 0;
-let venueDirectUntil = 0;
+let venueUserScroll = false;
+let venueScrollTimer;
 function selectVenue(index, scroll = true) {
   selectedVenue = clamp(index, 0, venueChoices.length - 1);
   venueChoices.forEach((choice, i) => choice.setAttribute('aria-pressed', String(i === selectedVenue)));
   $('venuePosition').textContent = `${selectedVenue + 1} / ${venueChoices.length} · 横にスライドして選ぶ`;
-  if (scroll) { venueUserScrollUntil = 0; venueDirectUntil = performance.now() + 800; clearTimeout(venueScrollTimer); venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: 'instant' }); }
+  if (scroll) { venueUserScroll = false; clearTimeout(venueScrollTimer); venueTrack.scrollTo({ left: selectedVenue * venueTrack.clientWidth, behavior: 'instant' }); }
+}
+function visibleVenue() { return Math.round(venueTrack.scrollLeft / Math.max(1, venueTrack.clientWidth)); }
+function commitVenueScroll() {
+  if (!venueUserScroll) return;
+  clearTimeout(venueScrollTimer);
+  selectVenue(visibleVenue(), false);
+  venueUserScroll = false;
 }
 for (const button of venueChoices) button.onclick = () => selectVenue(Number(button.dataset.venue));
-let venueScrollTimer;
-for (const event of ['pointerdown', 'wheel']) venueTrack.addEventListener(event, () => { venueDirectUntil = 0; venueUserScrollUntil = performance.now() + 1200; }, { passive: true });
-venueTrack.addEventListener('scroll', () => { if (performance.now() < venueDirectUntil || performance.now() > venueUserScrollUntil) return; clearTimeout(venueScrollTimer); venueScrollTimer = setTimeout(() => { if (performance.now() >= venueDirectUntil && performance.now() <= venueUserScrollUntil) selectVenue(Math.round(venueTrack.scrollLeft / venueTrack.clientWidth), false); }, 80); });
+for (const event of ['pointerdown', 'touchstart', 'wheel']) venueTrack.addEventListener(event, () => { venueUserScroll = true; }, { passive: true });
+venueTrack.addEventListener('scroll', () => { if (!venueUserScroll) return; clearTimeout(venueScrollTimer); venueScrollTimer = setTimeout(() => { if (venueUserScroll) selectVenue(visibleVenue(), false); }, 80); });
 venueTrack.addEventListener('keydown', event => { if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return; event.preventDefault(); event.stopPropagation(); selectVenue(selectedVenue + (event.key === 'ArrowRight' ? 1 : -1)); });
 if (new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
