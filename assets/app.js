@@ -375,10 +375,11 @@ $('play').addEventListener('click',()=>{if(candle&&$('play').dataset.loadFailed)
 $('reset').addEventListener('click',()=>{if(mode!=='intro')mark('game_retry');run()});
 $('share').addEventListener('click',()=>share(points?points+'点':''));
 let candlePointer=null,candleKey=null,shelterRelease=false;
+function beginCandleShield(){state.releaseAt=-100;state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}
 function releaseCandleInput(){const pointer=candlePointer;candlePointer=null;candleKey=null;if(pointer!==null&&action.hasPointerCapture?.(pointer))action.releasePointerCapture(pointer)}
 function holdRelease(intent=false){if(!down)return;down=false;if(candle)releaseCandleInput();if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;shelterRelease=!!intent;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
 landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease();syncCandleAudio()});
-action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(landscapeMode.matches||candleDialog||document.hidden||chapterLoading)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide'){state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
+action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(landscapeMode.matches||candleDialog||document.hidden||chapterLoading)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide')beginCandleShield();if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 const pointerRelease=(e,intent=false)=>{if(!candle||e.pointerId===candlePointer)holdRelease(intent)};
 action.addEventListener('pointerup',e=>pointerRelease(e,true));action.addEventListener('pointercancel',pointerRelease);
 if(candle){
@@ -392,7 +393,7 @@ window.addEventListener('blur',()=>holdRelease());document.addEventListener('vis
 action.addEventListener('contextmenu',e=>e.preventDefault());
 // Keyboard play for 004: hold Space/Enter on the button to shield, M (or Enter on the scene) to touch a memory.
 if(candle){
- const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down&&!action.disabled&&!candleDialog&&!document.hidden&&!landscapeMode.matches){e.preventDefault();down=true;candleKey=e.key;state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}};
+ const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down&&!action.disabled&&!candleDialog&&!document.hidden&&!landscapeMode.matches){e.preventDefault();down=true;candleKey=e.key;beginCandleShield()}};
  const lift=e=>{if(e.key===candleKey){e.preventDefault();holdRelease(true)}};
  action.addEventListener('keydown',press);document.addEventListener('keyup',lift);
  action.addEventListener('blur',()=>{if(candleKey!==null)holdRelease()});
