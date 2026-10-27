@@ -28,7 +28,7 @@ try {
         const frame = page.frameLocator('.chahan-shelf iframe');
         await frame.locator('#overlayTitle').waitFor();
         const art = await frame.locator('#scene').evaluate(async canvas => {
-          const [{ createGame }, { drawScene, drawDish, drawRiceMascot }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+          const [{ createGame }, { drawScene, drawDish, drawRiceMascot, cheeringFriends }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
           const assets = await Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','rice-egg-v1','flight-v3','flight-egg-v1'].map(name => new Promise(resolve => {
             const image = new Image(); image.onload = () => resolve(image.width === 780); image.onerror = () => resolve(false);
             image.src = `./art/${name}.webp`;
@@ -59,10 +59,16 @@ try {
           captureMascot('reducedLater', { time: 3.1 }, true);
           captureMascot('miss', { time: 3, combo: 0, tossOutcome: 'spilled', lastTossQuality: 0 });
           captureMascot('empty', { ingredients: { egg: false, rice: false, veg: false } });
-          return { assets, frames, dishes, mascotFrames };
+          Object.assign(game, { ingredients: { egg: true, rice: true, veg: true }, phase: 'playing', time: 3, lastToss: 2.8, tossOutcome: 'caught', combo: 2 });
+          const cheerLevels = [0, 1, 3, 5].map(bestCombo => { game.bestCombo = bestCombo; return cheeringFriends(game); });
+          for (const bestCombo of [0, 1, 3, 5]) captureMascot(`friends${bestCombo}`, { bestCombo }, true);
+          game.tossOutcome = 'spilled'; game.combo = 0;
+          const friendsAfterSpill = cheeringFriends(game);
+          game.tossOutcome = 'caught'; game.combo = 5; drawScene(ctx, game, true); frames.crowd = canvas.toDataURL();
+          return { assets, frames, dishes, mascotFrames, cheerLevels, friendsAfterSpill };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
-        assert.equal(new Set(Object.values(art.frames)).size, 8, `${name} ${width}: push, flight, ladle, scoop, separated rice and cooking states have distinct art`);
+        assert.equal(new Set(Object.values(art.frames)).size, 9, `${name} ${width}: push, flight, ladle, scoop, separated rice and cheering states have distinct art`);
         assert.equal(new Set(art.dishes).size, 5, `${name} ${width}: doneness, separated rice and round plating change the finished dish`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.caught, `${name} ${width}: every caught toss gets a celebration`);
@@ -70,6 +76,9 @@ try {
         assert.equal(art.mascotFrames.reduced, art.mascotFrames.reducedLater, `${name} ${width}: reduced motion holds a still celebration pose`);
         assert.equal(art.mascotFrames.idle, art.mascotFrames.miss, `${name} ${width}: a spill stops the dance`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.empty, `${name} ${width}: the mascot appears after rice is added`);
+        assert.deepEqual(art.cheerLevels, [0, 1, 2, 3], `${name} ${width}: friends join at consecutive toss milestones`);
+        assert.equal(art.friendsAfterSpill, 3, `${name} ${width}: earned friends stay after a spill`);
+        assert.equal(new Set([0, 1, 3, 5].map(n => art.mascotFrames[`friends${n}`])).size, 4, `${name} ${width}: each milestone has a visibly larger crowd`);
         if (width === 390) for (const [label, data] of Object.entries(art.frames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         if (width === 390) fs.writeFileSync(path.join(output, `mascot-${name}.png`), Buffer.from(art.mascotFrames.dance.split(',')[1], 'base64'));
         if (width === 390) fs.writeFileSync(path.join(output, `rounded-dish-${name}.png`), Buffer.from(art.dishes.at(-1).split(',')[1], 'base64'));
@@ -88,6 +97,8 @@ try {
           await frame.locator(`[data-venue="${venue}"]`).click();
           assert.equal(await frame.locator(`[data-venue="${venue}"]`).getAttribute('aria-pressed'), 'true', 'thumbnail choice is stable before starting');
           await frame.locator('#start').click();
+          const feedback = await frame.locator('.kitchen-feedback').boundingBox(), stage = await frame.locator('#swipeZone').boundingBox();
+          assert.ok(feedback.y >= stage.y + stage.height - 1, `${name} ${width}: feedback stays outside the character scene`);
           await frame.locator('#place').getByText(['路地裏の屋台','走る列車','空中キッチン'][venue]).waitFor();
           assert.equal(await frame.locator('#heatControl').evaluate(el => el.style.getPropertyValue('--target')), `${target}%`);
           assert.equal(await frame.locator('#cookTrack').getAttribute('data-state'), 'empty');

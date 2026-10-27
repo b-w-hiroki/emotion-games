@@ -403,17 +403,13 @@ function ladleEffect(ctx, game, reduced) {
     ctx.strokeText('カン！', x, y - 115 - 20 * spread); ctx.fillText('カン！', x, y - 115 - 20 * spread); ctx.restore();
   }
 }
-export function drawRiceMascot(ctx, game, reduced = false) {
-  if (!game.ingredients.rice || game.phase !== 'playing') return;
-  const age = game.time - game.lastToss;
-  const dancing = game.tossOutcome === 'caught' && game.combo > 0 && age >= 0 && age < 2.4;
-  const beat = dancing && !reduced ? Math.sin(game.time * 17) : 0;
-  const lift = dancing && !reduced ? Math.max(0, beat) * 13 : 0;
-  const tilt = dancing && !reduced ? beat * .12 : 0;
-  const x = 205, y = 754;
+function drawMascot(ctx, x, y, scale, beat, dancing, band) {
+  const lift = dancing ? Math.max(0, beat) * 13 : 0;
+  const tilt = dancing ? beat * .12 : 0;
   ctx.save();
-  ellipse(ctx, x, y + 8, 54, 11, '#110e14a8');
+  ellipse(ctx, x, y + 8 * scale, 54 * scale, 11 * scale, '#110e14a8');
   ctx.translate(x, y - lift);
+  ctx.scale(scale, scale);
   ctx.rotate(tilt);
   ctx.lineCap = 'round';
   ctx.strokeStyle = '#43302b'; ctx.lineWidth = 9;
@@ -435,9 +431,28 @@ export function drawRiceMascot(ctx, game, reduced = false) {
   ctx.strokeStyle = '#7a3c31'; ctx.lineWidth = 3; ctx.beginPath();
   if (dancing) { ctx.arc(0, -45, 7, 0, Math.PI); } else { ctx.arc(0, -47, 5, .1, Math.PI - .1); }
   ctx.stroke();
-  ctx.fillStyle = '#d05a39'; ctx.beginPath(); ctx.moveTo(-30, -84); ctx.quadraticCurveTo(0, -98, 29, -84); ctx.lineTo(29, -76); ctx.quadraticCurveTo(0, -91, -29, -76); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = band; ctx.beginPath(); ctx.moveTo(-30, -84); ctx.quadraticCurveTo(0, -98, 29, -84); ctx.lineTo(29, -76); ctx.quadraticCurveTo(0, -91, -29, -76); ctx.closePath(); ctx.fill();
   ellipse(ctx, 0, -88, 7, 3, '#ffe3a0');
   ctx.restore();
+}
+
+export function cheeringFriends(game) {
+  if (!game.ingredients.rice || game.phase !== 'playing') return 0;
+  return [1, 3, 5].filter(threshold => game.bestCombo >= threshold).length;
+}
+
+export function drawRiceMascot(ctx, game, reduced = false) {
+  if (!game.ingredients.rice || game.phase !== 'playing') return;
+  const age = game.time - game.lastToss;
+  const dancing = game.tossOutcome === 'caught' && game.combo > 0 && age >= 0 && age < 2.4;
+  const beat = dancing && !reduced ? Math.sin(game.time * 17) : 0;
+  const x = 205, y = 754;
+  drawMascot(ctx, x, y, 1, beat, dancing, '#d05a39');
+  const friends = [{ x: 306, y: 774, scale: .72, band: '#6e9d68' }, { x: 397, y: 777, scale: .69, band: '#dca443' }, { x: 486, y: 775, scale: .72, band: '#7898bd' }];
+  for (let i = 0; i < cheeringFriends(game); i++) {
+    const friend = friends[i], friendBeat = dancing && !reduced ? Math.sin(game.time * 17 + (i + 1) * 1.4) : 0;
+    drawMascot(ctx, friend.x, friend.y, friend.scale, friendBeat, dancing, friend.band);
+  }
   if (dancing && !reduced) {
     for (let i = 0; i < 3 + Math.min(3, game.combo); i++) {
       const phase = (game.time * 1.7 + i / 6) % 1;
