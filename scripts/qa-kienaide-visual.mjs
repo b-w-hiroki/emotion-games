@@ -40,6 +40,26 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  {
+   const touch=await open(size,'?qa=1&seed=2&speed=0.0001&t=2.2&vital=breath');await touch.page.locator('#play').click();
+   await touch.page.waitForFunction(()=>document.querySelector('#action').disabled);
+   const touchBox=await touch.page.locator('#action').boundingBox();await touch.page.touchscreen.tap(touchBox.x+touchBox.width/2,touchBox.y+touchBox.height/2);
+   await touch.page.waitForTimeout(250);
+   assert.equal(await touch.page.locator('#action').isDisabled(),true,'a tap cannot bypass the breath lock '+tag);
+   assert.doesNotMatch(await touch.page.locator('#story-beat').innerText(),/息が少し戻る/,'a blocked touch cannot earn a release reward '+tag);
+   assert.deepEqual(touch.errors,[]);await touch.ctx.close();
+   const breath=await open(size,'?qa=1&seed=2&speed=.25&t=2.2&vital=breath');await breath.page.locator('#play').click();
+   await breath.page.waitForFunction(()=>document.querySelector('#action').disabled);
+   await breath.page.screenshot({path:path.join(out,`${engine}-${tag}-breath-disabled.png`)});
+   const box=await breath.page.locator('#action').boundingBox();await breath.page.mouse.move(box.x+box.width/2,box.y+box.height/2);await breath.page.mouse.down();
+   await breath.page.waitForTimeout(250);
+   assert.equal(await breath.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),false,'disabled breath control must not shield '+tag);
+   await breath.page.waitForFunction(()=>!document.querySelector('#action').disabled,null,{timeout:8000});
+   assert.equal(await breath.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),false,'a blocked hold must not start after recovery '+tag);
+   await breath.page.mouse.up();await breath.page.mouse.down();
+   await breath.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'),null,{timeout:3000});
+   await breath.page.mouse.up();assert.deepEqual(breath.errors,[]);await breath.ctx.close();done('critical breath blocks pointer until recovery '+tag);
+  }
   // Every full-screen phase offers an exit. During play, leaving requires confirmation.
   {
    const title=await open(size,'?qa=1&speed=0.0001');
