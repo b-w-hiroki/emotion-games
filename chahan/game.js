@@ -20,7 +20,7 @@ const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = '今日の厨房'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
-function begin() { audio.unlock(); cancelAnimationFrame(dishAnimation); dishAnimation = 0; game = createGame(selectedVenue); game.phase = 'playing'; gesture = null; resetScoopTrace(); resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); updateHud(); draw(); animation = requestAnimationFrame(loop); showNotice(STAGES[game.stage].name, STAGES[game.stage].note + '。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
+function begin() { audio.unlock(); cancelAnimationFrame(dishAnimation); dishAnimation = 0; game = createGame(selectedVenue); game.phase = 'playing'; gesture = null; resetScoopTrace(); resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); updateHud(); draw(); zone.focus({ preventScroll: true }); animation = requestAnimationFrame(loop); showNotice(STAGES[game.stage].name, STAGES[game.stage].note + '。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
 function revealDish() {
   cancelAnimationFrame(dishAnimation);
   const dishCtx = resultDish.getContext('2d');
@@ -61,7 +61,34 @@ function updatePullPreview() { const peak = gesture?.peak; game.pullPreview = pe
 zone.addEventListener('pointermove', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.currentX = e.clientX; gesture.currentY = e.clientY; gesture.peak = forwardPeak(gesture.peak, { x: e.clientX, y: e.clientY, at: e.timeStamp }); gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); const gather = drawScoopTrace(gesture.points, rect.width, rect.height); game.panPush = gather.progress > .15 ? 0 : clamp((e.clientY - gesture.y) / 90, 0, 1); updatePullPreview(); if (gather.progress > .15) game.pullPreview = null; });
 zone.addEventListener('pointerup', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.peak = forwardPeak(gesture.peak, { x: e.clientX, y: e.clientY, at: e.timeStamp }); gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); const gather = drawScoopTrace(gesture.points, rect.width, rect.height); const peak = gesture.peak; if (gather.valid) doPlate(gather.quality); else if (peak.y - gesture.y > 25 && gather.progress < .15) doToss(pullInput(peak.x, peak.y, peak.at)); else if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) < 14) doLadle((e.clientX - rect.left) / rect.width); else if (game.seasoned) { game.message = 'おたまで外側から円を描き、中央へ集めよう。'; updateHud(); } if (!gather.valid) resetScoopTrace(); game.pullPreview = null; game.panPush = 0; gesture = null; });
 for (const event of ['pointercancel','lostpointercapture']) zone.addEventListener(event, () => { game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
-document.addEventListener('keydown', e => { if (!document.getElementById('fillingChoices').hidden) { if (e.code === 'Escape') { e.preventDefault(); document.getElementById('fillingBack').click(); return; } if (e.code === 'Digit1' || e.code === 'Digit2') { e.preventDefault(); if (!e.repeat) document.querySelectorAll('#fillingChoices [data-filling]:not([hidden])')[e.code === 'Digit1' ? 0 : 1]?.click(); return; } } const ingredient = { Digit1: 'egg', Digit2: 'rice', Digit3: 'veg' }[e.code]; if (ingredient) { e.preventDefault(); if (!e.repeat) doIngredient(ingredient); return; } if (e.code === 'KeyS') { e.preventDefault(); if (!e.repeat) doSeasoning(); return; } if (e.code === 'KeyP') { e.preventDefault(); if (!e.repeat) doPlate(.7); return; } if (e.code === 'KeyL') { e.preventDefault(); if (!e.repeat) doLadle(); return; } const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (!k) return; e.preventDefault(); if (k === 'toss' && !e.repeat) doToss({ lift: .7, lean: 0 }); held.add(k); });
+document.addEventListener('keydown', e => {
+  if (!$('fillingChoices').hidden) {
+    if (e.code === 'Escape') { e.preventDefault(); $('fillingBack').click(); return; }
+    if (e.code === 'Digit1' || e.code === 'Digit2') {
+      e.preventDefault();
+      if (!e.repeat) document.querySelectorAll('#fillingChoices [data-filling]:not([hidden])')[e.code === 'Digit1' ? 0 : 1]?.click();
+      return;
+    }
+  }
+  const ingredient = { Digit1: 'egg', Digit2: 'rice', Digit3: 'veg' }[e.code];
+  if (ingredient) { e.preventDefault(); if (!e.repeat) doIngredient(ingredient); return; }
+  if (e.code === 'KeyS') { e.preventDefault(); if (!e.repeat) doSeasoning(); return; }
+  if (e.code === 'KeyP') { e.preventDefault(); if (!e.repeat) doPlate(.7); return; }
+  if (e.code === 'KeyL') {
+    e.preventDefault();
+    if (!e.repeat) {
+      const pocket = game.riceClumps.indexOf(Math.max(...game.riceClumps));
+      doLadle([.3, .5, .7][pocket]);
+    }
+    return;
+  }
+  const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code];
+  if (!k) return;
+  if (e.target instanceof Element && e.target.closest('button, input, select, textarea, summary, a[href], [contenteditable="true"]')) return;
+  e.preventDefault();
+  if (k === 'toss' && !e.repeat) doToss({ lift: .7, lean: 0 });
+  held.add(k);
+});
 document.addEventListener('keyup', e => { const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (k) held.delete(k); });
 window.addEventListener('blur', () => { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); last = 0; audio.pause(); } else { last = performance.now(); audio.unlock(); } });

@@ -192,6 +192,31 @@ try {
           await fresh.close();
         }
         if (width === 390) {
+          const keyboard = await browser.newPage({ viewport: { width, height } });
+          await keyboard.goto(base);
+          await keyboard.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          const keys = keyboard.frameLocator('.chahan-shelf iframe');
+          await keys.locator('#heatControl').evaluate(async element => {
+            const timeout = performance.now() + 10000;
+            while (!element.style.getPropertyValue('--target') && performance.now() < timeout) await new Promise(resolve => setTimeout(resolve, 20));
+            if (!element.style.getPropertyValue('--target')) throw new Error('game module did not initialize');
+          });
+          await keys.locator('[data-venue="1"]').press('Space');
+          assert.equal(await keys.locator('[data-venue="1"]').getAttribute('aria-pressed'), 'true', `${name}: Space selects a focused venue`);
+          await keys.locator('#start').press('Space');
+          assert.equal(await keys.locator('#place').textContent(), '走る列車', `${name}: Space starts the selected kitchen`);
+          assert.equal(await keys.locator('#swipeZone').evaluate(el => document.activeElement === el), true, `${name}: game controls receive focus after starting`);
+          for (const ingredient of ['egg', 'rice']) await keys.locator(`[data-ingredient="${ingredient}"]`).press('Space');
+          assert.equal(await keys.locator('#combo').textContent(), '0', `${name}: activating ingredients does not toss`);
+          const heat = keys.locator('#heatControl'), initialHeat = Number(await heat.inputValue());
+          await heat.press('ArrowUp');
+          assert.equal(Number(await heat.inputValue()), initialHeat + 1, `${name}: arrow keys adjust the focused heat slider`);
+          const zone = keys.locator('#swipeZone');
+          for (let i = 0; i < 12; i++) { await zone.press('l'); await keyboard.waitForTimeout(230); }
+          assert.ok(await keys.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > 38, `${name}: keyboard ladle reaches more than the centre rice pocket`);
+          await zone.press('Space');
+          assert.equal(await keys.locator('#combo').textContent(), '1', `${name}: Space tosses when the cooking scene has focus`);
+          await keyboard.close();
           const reduced = await browser.newPage({ viewport: { width, height }, hasTouch: true, reducedMotion: 'reduce' });
           await reduced.goto(base);
           await reduced.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
