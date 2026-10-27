@@ -131,6 +131,18 @@ test('blur or canceled input cannot trigger the near-extinction rescue',()=>{
  const events=K.step(s,84,DT,{shield:false,wasShield:true,releaseIntent:true});
  assert.equal(events.some(e=>e.type==='miracle'),true);
 });
+test('holding again invalidates a previous calm release before an input cancellation',()=>{
+ const s=K.create({seed:2});Object.assign(s,{routeChoice:'legacy-test',decisionIndex:2,events:[],memories:2,flame:21,oxygen:28});
+ K.step(s,75,DT,{shield:false,wasShield:true,releaseIntent:true});
+ assert.equal(s.releaseAt,75,'the calm release is recorded while breath is still too low for rescue');
+ assert.equal(s.rescue,false);
+ K.step(s,75.1,DT,{shield:true,wasShield:false});
+ assert.equal(s.releaseAt,-100,'a new hold ends the earlier release opportunity');
+ const events=K.step(s,75.2,.2,{shield:false,wasShield:true,releaseIntent:false});
+ assert.ok(s.oxygen>=30,'breath has recovered enough to otherwise qualify');
+ assert.equal(events.some(e=>e.type==='miracle'),false,'cancellation cannot reuse an earlier release');
+ assert.equal(s.rescue,false);
+});
 test('releasing in a gust cannot claim a rescue when the wind calms a second later',()=>{
  const make=()=>{const s=K.create({seed:2});s.events=[];Object.assign(s,{routeChoice:'rest',decisionIndex:2,journey:98,chapter:3,flame:20,oxygen:60,memories:2});return s};
  const gust=make();

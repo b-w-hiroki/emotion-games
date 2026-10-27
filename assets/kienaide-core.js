@@ -84,7 +84,7 @@ function step(s,time,dt,input){
  const decisionTimes=[42,56];
  if(s.routeChoice!=='none'&&s.decisionIndex<decisionTimes.length&&time>=decisionTimes[s.decisionIndex]){s.decisionPending=s.decisionIndex===0?'hearth':'bridge';s.shield=false;emit('decision-choice',{kind:s.decisionPending});return out}
  s.shield=!!input.shield;
- if(s.shield)s.shieldTime+=dt;
+ if(s.shield){s.shieldTime+=dt;s.releaseAt=-100;}
  const chapter=chapterAt(time,s.journey);
  if(chapter!==s.chapter){s.previousChapter=s.chapter;s.chapter=chapter;s.sceneChangedAt=time;emit('chapter',{chapter});}
  let wind=baseWind(time,chapter);
