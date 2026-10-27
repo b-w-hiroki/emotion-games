@@ -22,6 +22,7 @@ function exportJson(){
  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='emotion-games-study.json';link.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+function preserveStudyLinks(selector){document.querySelectorAll(selector).forEach(a=>{const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()})}
 function menu(){
  const el=document.querySelector('.hero,.kienaide-home');
  if(!el)return;
@@ -30,7 +31,7 @@ function menu(){
  el.append(panel);panel.querySelector('#study-export').addEventListener('click',exportJson);
  panel.querySelector('#study-clear').addEventListener('click',()=>{if(!window.confirm('この端末の検証記録を削除しますか？'))return;records=[];save();panel.querySelector('#study-count').textContent='0 回のプレイ'});
  panel.querySelector('#study-count').textContent=records.length+' 回のプレイ';
- document.querySelectorAll('.card,.kienaide-home-play,.game-detail-play').forEach(a=>{const u=new URL(a.href);u.searchParams.set('study','1');a.href=u.toString()});
+ preserveStudyLinks('.card,.kienaide-home-play,.game-detail-play,.studio-work-card,.studio-works-all');
 }
 function optionPairs(options){return options.map(option=>Array.isArray(option)?option:[option,option])}
 function survey(){
@@ -54,6 +55,7 @@ function survey(){
  return panel;
 }
 if(!document.body.dataset.game){menu();return}
+if(document.body.dataset.game==='works'){preserveStudyLinks('.studio-work-card,.studio-library-back,.logo');return}
 const game=document.body.dataset.game;const panel=survey();
 attempt=Math.max(0,...records.filter(r=>r.game_id===game).map(r=>Number(r.attempt_index)||0));
 const links=document.querySelectorAll('.related,.logo,.controls-bottom a');

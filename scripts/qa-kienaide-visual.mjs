@@ -73,13 +73,13 @@ try{
   // Every full-screen phase offers an exit. During play, leaving requires confirmation.
   {
    const title=await open(size,'?qa=1&speed=0.0001');
-   assert.equal(await title.page.locator('.journey-back').getAttribute('href'),'../');
+   assert.equal(await title.page.locator('.journey-back').getAttribute('href'),'../works/');
    await title.page.locator('.journey-back').click();
-   await title.page.waitForURL(url=>url.pathname==='/emotion-games/');
+   await title.page.waitForURL(url=>url.pathname==='/emotion-games/works/');
    assert.deepEqual(title.errors,[]);await title.ctx.close();
    const intro=await open(size,'?qa=1&speed=0.0001',{intro:true});
    await intro.page.locator('#play').click();await intro.page.locator('.intro-back').click();
-   await intro.page.waitForURL(url=>url.pathname==='/emotion-games/');
+   await intro.page.waitForURL(url=>url.pathname==='/emotion-games/works/');
    assert.deepEqual(intro.errors,[]);await intro.ctx.close();
    const play=await open(size,'?qa=1&speed=0.0001');
    await play.page.locator('#play').click();
@@ -91,7 +91,7 @@ try{
    assert.equal(new URL(play.page.url()).pathname,'/emotion-games/kienaide/');
    await play.page.locator('#journey-back-play').click();
    await play.page.locator('#pause-confirm-action').click();
-   await play.page.waitForURL(url=>url.pathname==='/emotion-games/');
+   await play.page.waitForURL(url=>url.pathname==='/emotion-games/works/');
    assert.deepEqual(play.errors,[]);await play.ctx.close();done('full-screen return routes '+tag);
   }
   {
@@ -580,7 +580,7 @@ try{
   const scenePath=path.join(out,`${engine}-ending-${id}-scene.png`);
   await page.screenshot({path:scenePath});
   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
-  assert.equal(await page.locator('.journey-back').getAttribute('href'),'../','the ending can return to the game list');
+  assert.equal(await page.locator('.journey-back').getAttribute('href'),'../works/','the ending can return to the game list');
   const heading=await page.locator('#curtain-title').evaluate(el=>({height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight),overflow:el.scrollWidth>el.clientWidth+1}));
   assert.ok(heading.height<heading.lineHeight*1.5&&!heading.overflow,id+' ending headline must fit one line immediately: '+JSON.stringify(heading));
   await page.waitForTimeout(400);
