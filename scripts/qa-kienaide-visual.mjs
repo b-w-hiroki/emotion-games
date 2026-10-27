@@ -427,6 +427,25 @@ try{
    await window.page.screenshot({path:path.join(out,`${engine}-rescue-release-cue.png`)});
    await window.page.keyboard.up('Space');await window.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
    assert.deepEqual(window.errors,[]);await window.ctx.close();done('critical flame rescue cue and actual release');
+   // Exercise input handlers between frames with an earlier release still eligible but low breath.
+   for(const kind of ['keyboard','pointer']){
+    const fastCancel=await open(size,'?qa=1&seed=2&speed=.25&t=75&mem=2&vital=flame');
+    await fastCancel.page.evaluate(()=>{const core=window.KienaideCore,step=core.step;core.step=(state,...args)=>{window.qaRescueState=state;return step(state,...args)}});
+    await fastCancel.page.locator('#play').click();
+    await fastCancel.page.waitForFunction(()=>window.qaRescueState&&Number(document.querySelector('#stage').dataset.wind)<.46);
+    const recorded=await fastCancel.page.evaluate(kind=>{
+     const s=window.qaRescueState,a=document.querySelector('#action');a.focus();
+     s.releaseAt=Number(document.querySelector('#stage').dataset.elapsed);s.oxygen=29.9;s.flame=21;s.rescue=false;
+     if(kind==='keyboard'){a.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));window.dispatchEvent(new Event('blur'))}
+     else{a.setPointerCapture=()=>{};a.hasPointerCapture=()=>false;const p=type=>new PointerEvent(type,{pointerId:21,pointerType:'touch',button:0,bubbles:true});a.dispatchEvent(p('pointerdown'));a.dispatchEvent(p('pointercancel'))}
+     return s.releaseAt;
+    },kind);
+    assert.equal(recorded,-100,'a same-frame '+kind+' hold invalidates the earlier release immediately');
+    await fastCancel.page.waitForFunction(()=>window.qaRescueState.oxygen>=30,null,{timeout:5000});
+    assert.equal(await fastCancel.page.evaluate(()=>window.qaRescueState.rescue),false,'cancellation cannot reuse the earlier release');
+    assert.deepEqual(fastCancel.errors,[]);await fastCancel.ctx.close();
+   }
+   done('same-frame interrupted holds cannot reuse rescue release');
    const gust=await open(size,'?qa=1&seed=2&speed=.25&t=80.8&mem=2&vital=flame');await gust.page.locator('#play').click();
    await gust.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)>.55,null,{timeout:3000});
    await gust.page.locator('#action').focus();await gust.page.keyboard.down('Space');await gust.page.waitForTimeout(150);
