@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const source=fs.readFileSync('assets/kienaide-audio.js','utf8');
 
 function audioRig(saved='{}',opts={}){
- const stats={bufferStarts:0,oscillatorStarts:0,melodyStarts:0,gainTargets:[]};
+ const stats={bufferStarts:0,oscillatorStarts:0,melodyStarts:0,gainTargets:[],oscillators:[],buffers:[]};
  const pending=[];
  const param=onTarget=>({value:0,setValueAtTime(v){this.value=v},setTargetAtTime(v){this.value=v;onTarget?.(v)},exponentialRampToValueAtTime(){}});
  const node=extra=>Object.assign({connect(){return this}},extra);
@@ -18,10 +18,10 @@ function audioRig(saved='{}',opts={}){
   createGain(){return node({gain:param(v=>stats.gainTargets.push(v))})}
   createDelay(){return node({delayTime:param()})}
   createBiquadFilter(){return node({frequency:param(),Q:param()})}
-  createOscillator(){return node({frequency:param(),start(){stats.oscillatorStarts++;if(this.type==='sine')stats.melodyStarts++},stop(){}})}
+  createOscillator(){const o=node({frequency:param(),stops:[],start(t=0){this.startsAt=t;stats.oscillatorStarts++;if(this.type==='sine')stats.melodyStarts++},stop(t=0){this.stops.push(t)}});stats.oscillators.push(o);return o}
   createStereoPanner(){return node({pan:param()})}
   createBuffer(_,length){return {getChannelData(){return new Float32Array(length)}}}
-  createBufferSource(){return node({buffer:null,start(){stats.bufferStarts++},stop(){},loop:false})}
+  createBufferSource(){const b=node({buffer:null,stops:[],start(){stats.bufferStarts++},stop(t=0){this.stops.push(t)},loop:false});stats.buffers.push(b);return b}
  }
  const scope={AudioContext,localStorage:{getItem(){return saved},setItem(){}}};
  vm.runInNewContext(source,scope);
@@ -45,6 +45,19 @@ test('every retry immediately restores footsteps and melody without recreating a
   assert.equal(stats.bufferStarts-buffers,1,'the new journey has a footstep in its first second');
   assert.equal(stats.melodyStarts-melody,2,'the new journey has its two-voice melody immediately');
  }
+});
+
+test('retry cancels sounding and future ending notes without stopping ambience',()=>{
+ const {audio,stats}=audioRig();
+ audio.cues.ending('dawn');
+ const endingNotes=stats.oscillators.filter(o=>o.stops.length);
+ assert.ok(endingNotes.some(o=>o.startsAt>0),'the ending includes notes scheduled after the current time');
+ assert.ok(endingNotes.some(o=>o.startsAt===0),'the ending also includes a sounding note');
+ audio.startJourney();
+ assert.ok(endingNotes.every(o=>o.stops.at(-1)===0),'every previous note is stopped at retry time');
+ assert.ok(stats.buffers.filter(b=>b.loop).every(b=>b.stops.length===0),'the existing wind and fire loops survive');
+ const count=stats.melodyStarts;audio.update(state(80),1,{playing:true,dt:1/60,ended:false});
+ assert.equal(stats.melodyStarts,count+2,'the new journey can play its own melody');
 });
 
 test('retry preserves mute, volume and the existing audio context',()=>{
