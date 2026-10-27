@@ -28,6 +28,13 @@ test('critical guidance still protects against wind and bridge frost',()=>{
  assert.match(caption({...base,oxygen:20})[0],/息が危ない/);
 });
 
+test('low breath while shielding does not claim strong wind has calmed',()=>{
+ const guarded={...base,flame:60,shield:true,wind:.57,oxygen:26};
+ assert.deepEqual(caption(guarded),['息が苦しい — いま離して',true]);
+ assert.deepEqual(caption({...guarded,oxygen:40,wind:.2}),['風が弱まった — いま離して',false]);
+ assert.deepEqual(caption({...guarded,oxygen:40}),['灯りをかばっている',false]);
+});
+
 test('the final storm and silence outrank a temporary calm wind',()=>{
  assert.match(caption({...base,finalePhase:'gust-warning'})[0],/最後の風.*長押し/);
  assert.match(caption({...base,finalePhase:'gust-active',wind:1.15})[0],/大突風/);

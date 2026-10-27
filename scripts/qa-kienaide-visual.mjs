@@ -41,6 +41,16 @@ try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
   {
+   const warning=await open(size,'?qa=1&seed=2&speed=0.0001&t=5&vital=breath-warning');await warning.page.locator('#play').click();
+   await warning.page.waitForFunction(()=>Number(document.querySelector('#breath-meter').getAttribute('aria-valuenow'))===26,null,{timeout:3000});
+   await warning.page.locator('#action').focus();await warning.page.keyboard.down('Space');
+   await warning.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('息が苦しい'),null,{timeout:3000});
+   assert.ok(Number(await warning.page.locator('#stage').getAttribute('data-wind'))>.44,'breath warning must be tested while wind remains strong '+tag);
+   assert.match(await warning.page.locator('.action-cue').innerText(),/息が苦しい.*離して/);
+   await warning.page.screenshot({path:path.join(out,`${engine}-${tag}-breath-warning.png`)});
+   await warning.page.keyboard.up('Space');assert.deepEqual(warning.errors,[]);await warning.ctx.close();done('low breath guidance names the reason '+tag);
+  }
+  {
    const touch=await open(size,'?qa=1&seed=2&speed=0.0001&t=2.2&vital=breath');await touch.page.locator('#play').click();
    await touch.page.waitForFunction(()=>document.querySelector('#action').disabled);
    const touchBox=await touch.page.locator('#action').boundingBox();await touch.page.touchscreen.tap(touchBox.x+touchBox.width/2,touchBox.y+touchBox.height/2);
@@ -88,6 +98,7 @@ try{
    const guide=await open(size,'?qa=1&seed=2&speed=0.0001');
    await guide.page.locator('#play').click();
    assert.match(await guide.page.locator('#story-beat').innerText(),/長押し.*離して/,'the opening teaches both actions');
+   assert.match(await guide.page.locator('#story-beat').innerText(),/凪や息苦しい時/,'the opening explains both reasons to release');
    await guide.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('凪では離す'));
    await guide.page.screenshot({path:path.join(out,`${engine}-${tag}-first-play-guidance.png`)});
    assert.deepEqual(guide.errors,[]);await guide.ctx.close();
