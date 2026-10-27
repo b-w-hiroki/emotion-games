@@ -84,8 +84,30 @@ function collectionCount(id){
  try{const raw=JSON.parse(localStorage.getItem('emotion-endings-v1-'+id)||'[]');return Array.isArray(raw)?new Set(raw.filter(key=>endings[id].some(x=>x.id===key))).size:0}catch(_){return 0}
 }
 function top(){return '<header class="top"><a class="logo" href="'+base+'">birdman<span>studio</span><small>EMOTION GAMES</small></a><a class="follow" href="https://x.com/toriihiroki4649" target="_blank" rel="noopener noreferrer">X / 最新作 ↗</a></header>'}
+const featuredWorks=[
+ {id:'kienaide',title:'きえないで。',label:'短編ゲーム · 約90秒',description:'消えかけた灯りを、雪の町の家まで。',cta:'旅をはじめる',href:base+'kienaide/',image:base+'assets/kienaide-v3/snow-town.webp',overlay:base+'assets/kienaide-v3/traveller-flame.webp'},
+ {id:'chahan',title:'チャーハン大回転',label:'アクション · '+(slug==='works'?'トップで遊べる':'このページで遊べる'),description:'鍋をあおって、パラパラの一皿を。',cta:slug==='works'?'トップで遊ぶ':'ここで遊ぶ',href:base+'#chahan-shelf',image:base+'chahan/art/street.webp',overlay:base+'chahan/art/wok-v2.webp'},
+ {id:'fishing-battle',title:'AINAN 釣りバトル',label:'アクション · 試作',description:'魚の動きを見て、タイミングよく巻く。',href:base+'fishing-battle/',image:base+'fishing-battle/assets/harbor-water.png',overlay:base+'fishing-battle/assets/fight-mid.png'}
+];
+function workCard(item){return '<a class="studio-work-card" href="'+esc(item.href)+'"><span class="studio-work-image studio-work-image--'+esc(item.id)+'"><img src="'+esc(item.image)+'" alt="" loading="lazy" decoding="async">'+(item.overlay?'<img class="studio-work-subject" src="'+esc(item.overlay)+'" alt="" loading="lazy" decoding="async">':'')+'</span><span class="studio-work-copy"><span class="studio-work-label">'+esc(item.label)+'</span><strong>'+esc(item.title)+'</strong><span class="studio-work-description">'+esc(item.description)+'</span><span class="studio-work-link">'+esc(item.cta||'遊ぶ')+' <span aria-hidden="true">↗</span></span></span></a>'}
+if(slug==='works'){
+ const shorts=games.filter(item=>item.slug!=='kienaide').map(item=>({id:item.slug,title:item.title,label:'試作 · '+item.emotion,description:item.subtitle,href:base+item.slug+'/',image:base+'assets/og/'+item.slug+'.png'}));
+ root.innerHTML=top()+'<main class="studio-library"><a class="studio-library-back" href="'+base+'">← トップへ</a><header class="studio-library-intro"><span>THE COLLECTION</span><h1>作品一覧</h1><p>短い物語から、手を動かして遊ぶゲームまで。</p></header><section aria-labelledby="library-featured"><div class="studio-library-heading"><h2 id="library-featured">おすすめの作品</h2><span>FEATURED</span></div><div class="studio-library-grid">'+featuredWorks.map(workCard).join('')+'</div></section><section aria-labelledby="library-shorts"><div class="studio-library-heading"><div><h2 id="library-shorts">ショートゲーム</h2><p>ひとつの感情を、短い遊びに。</p></div><span>'+shorts.length+' GAMES</span></div><div class="studio-library-grid studio-library-shorts">'+shorts.map(workCard).join('')+'</div></section></main><footer class="foot"><a href="'+base+'privacy.html">プライバシー</a><span>© birdman studio</span></footer>';
+ return;
+}
 if(!game){
  root.innerHTML=top()+'<main class="kienaide-home"><section class="kienaide-home-art" aria-labelledby="home-title"><div class="kienaide-home-copy"><span class="kienaide-home-kicker">A SHORT NIGHT JOURNEY</span><h1 id="home-title" class="kienaide-lettering">きえないで。</h1><div class="kienaide-home-promise"><p>この灯りを、あの窓まで。</p><img class="kienaide-home-flame" src="./assets/kienaide-v3/flame-spirit.webp" alt="" aria-hidden="true"></div></div><div class="kienaide-home-bottom"><span>雪の夜を歩く、約90秒の物語</span><a class="kienaide-home-play" href="./kienaide/">旅をはじめる <span aria-hidden="true">↗</span></a></div></section><section class="chahan-shelf" aria-labelledby="chahan-shelf-title"><div class="chahan-shelf-copy"><span class="chahan-shelf-kicker">BIRDMAN STUDIO / PLAYABLE KITCHEN</span><h2 id="chahan-shelf-title">チャーハン大回転</h2><p>厨房を選び、火力を合わせて、鍋をあおる。場所ごとに一皿が変わる。</p></div><div class="chahan-shelf-frame"><iframe src="./chahan/?embed=1" title="チャーハン大回転をこのページで遊ぶ" loading="lazy" allow="accelerometer; gyroscope"></iframe></div></section></main><footer class="foot"><a href="./privacy.html">プライバシー</a><span>© birdman studio</span></footer>';
+ document.querySelector('.chahan-shelf').id='chahan-shelf';
+ if(location.hash==='#chahan-shelf')requestAnimationFrame(()=>document.getElementById('chahan-shelf').scrollIntoView({block:'start'}));
+ document.querySelector('.chahan-shelf').insertAdjacentHTML('beforebegin','<section class="studio-works" aria-labelledby="studio-works-title"><div class="studio-works-head"><div><span class="studio-works-kicker">BIRDMAN STUDIO / WORKS</span><h2 id="studio-works-title">遊べる作品</h2><p>気になる世界へ、ひとつずつ。</p></div><a class="studio-works-all" href="./works/">作品一覧へ <span aria-hidden="true">↗</span></a></div><div class="studio-carousel" id="studio-carousel" role="region" aria-roledescription="カルーセル" aria-label="おすすめ作品" tabindex="0">'+featuredWorks.map(workCard).join('')+'</div><div class="studio-carousel-controls"><span>横にスライドして選ぶ</span><div><button type="button" id="studio-prev" aria-label="前の作品">←</button><button type="button" id="studio-next" aria-label="次の作品">→</button></div></div></section>');
+ const carousel=document.getElementById('studio-carousel'),previous=document.getElementById('studio-prev'),next=document.getElementById('studio-next'),carouselControls=document.querySelector('.studio-carousel-controls');let carouselTarget=null;
+ function updateCarouselButtons(){previous.disabled=carousel.scrollLeft<=1;next.disabled=carousel.scrollLeft+carousel.clientWidth>=carousel.scrollWidth-1;carouselControls.hidden=carousel.scrollWidth<=carousel.clientWidth+1}
+ function moveCarousel(direction){const cards=carousel.querySelectorAll('.studio-work-card'),distance=cards[0].getBoundingClientRect().width+parseFloat(getComputedStyle(carousel).columnGap||0);const current=carouselTarget===null?Math.round(carousel.scrollLeft/distance):carouselTarget;carouselTarget=Math.max(0,Math.min(cards.length-1,current+direction));carousel.scrollTo({left:carouselTarget*distance,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+ previous.addEventListener('click',()=>moveCarousel(-1));next.addEventListener('click',()=>moveCarousel(1));
+ carousel.addEventListener('keydown',event=>{if(event.target!==carousel||!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();moveCarousel(event.key==='ArrowRight'?1:-1)});
+ for(const event of ['pointerdown','wheel'])carousel.addEventListener(event,()=>{carouselTarget=null},{passive:true});
+ carousel.addEventListener('focusin',event=>{if(event.target!==carousel)carouselTarget=null});
+ carousel.addEventListener('scroll',updateCarouselButtons,{passive:true});window.addEventListener('resize',()=>{carouselTarget=null;updateCarouselButtons()});updateCarouselButtons();
  document.querySelector('.kienaide-home-bottom').insertAdjacentHTML('beforeend','<button class="kienaide-home-details" id="home-details-open" type="button" aria-haspopup="dialog">作品を詳しく見る</button>');
  root.insertAdjacentHTML('beforeend',`<dialog class="game-detail-modal" id="game-detail" aria-labelledby="game-detail-title" aria-describedby="game-detail-intro">
   <div class="game-detail-head"><span>EMOTION 04 / 切なさ</span><button type="button" id="game-detail-close" aria-label="作品詳細を閉じる">閉じる ✕</button></div>
@@ -148,7 +170,7 @@ if(memoryTouch){memoryTouch.id='memory-touch';memoryTouch.className='memory-touc
 if(candle){
  document.body.classList.add('kienaide-title-screen');
  curtain.classList.add('journey-title');
- const back=document.createElement('a');back.className='journey-back';back.href=base;back.textContent='← 作品一覧へ';curtain.prepend(back);
+ const back=document.createElement('a');back.className='journey-back';back.href=base+'works/';back.textContent='← 作品一覧へ';curtain.prepend(back);
  $('curtain-kicker').textContent='EMOTION 04　/　切なさ';
  $('curtain-description').innerHTML=guidanceMarkup('吹雪の町を抜け、消えかけた灯りを家まで届けよう。');
  const hero=document.createElement('img');hero.className='journey-title-hero';hero.src=base+'assets/kienaide-v3/traveller-flame.webp';hero.alt='';hero.setAttribute('aria-hidden','true');curtain.prepend(hero);
@@ -204,7 +226,7 @@ if(candle){
  $('pause-resume').addEventListener('click',()=>{setCandleDialog(menu,false);last=0;focusCandleAction()});
  menu.querySelectorAll('[data-pause-action]').forEach(button=>button.addEventListener('click',()=>showJourneyMenuConfirm(button.dataset.pauseAction)));
  $('pause-cancel').addEventListener('click',()=>showJourneyMenuConfirm(''));
- $('pause-confirm-action').addEventListener('click',()=>{const next=journeyMenuAction;if(!next)return;if(next==='title'||next==='home'){mark('journey_exit',{elapsed:Math.round(elapsed),destination:next});location.assign(next==='home'?base:'./');return}setCandleDialog(menu,false);last=0;mark('game_retry',{source:'pause-menu'});run();action.focus()});
+ $('pause-confirm-action').addEventListener('click',()=>{const next=journeyMenuAction;if(!next)return;if(next==='title'||next==='home'){mark('journey_exit',{elapsed:Math.round(elapsed),destination:next});location.assign(next==='home'?base+'works/':'./');return}setCandleDialog(menu,false);last=0;mark('game_retry',{source:'pause-menu'});run();action.focus()});
  $('pause-collection').addEventListener('click',()=>{setCandleDialog(menu,false);collectionFromMenu=true;renderCollection();setCandleDialog($('collection-panel'),true);$('close-collection').focus()});
 }
 function showJourneyMenuConfirm(next){journeyMenuAction=next;$('pause-normal').hidden=!!next;$('pause-confirm').hidden=!next;$('journey-menu-title').textContent=next?'今の旅を終えますか？':'ひと息つこう。';if(next){$('pause-confirm-text').innerHTML=guidanceMarkup('途中の記憶と進行は引き継ぎません。発見済みの結末は残ります。');$('pause-confirm-action').textContent=next==='restart'?'新しい旅をはじめる':next==='home'?'作品一覧へ戻る':'タイトルへ戻る';$('pause-cancel').focus()}else $('pause-resume').focus()}
@@ -358,7 +380,7 @@ function showKienaideIntro(){
  const stage=document.createElement('canvas');stage.setAttribute('aria-hidden','true');
  const line=document.createElement('p');line.className='intro-line';line.setAttribute('aria-live','polite');
  const skip=document.createElement('button');skip.type='button';skip.textContent='スキップして遊ぶ';
- const back=document.createElement('a');back.className='intro-back';back.href=base;back.textContent='← 作品一覧へ';
+ const back=document.createElement('a');back.className='intro-back';back.href=base+'works/';back.textContent='← 作品一覧へ';
  overlay.append(stage,line,back,skip);document.body.append(overlay);setCandleDialog(overlay,true);
  const iv=KV,g=stage.getContext('2d'),reduced=reducedMotion(),speed=qa?6:1;
  let t0=0,hiddenAt=0,introTime=0,wasHidden=false,finished=false,shown='';const voiced=[0,0];

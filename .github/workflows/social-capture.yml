@@ -23,6 +23,7 @@ jobs:
       - run: node scripts/qa-kienaide-image-noise.mjs
       - run: node scripts/qa-kienaide-release.mjs chromium
       - run: node scripts/qa-game-detail.mjs chromium
+      - run: node scripts/qa-studio-works.mjs chromium
       - run: node scripts/qa-chahan.mjs chromium
       - run: node scripts/qa-fishing-battle.mjs chromium
       - run: node scripts/qa-kienaide-card.mjs chromium
@@ -65,6 +66,7 @@ jobs:
       - run: npm run build
       - run: node scripts/qa-kienaide-release.mjs webkit
       - run: node scripts/qa-game-detail.mjs webkit
+      - run: node scripts/qa-studio-works.mjs webkit
       - run: node scripts/qa-chahan.mjs webkit
       - run: node scripts/qa-fishing-battle.mjs webkit
       - run: node scripts/qa-kienaide-card.mjs webkit
@@ -78,4 +80,5 @@ jobs:
             artifacts/kienaide/
             artifacts/fishing-battle/
             artifacts/chahan/
+            artifacts/studio/
           retention-days: 30
