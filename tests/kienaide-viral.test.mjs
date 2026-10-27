@@ -24,7 +24,7 @@ test('highlight is shareable but never auto-posted',()=>{
   assert.ok(app.includes(x),x);
  const card=fs.readFileSync('assets/kienaide-card.js','utf8');for(const x of ['canvas.toBlob','navigator.canShare','navigator.share'])assert.ok(card.includes(x),x);
  assert.equal(spawnSync(process.execPath,['--check','assets/kienaide-card.js'],{encoding:'utf8'}).status,0);
- assert.ok(core.includes('if(!s.shield&&input.wasShield&&input.releaseIntent)s.releaseAt=time'));
+ assert.ok(core.includes('if(!s.shield&&input.wasShield&&input.releaseIntent&&s.wind<.46)s.releaseAt=time'));
  assert.equal(spawnSync(process.execPath,['--check','assets/app.js'],{encoding:'utf8'}).status,0);
 });
 

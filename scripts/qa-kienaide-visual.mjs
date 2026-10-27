@@ -394,6 +394,19 @@ try{
    await window.page.screenshot({path:path.join(out,`${engine}-rescue-release-cue.png`)});
    await window.page.keyboard.up('Space');await window.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
    assert.deepEqual(window.errors,[]);await window.ctx.close();done('critical flame rescue cue and actual release');
+   const gust=await open(size,'?qa=1&seed=2&speed=.5&t=80.8&mem=2&vital=flame');await gust.page.locator('#play').click();
+   await gust.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)>.55,null,{timeout:3000});
+   await gust.page.locator('#action').focus();await gust.page.keyboard.down('Space');await gust.page.waitForTimeout(150);await gust.page.keyboard.up('Space');
+   assert.ok(Number(await gust.page.locator('#stage').getAttribute('data-wind'))>.46,'the first release happens in strong wind');
+   await gust.page.waitForFunction(()=>{const s=document.querySelector('#stage').dataset;return Number(s.elapsed)>81.65&&Number(s.wind)<.4},null,{timeout:6000});
+   assert.doesNotMatch(await gust.page.locator('#story-beat strong').innerText(),/手を離した瞬間/,'a later lull cannot retroactively rescue the gust release');
+   await gust.page.screenshot({path:path.join(out,`${engine}-gust-release-no-rescue.png`)});
+   assert.deepEqual(gust.errors,[]);await gust.ctx.close();
+   const calmRelease=await open(size,'?qa=1&seed=2&speed=.0001&t=81.8&mem=2&vital=flame');await calmRelease.page.locator('#play').click();
+   await calmRelease.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)<.46,null,{timeout:3000});
+   await calmRelease.page.locator('#action').focus();await calmRelease.page.keyboard.down('Space');await calmRelease.page.waitForTimeout(150);await calmRelease.page.keyboard.up('Space');
+   await calmRelease.page.waitForFunction(()=>document.querySelector('#story-beat strong').textContent.includes('手を離した瞬間'),null,{timeout:3000});
+   assert.deepEqual(calmRelease.errors,[]);await calmRelease.ctx.close();done('gust release cannot rescue later; a calm release can');
   }
  }
   const calm=await open(size,'?qa=1&seed=3&speed=.0001&vital=flame');await calm.page.locator('#play').click();
