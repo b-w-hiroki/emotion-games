@@ -593,6 +593,24 @@ try{
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('sound settings');
  }
+ // A new journey must cancel ending notes that are still sounding or scheduled.
+ {
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=0.0001');
+  await page.locator('#play').click();
+  const outcome=await page.evaluate(()=>{
+   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
+   const proto=AC.prototype,original=proto.createOscillator,voices=[];
+   proto.createOscillator=function(){const o=original.call(this),stop=o.stop;const record={stops:[]};voices.push(record);o.stop=function(t){record.stops.push(t);return stop.call(this,t)};return o};
+   try{
+    const audio=window.KienaideAudio.create();if(!audio.init())return null;audio.resume();
+    audio.cues.ending('dawn');const notes=voices.filter(v=>v.stops.length);
+    audio.startJourney();
+    return {notes:notes.length,canceled:notes.filter(v=>v.stops.length===2&&v.stops[1]<v.stops[0]).length};
+   }finally{proto.createOscillator=original}
+  });
+  if(outcome){assert.ok(outcome.notes>=12,'the dawn ending schedules its notes');assert.equal(outcome.canceled,outcome.notes,'retry cancels every sounding or future ending note')}
+  assert.deepEqual(errors,[]);await ctx.close();done('retry cancels earlier ending audio');
+ }
  // A completed run must not leave the next run waiting on the previous audio clock.
  {
   const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=3',{audioProbe:true});

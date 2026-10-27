@@ -14,6 +14,8 @@ function create(){
  const prefs=load();
  let ac=null,master=null,bus=null,wind=null,fire=null,steps=null,pad=null,nextNote=0,noteIndex=0,lastStep=0,nextBreath=0,chapter=-1;
  let shouldPlay=false,transport=null;
+ const oneShots=new Set();
+ function track(source){oneShots.add(source);source.onended=()=>oneShots.delete(source);return source}
  function init(){
   if(ac)return true;
   const AC=root.AudioContext||root.webkitAudioContext;if(!AC)return false;
@@ -47,26 +49,30 @@ function create(){
  function resume(){shouldPlay=true;syncTransport()}
  function suspend(){shouldPlay=false;syncTransport()}
  // Simulation time returns to zero on retry; audio preferences and the context do not.
- function startJourney(){nextNote=0;noteIndex=0;lastStep=0;nextBreath=0;chapter=-1}
+ function startJourney(){
+  // Cancel both sounding and scheduled cues from the previous journey before retrying.
+  for(const source of oneShots){try{source.stop(ac.currentTime)}catch(_){}}oneShots.clear();
+  nextNote=0;noteIndex=0;lastStep=0;nextBreath=0;chapter=-1;
+ }
  function setMuted(m){prefs.muted=!!m;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
  function setVolume(v){prefs.volume=Math.min(1,Math.max(0,v));if(prefs.volume>0&&prefs.muted)prefs.muted=false;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
  function tone(freq,dur=.6,vol=.12,type='sine',when=0,dest){
   if(!ac||prefs.muted)return;const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(dest||bus);o.start(t);o.stop(t+dur+.05);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(dest||bus);track(o);o.start(t);o.stop(t+dur+.05);
  }
  function bell(note,when=0,vol=.09){tone(midi(note),1.6,vol,'sine',when);tone(midi(note+12),.7,vol*.35,'sine',when)}
  function whoosh(dur=1.2,up=true,vol=.18){
   if(!ac||prefs.muted)return;const t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=steps.noise;f.type='bandpass';f.Q.value=1.2;
   f.frequency.setValueAtTime(up?300:1400,t);f.frequency.exponentialRampToValueAtTime(up?1600:250,t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+dur*.6);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  s.connect(f).connect(g).connect(master);s.start(t);s.stop(t+dur+.05);
+  s.connect(f).connect(g).connect(master);track(s);s.start(t);s.stop(t+dur+.05);
  }
  function thump(vol=.06,freq=180){
   if(!ac||prefs.muted)return;const t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=steps.noise;f.type='lowpass';f.frequency.value=freq;
-  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);s.connect(f).connect(g).connect(master);s.start(t,Math.random());s.stop(t+.2);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);s.connect(f).connect(g).connect(master);track(s);s.start(t,Math.random());s.stop(t+.2);
  }
  function breathCue(profile){
   if(!ac||prefs.muted||!profile)return;const t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=steps.noise;f.type='bandpass';f.frequency.value=profile.frequency;f.Q.value=.55;
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(profile.gain,t+.22);g.gain.exponentialRampToValueAtTime(.0001,t+.9);s.connect(f).connect(g).connect(master);s.start(t,Math.random());s.stop(t+.95);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(profile.gain,t+.22);g.gain.exponentialRampToValueAtTime(.0001,t+.9);s.connect(f).connect(g).connect(master);track(s);s.start(t,Math.random());s.stop(t+.95);
  }
  function setPad(ch){
   if(!ac)return;const t=ac.currentTime;
