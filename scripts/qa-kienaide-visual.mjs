@@ -84,6 +84,30 @@ try{
    await page.screenshot({path:path.join(out,`${engine}-${tag}-companion-warmth.png`)});
    assert.deepEqual(errors,[]);await ctx.close();done('first-play guidance and companion response '+tag);
   }
+  // Down and up can both arrive before the next animation frame on a slow device.
+  {
+   const fast=await open(size,'?qa=1&seed=2&speed=0.0001&t=2.2&vital=breath-mid');await fast.page.locator('#play').click();
+   await fast.page.waitForFunction(()=>Number(document.querySelector('#breath-meter').getAttribute('aria-valuenow'))===80);
+   await fast.page.locator('#action').focus();
+   await fast.page.evaluate(()=>{const a=document.querySelector('#action');a.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));window.dispatchEvent(new Event('blur'));document.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}))});
+   await fast.page.waitForTimeout(200);
+   assert.doesNotMatch(await fast.page.locator('#story-beat').innerText(),/息が少し戻る/,'a same-frame cancellation must not earn warmth '+tag);
+   await fast.page.locator('#action').focus();
+   await fast.page.evaluate(()=>{const a=document.querySelector('#action');a.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}))});
+   await fast.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('火の子が手を温めた'),null,{timeout:3000});
+   assert.ok(Number(await fast.page.locator('#breath-meter').getAttribute('aria-valuenow'))>=85,'a same-frame deliberate release restores breath '+tag);
+   await fast.page.screenshot({path:path.join(out,`${engine}-${tag}-fast-release.png`)});
+   assert.deepEqual(fast.errors,[]);await fast.ctx.close();
+   const touch=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');await touch.page.locator('#play').click();
+   await touch.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)>.1);
+   await touch.page.evaluate(()=>{const a=document.querySelector('#action');a.setPointerCapture=()=>{};a.hasPointerCapture=()=>false;const p=type=>new PointerEvent(type,{pointerId:11,pointerType:'touch',button:0,bubbles:true});a.dispatchEvent(p('pointerdown'));a.dispatchEvent(p('pointercancel'))});
+   await touch.page.waitForTimeout(200);
+   assert.doesNotMatch(await touch.page.locator('#story-beat').innerText(),/建物の陰/,'a same-frame touch cancellation must not earn shelter '+tag);
+   await touch.page.evaluate(()=>{const a=document.querySelector('#action'),p=type=>new PointerEvent(type,{pointerId:12,pointerType:'touch',button:0,bubbles:true});a.dispatchEvent(p('pointerdown'));a.dispatchEvent(p('pointerup'))});
+   await touch.page.waitForFunction(()=>document.querySelector('#story-beat').textContent.includes('建物の陰'),null,{timeout:3000});
+   assert.ok(Number(await touch.page.locator('#stage').getAttribute('data-wind'))<.1,'a same-frame touch release earns shelter '+tag);
+   assert.deepEqual(touch.errors,[]);await touch.ctx.close();done('same-frame keyboard and touch release and cancellation '+tag);
+  }
   // A tunnel lull becomes a safe place only after a deliberate release.
   {
    const {ctx,page,errors}=await open(size,'?qa=1&seed=9&speed=0.0001&t=22.5');

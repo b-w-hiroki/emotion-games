@@ -498,7 +498,8 @@ function drawCandle(dt){
  if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
  const paused=!!(document.hidden||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'||s.decisionPending),step=paused?0:dt*(s.qaSpeed||1);
- const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
+ // An intentional down/up can happen between frames; its release proves the hold existed.
+ const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield||shelterRelease,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);
