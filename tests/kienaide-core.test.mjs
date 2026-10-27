@@ -131,6 +131,18 @@ test('blur or canceled input cannot trigger the near-extinction rescue',()=>{
  const events=K.step(s,84,DT,{shield:false,wasShield:true,releaseIntent:true});
  assert.equal(events.some(e=>e.type==='miracle'),true);
 });
+test('releasing in a gust cannot claim a rescue when the wind calms a second later',()=>{
+ const make=()=>{const s=K.create({seed:2});s.events=[];Object.assign(s,{routeChoice:'rest',decisionIndex:2,journey:98,chapter:3,flame:20,oxygen:60,memories:2});return s};
+ const gust=make();
+ assert.equal(K.step(gust,80.8,DT,{shield:false,wasShield:true,releaseIntent:true}).some(e=>e.type==='miracle'),false);
+ assert.ok(gust.wind>.46,'the hand opened into strong wind');
+ assert.equal(gust.releaseAt,-100,'the strong-wind release is not stored for a later lull');
+ assert.equal(K.step(gust,81.8,DT,{shield:false,wasShield:false}).some(e=>e.type==='miracle'),false);
+ assert.ok(gust.wind<.46,'the wind really did calm within the old rescue window');
+ const calm=make();
+ assert.equal(K.step(calm,81.8,DT,{shield:false,wasShield:true,releaseIntent:true}).some(e=>e.type==='miracle'),true);
+ assert.equal(calm.releaseAt,81.8,'a deliberate release in that lull still earns the rescue');
+});
 test('chapters change play conditions: tunnel shelter, bridge exposure, foreshadowed rescue',()=>{
  assert.deepEqual([0,19.9,20,44.9,45,70].map(t=>K.chapterAt(t)),[0,0,1,1,2,3]);
  const shield=(ch,t)=>{const s=K.create({seed:9});s.events=[];s.chapter=ch;K.step(s,t,1,{shield:true});return 100-s.oxygen};

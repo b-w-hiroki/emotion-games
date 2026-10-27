@@ -130,7 +130,8 @@ function step(s,time,dt,input){
   const warm=(live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut'?2.6:0)+(live&&ev.kind==='lull'?3.5:0);
   s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45+s.bridgeFrost*1.4:0)+warm)*dt));
  }
- if(!s.shield&&input.wasShield&&input.releaseIntent)s.releaseAt=time;
+ // The rescue remembers a release only if the air was calm at that exact moment.
+ if(!s.shield&&input.wasShield&&input.releaseIntent&&s.wind<.46)s.releaseAt=time;
  // A deliberate release in calm air lets the flame look after the traveller once.
  // Blur, cancellation and releases in a gust cannot claim this moment.
  if(!s.companionSeen&&time<s.journey-20&&!s.shield&&input.wasShield&&input.releaseIntent&&s.wind<.44&&s.flame>=25&&s.oxygen<=94){
