@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeGather, analyzePull } from '../assets/chahan-gesture.js';
+import { analyzeGather, analyzePull, forwardPeak } from '../assets/chahan-gesture.js';
+
+test('only the forward reach determines a wok toss', () => {
+  const start = { x: 150, y: 100, at: 0 };
+  const forward = forwardPeak(start, { x: 152, y: 195, at: 280 });
+  const returned = forwardPeak(forward, { x: 150, y: 110, at: 700 });
+  assert.equal(returned, forward, 'returning does not undo the forward pull');
+  assert.equal(forwardPeak(start, { x: 150, y: 20, at: 280 }), start, 'a back swipe alone has no toss');
+  assert.deepEqual(analyzePull(start.x, start.y, returned.x, returned.y, returned.at - start.at), analyzePull(150, 100, 152, 195, 280));
+});
 
 test('a straight wok pull remains catchable when frames are delayed', () => {
   const ordinary = analyzePull(150, 100, 150, 195, 280);
