@@ -222,7 +222,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await quiet.close();
   const audio = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await audio.addInitScript(() => {
-    window.__battleAudio = { contexts: 0, resumes: 0, notes: 0, stops: 0, pitches: [] };
+    window.__battleAudio = { contexts: 0, resumes: 0, notes: 0, stops: 0, pitches: [], peaks: [] };
     class ProbeContext {
       constructor() { window.__battleAudio.contexts++; this.currentTime = 0; this.destination = {}; }
       resume() { window.__battleAudio.resumes++; return Promise.resolve(); }
@@ -230,7 +230,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         window.__battleAudio.notes++;
         return { frequency: { setValueAtTime(value) { window.__battleAudio.pitches.push(value); }, exponentialRampToValueAtTime() {} }, connect(target) { return target; }, start() {}, stop() { window.__battleAudio.stops++; } };
       }
-      createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+      createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime(value) { window.__battleAudio.peaks.push(value); } }, connect() {} }; }
     }
     window.AudioContext = ProbeContext;
     window.webkitAudioContext = ProbeContext;
@@ -255,6 +255,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   await audio.locator('#mute').click();
   await audio.locator('#reel').click();
   if (await audio.evaluate(() => window.__battleAudio.notes) <= played.notes) throw new Error(`${name}: unmuted reel stayed silent`);
+  await audio.reload();
+  await audio.mouse.move(190, 210); await audio.mouse.down(); await audio.mouse.move(190, 300); await audio.mouse.up();
+  const fastPeak = await audio.evaluate(() => Math.max(...window.__battleAudio.peaks));
+  if (await audio.locator('#progressValue').textContent() !== '53%') throw new Error(`${name}: fast swipe changed reel progress`);
+  await audio.screenshot({ path: `${out}/${name}-fast-swipe-impact.png` });
+  await audio.reload();
+  await audio.mouse.move(190, 210); await audio.mouse.down(); await audio.mouse.move(190, 300);
+  await audio.waitForTimeout(700); await audio.mouse.up();
+  const slowPeak = await audio.evaluate(() => Math.max(...window.__battleAudio.peaks));
+  if (!(fastPeak > slowPeak + .003) || await audio.locator('#progressValue').textContent() !== '53%') throw new Error(`${name}: equal-distance swipe speed did not change impact without changing progress (${fastPeak}, ${slowPeak})`);
+  await audio.screenshot({ path: `${out}/${name}-slow-swipe-impact.png` });
   await audio.close();
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'no-preference' });
   await page.goto(url);

@@ -44,8 +44,15 @@ export function advanceSwimMotion(motion, state, cue, dt) {
   return next;
 }
 
-// The swipe changes the impact of a reel, never the amount of battle progress.
-export const reelImpulse = distance => .65 + clamp((distance - 34) / 90, 0, 1) * .7;
+// Distance and speed change the physical response, never AINAN's reel amount.
+// Omitted duration keeps keyboard and scripted inputs at their existing weight.
+export function reelImpulse(distance, durationMs = null) {
+  const reach = .65 + clamp((distance - 34) / 90, 0, 1) * .7;
+  if (durationMs === null) return reach;
+  const speed = distance / Math.max(16, durationMs);
+  const snap = .8 + clamp((speed - .08) / .55, 0, 1) * .4;
+  return clamp(reach * snap, .55, 1.55);
+}
 
 // Only a deliberate downward stroke charges the reel. Sideways movement can
 // still be corrected before release, so the preview always matches the input.
