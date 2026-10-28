@@ -27,6 +27,11 @@ try {
         await page.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
         const frame = page.frameLocator('.chahan-shelf iframe');
         await frame.locator('#overlayTitle').waitFor();
+        const frameBox = await page.locator('.chahan-shelf-frame').boundingBox();
+        assert.ok(Math.abs(frameBox.height - height) <= 1, `${name} ${width}: embedded game matches the viewport height`);
+        assert.ok(frameBox.width >= width - 1, `${name} ${width}: embedded game uses the mobile width`);
+        const shell = frame.locator('.shell');
+        assert.ok(await shell.evaluate(el => el.scrollHeight <= innerHeight + 1), `${name} ${width}: controls fit without scrolling inside the game`);
         const art = await frame.locator('#scene').evaluate(async canvas => {
           const [{ createGame }, { drawScene, drawDish, drawRiceMascot, cheeringFriends }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
           const assets = await Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','rice-egg-v1','flight-v3','flight-egg-v1'].map(name => new Promise(resolve => {
@@ -97,6 +102,7 @@ try {
           await frame.locator(`[data-venue="${venue}"]`).click();
           assert.equal(await frame.locator(`[data-venue="${venue}"]`).getAttribute('aria-pressed'), 'true', 'thumbnail choice is stable before starting');
           await frame.locator('#start').click();
+          assert.ok(Math.abs((await page.locator('.chahan-shelf iframe').boundingBox()).y) <= 2, `${name} ${width}: starting aligns the game with the top of the screen`);
           const feedback = await frame.locator('.kitchen-feedback').boundingBox(), stage = await frame.locator('#swipeZone').boundingBox();
           assert.ok(feedback.y >= stage.y + stage.height - 1, `${name} ${width}: feedback stays outside the character scene`);
           await frame.locator('#place').getByText(['路地裏の屋台','走る列車','空中キッチン'][venue]).waitFor();
