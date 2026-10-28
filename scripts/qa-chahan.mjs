@@ -239,6 +239,29 @@ try {
           await fresh.close();
         }
         if (width === 390) {
+          const interrupted = await browser.newPage({ viewport: { width, height } });
+          await interrupted.goto(base + 'chahan/');
+          await interrupted.locator('#start').click();
+          const cooking = interrupted.locator('#swipeZone');
+          const interruptedBox = await cooking.boundingBox();
+          await interrupted.mouse.move(interruptedBox.x + interruptedBox.width / 2, interruptedBox.y + 20);
+          await interrupted.mouse.down();
+          await cooking.evaluate(() => {
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+          });
+          const stoppedAt = Number(await cooking.getAttribute('data-game-time'));
+          await interrupted.waitForTimeout(500);
+          assert.equal(Number(await cooking.getAttribute('data-game-time')), stoppedAt, `${name}: background cooking time stays paused even if animation frames run`);
+          await cooking.evaluate(() => {
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            document.dispatchEvent(new Event('visibilitychange'));
+          });
+          await interrupted.mouse.move(interruptedBox.x + interruptedBox.width / 2, interruptedBox.y + interruptedBox.height - 10);
+          await interrupted.mouse.up();
+          assert.equal(await interrupted.locator('#combo').textContent(), '0', `${name}: interrupted gestures do not toss on return`);
+          await interrupted.waitForFunction(start => Number(document.querySelector('#swipeZone').dataset.gameTime) > start + .1, stoppedAt);
+          await interrupted.close();
           const keyboard = await browser.newPage({ viewport: { width, height } });
           await keyboard.goto(base);
           await keyboard.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();

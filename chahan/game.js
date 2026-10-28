@@ -91,7 +91,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (k) held.delete(k); });
 window.addEventListener('blur', () => { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); last = 0; audio.pause(); } else { last = performance.now(); audio.unlock(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); last = 0; audio.pause(); } else { last = 0; if (audio.active) audio.unlock(); } });
 $('sound').textContent = audio.enabled ? '音 ON' : '音 OFF';
 $('sound').onclick = () => { const enabled = audio.setEnabled(!audio.enabled); $('sound').textContent = enabled ? '音 ON' : '音 OFF'; if (enabled) audio.unlock(); };
 $('start').onclick = () => { commitVenueScroll(); closeFilling(); begin(); };
@@ -178,7 +178,7 @@ function updateHud() {
   if (seasonHint.textContent !== hint) seasonHint.textContent = hint;
 }
 function draw() { drawScene(ctx, game, reduceMotion); }
-function loop(now) { const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { heat: Number(held.has('up')) - Number(held.has('down')) }, dt); if (now - audioTick > 130) { audio.update({ stage: game.stage, heat: game.heat, playing: game.phase === 'playing' }); audioTick = now; } updatePullPreview(); draw(); updateHud(); if (game.phase === 'finished') { closeFilling(); finish(); } else animation = requestAnimationFrame(loop); }
+function loop(now) { if (document.hidden) { last = 0; animation = requestAnimationFrame(loop); return; } const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { heat: Number(held.has('up')) - Number(held.has('down')) }, dt); if (now - audioTick > 130) { audio.update({ stage: game.stage, heat: game.heat, playing: game.phase === 'playing' }); audioTick = now; } updatePullPreview(); draw(); updateHud(); if (game.phase === 'finished') { closeFilling(); finish(); } else animation = requestAnimationFrame(loop); }
 draw(); updateHud();
 
 const venueTrack = $('venueTrack');
