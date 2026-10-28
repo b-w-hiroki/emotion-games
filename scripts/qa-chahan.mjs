@@ -268,6 +268,33 @@ try {
           assert.equal(await interrupted.locator('#combo').textContent(), '0', `${name}: interrupted gestures do not toss on return`);
           await interrupted.waitForFunction(start => Number(document.querySelector('#swipeZone').dataset.gameTime) > start + .1, stoppedAt);
           await interrupted.close();
+          const away = await browser.newPage({ viewport: { width, height } });
+          await away.goto(base);
+          const embedded = away.frameLocator('.chahan-shelf iframe');
+          await away.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          await embedded.locator('#start').click();
+          const embeddedZone = embedded.locator('#swipeZone');
+          await embeddedZone.evaluate(async zone => {
+            const start = Number(zone.dataset.gameTime), deadline = performance.now() + 5000;
+            while (Number(zone.dataset.gameTime) < start + .15 && performance.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+            if (Number(zone.dataset.gameTime) < start + .15) throw new Error('cooking did not start before scrolling away');
+          });
+          await away.evaluate(() => window.scrollTo(0, 0));
+          await away.waitForTimeout(300);
+          const awayTime = Number(await embeddedZone.getAttribute('data-game-time'));
+          await away.waitForTimeout(500);
+          assert.equal(Number(await embeddedZone.getAttribute('data-game-time')), awayTime, `${name}: cooking pauses when the embedded game is offscreen`);
+          await away.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          await embedded.locator('#noticeTitle').getByText('調理を再開').waitFor();
+          const noticeBox = await embedded.locator('#stageNotice').boundingBox(), feedbackBox = await embedded.locator('.kitchen-feedback').boundingBox();
+          assert.ok(noticeBox.y >= feedbackBox.y && noticeBox.y + noticeBox.height <= feedbackBox.y + feedbackBox.height + 1, `${name}: resumption notice stays outside the character scene`);
+          await away.screenshot({ path: path.join(output, `resume-${name}-${width}.png`) });
+          await embeddedZone.evaluate(async (zone, start) => {
+            const deadline = performance.now() + 5000;
+            while (Number(zone.dataset.gameTime) < start + .1 && performance.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+            if (Number(zone.dataset.gameTime) < start + .1) throw new Error('cooking did not resume after returning to the game');
+          }, awayTime);
+          await away.close();
           const keyboard = await browser.newPage({ viewport: { width, height } });
           await keyboard.goto(base);
           await keyboard.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();

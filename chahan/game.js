@@ -5,6 +5,7 @@ import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
 const $ = id => document.getElementById(id);
 const canvas = $('scene'), ctx = canvas.getContext('2d');
+document.querySelector('.kitchen-feedback').appendChild($('stageNotice'));
 const resultCard = $('overlay').querySelector('.card');
 const resultDish = document.createElement('canvas');
 resultDish.id = 'resultDish'; resultDish.className = 'result-dish'; resultDish.width = 640; resultDish.height = 280;
@@ -14,12 +15,13 @@ resultStats.className = 'result-stats';
 resultStats.innerHTML = '<div><small>混ざり</small><strong data-stat="mix"></strong></div><div><small>火の通り</small><strong data-stat="cook"></strong></div><div><small>味付け</small><strong data-stat="seasoning"></strong></div><div><small>パラパラ</small><strong data-stat="fluff"></strong></div><div><small>鍋さばき</small><strong data-stat="toss"></strong></div>';
 resultCard.insertBefore(resultStats, $('start'));
 let selectedVenue = 0, game = createGame(), last = 0, animation = 0, dishAnimation = 0, gesture = null, noticeTimer = 0, audioTick = 0;
+let inView = true, suspended = false;
 const audio = createKitchenAudio();
 let motionEnabled = false, motionSeen = false, motionTimeout = 0;
 const held = new Set();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-function showNotice(title, detail) { const notice = $('stageNotice'); notice.querySelector('small').textContent = '今日の厨房'; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
+function showNotice(title, detail, label = '今日の厨房') { const notice = $('stageNotice'); notice.querySelector('small').textContent = label; $('noticeTitle').textContent = title; $('noticeDetail').textContent = detail; notice.hidden = false; notice.classList.remove('show'); void notice.offsetWidth; notice.classList.add('show'); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { notice.hidden = true; }, 2300); }
 function begin() { audio.unlock(); cancelAnimationFrame(dishAnimation); dishAnimation = 0; game = createGame(selectedVenue); game.phase = 'playing'; gesture = null; resetScoopTrace(); resultCard.classList.remove('result'); $('overlay').hidden = true; $('stageNotice').hidden = true; clearTimeout(noticeTimer); last = performance.now(); audioTick = 0; cancelAnimationFrame(animation); updateHud(); draw(); window.frameElement?.scrollIntoView({ block: 'start', behavior: 'instant' }); zone.focus({ preventScroll: true }); animation = requestAnimationFrame(loop); showNotice(STAGES[game.stage].name, STAGES[game.stage].note + '。まず卵を入れよう。'); window.emotionTrack?.('game_start',{game_id:'chahan'}); }
 function revealDish() {
   cancelAnimationFrame(dishAnimation);
@@ -62,6 +64,7 @@ zone.addEventListener('pointermove', e => { if (!gesture || e.pointerId !== gest
 zone.addEventListener('pointerup', e => { if (!gesture || e.pointerId !== gesture.id) return; const rect = zone.getBoundingClientRect(); gesture.peak = forwardPeak(gesture.peak, { x: e.clientX, y: e.clientY, at: e.timeStamp }); gesture.points.push([e.clientX - rect.left, e.clientY - rect.top]); const gather = drawScoopTrace(gesture.points, rect.width, rect.height); const peak = gesture.peak; if (gather.valid) doPlate(gather.quality); else if (peak.y - gesture.y > 25 && gather.progress < .15) doToss(pullInput(peak.x, peak.y, peak.at)); else if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) < 14) doLadle((e.clientX - rect.left) / rect.width); else if (game.seasoned) { game.message = 'おたまで外側から円を描き、中央へ集めよう。'; updateHud(); } if (!gather.valid) resetScoopTrace(); game.pullPreview = null; game.panPush = 0; gesture = null; });
 for (const event of ['pointercancel','lostpointercapture']) zone.addEventListener(event, () => { game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
 document.addEventListener('keydown', e => {
+  if (suspended) return;
   if (!$('fillingChoices').hidden) {
     if (e.code === 'Escape') { e.preventDefault(); $('fillingBack').click(); return; }
     if (e.code === 'Digit1' || e.code === 'Digit2') {
@@ -91,7 +94,24 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { const k = { ArrowUp: 'up', ArrowDown: 'down', Space: 'toss' }[e.code]; if (k) held.delete(k); });
 window.addEventListener('blur', () => { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null; if (game.phase === 'playing') resetScoopTrace(); last = 0; audio.pause(); } else { last = 0; if (audio.active) audio.unlock(); } });
+function updateSuspension() {
+  const shouldSuspend = document.hidden || !inView;
+  if (shouldSuspend === suspended) return;
+  suspended = shouldSuspend;
+  last = 0;
+  if (suspended) {
+    held.clear(); game.pullPreview = null; game.panPush = 0; gesture = null;
+    if (game.phase === 'playing') resetScoopTrace();
+    audio.pause();
+  } else {
+    if (audio.active) audio.unlock();
+    if (game.phase === 'playing') showNotice('調理を再開', '続きから、鍋をあおろう。', 'おかえり');
+  }
+}
+document.addEventListener('visibilitychange', updateSuspension);
+if (window.frameElement && 'IntersectionObserver' in window) {
+  new IntersectionObserver(entries => { inView = entries[0].isIntersecting; updateSuspension(); }).observe(document.documentElement);
+}
 $('sound').textContent = audio.enabled ? '音 ON' : '音 OFF';
 $('sound').onclick = () => { const enabled = audio.setEnabled(!audio.enabled); $('sound').textContent = enabled ? '音 ON' : '音 OFF'; if (enabled) audio.unlock(); };
 $('start').onclick = () => { commitVenueScroll(); closeFilling(); begin(); };
@@ -103,7 +123,7 @@ function stopMotion(status = 'タップで再開') {
   $('motionButton').classList.remove('active');
 }
 function onMotion(event) {
-  if (!motionEnabled || document.hidden) return;
+  if (!motionEnabled || suspended) return;
   if ([event.acceleration?.x, event.acceleration?.y, event.acceleration?.z].every(Number.isFinite)) motionSeen = true;
   const impulse = motionToss(event.acceleration);
   if (impulse && game.phase === 'playing') doToss(impulse);
@@ -178,7 +198,7 @@ function updateHud() {
   if (seasonHint.textContent !== hint) seasonHint.textContent = hint;
 }
 function draw() { drawScene(ctx, game, reduceMotion); }
-function loop(now) { if (document.hidden) { last = 0; animation = requestAnimationFrame(loop); return; } const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { heat: Number(held.has('up')) - Number(held.has('down')) }, dt); if (now - audioTick > 130) { audio.update({ stage: game.stage, heat: game.heat, playing: game.phase === 'playing' }); audioTick = now; } updatePullPreview(); draw(); updateHud(); if (game.phase === 'finished') { closeFilling(); finish(); } else animation = requestAnimationFrame(loop); }
+function loop(now) { if (document.hidden || suspended) { last = 0; animation = requestAnimationFrame(loop); return; } const dt = last ? clamp((now - last) / 1000, 0, .05) : 0; last = now; advance(game, { heat: Number(held.has('up')) - Number(held.has('down')) }, dt); if (now - audioTick > 130) { audio.update({ stage: game.stage, heat: game.heat, playing: game.phase === 'playing' }); audioTick = now; } updatePullPreview(); draw(); updateHud(); if (game.phase === 'finished') { closeFilling(); finish(); } else animation = requestAnimationFrame(loop); }
 draw(); updateHud();
 
 const venueTrack = $('venueTrack');
