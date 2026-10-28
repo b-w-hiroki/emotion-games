@@ -40,6 +40,36 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A second touch can collect a memory without releasing the first hold.
+  {
+   const memory=await open(size,'?qa=1&seed=2&speed=0.0001&t=14.5');await memory.page.locator('#play').click();
+   await memory.page.locator('#memory-touch').waitFor({state:'visible'});
+   await memory.page.evaluate(()=>{const a=document.querySelector('#memory-touch'),r=a.getBoundingClientRect();a.dispatchEvent(new PointerEvent('pointerdown',{pointerId:30,pointerType:'touch',isPrimary:false,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,bubbles:true}))});
+   await memory.page.locator('#journey-menu-open').click();await memory.page.locator('#pause-resume').click();await memory.page.locator('#memory-touch').waitFor({state:'visible'});
+   await memory.page.evaluate(()=>{const a=document.querySelector('#memory-touch'),r=a.getBoundingClientRect();a.dispatchEvent(new PointerEvent('pointerup',{pointerId:30,pointerType:'touch',isPrimary:false,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,bubbles:true}))});
+   assert.equal(await memory.page.locator('#best').innerText(),'0 / 3','pause clears an unfinished touch '+tag);
+   await memory.page.locator('#action').focus();await memory.page.keyboard.down('Space');
+   await memory.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await memory.page.evaluate(()=>{const a=document.querySelector('#memory-touch'),r=a.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;const p=(type,id,px=x,py=y)=>new PointerEvent(type,{pointerId:id,pointerType:'touch',isPrimary:false,button:0,clientX:px,clientY:py,bubbles:true});a.dispatchEvent(p('pointerdown',31));a.dispatchEvent(p('pointercancel',31));a.dispatchEvent(p('pointerup',31));a.dispatchEvent(p('pointerdown',32));a.dispatchEvent(p('pointerup',32,r.right+20,y))});
+   assert.equal(await memory.page.locator('#best').innerText(),'0 / 3','canceled and outside touches do not collect '+tag);
+   await memory.page.evaluate(()=>{const a=document.querySelector('#memory-touch'),r=a.getBoundingClientRect(),p=type=>new PointerEvent(type,{pointerId:33,pointerType:'touch',isPrimary:false,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,bubbles:true});a.dispatchEvent(p('pointerdown'));a.dispatchEvent(p('pointerup'))});
+   await memory.page.waitForFunction(()=>document.querySelector('#best').textContent==='1 / 3',null,{timeout:3000});
+   assert.equal(await memory.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),true,'collecting with another pointer keeps the hold '+tag);
+   await memory.page.screenshot({path:path.join(out,`${engine}-${tag}-held-memory.png`)});await memory.page.keyboard.up('Space');
+   assert.deepEqual(memory.errors,[]);await memory.ctx.close();
+   if(engine==='chromium'){
+    const touch=await open(size,'?qa=1&seed=2&speed=0.0001&t=14.5');await touch.page.locator('#play').click();await touch.page.locator('#memory-touch').waitFor({state:'visible'});
+    const a=await touch.page.locator('#action').boundingBox(),m=await touch.page.locator('#memory-touch').boundingBox(),cdp=await touch.ctx.newCDPSession(touch.page);
+    const first={x:Math.round(a.x+a.width/2),y:Math.round(a.y+a.height/2),id:1},second={x:Math.round(m.x+m.width/2),y:Math.round(m.y+m.height/2),id:2};
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first]});await touch.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first,second]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[second]});
+    await touch.page.waitForFunction(()=>document.querySelector('#best').textContent==='1 / 3',null,{timeout:3000});
+    assert.equal(await touch.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),true,'the first finger remains held after the second collects '+tag);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[first]});await touch.page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
+    assert.deepEqual(touch.errors,[]);await touch.ctx.close();
+   }
+   done('held memory collection with another touch '+tag);
+  }
   {
    const warning=await open(size,'?qa=1&seed=2&speed=0.0001&t=5&vital=breath-warning');await warning.page.locator('#play').click();
    await warning.page.waitForFunction(()=>Number(document.querySelector('#breath-meter').getAttribute('aria-valuenow'))===26,null,{timeout:3000});

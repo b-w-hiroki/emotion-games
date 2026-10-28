@@ -166,7 +166,7 @@ const canvas=document.getElementById('stage'),ctx=canvas.getContext('2d'),curtai
 if(candle){document.querySelector('.game-heading h1').classList.add('kienaide-lettering');document.getElementById('curtain-title').classList.add('kienaide-lettering');document.querySelector('.controls-bottom a').textContent='タイトルへ';document.getElementById('related').remove()}
 if(candle)document.getElementById('collection-panel').querySelector('.collection-head').insertAdjacentHTML('afterend','<p id="journey-progress" class="journey-progress"></p>');
 const $=id=>document.getElementById(id),record=$('record'),best=$('best'),timer=$('timer');
-const memoryTouch=candle?document.createElement('button'):null;
+const memoryTouch=candle?document.createElement('button'):null,memoryPointers=new Map();
 if(memoryTouch){memoryTouch.id='memory-touch';memoryTouch.className='memory-touch';memoryTouch.type='button';memoryTouch.textContent='記憶にふれる';memoryTouch.hidden=true;canvas.after(memoryTouch)}
 if(candle){
  document.body.classList.add('kienaide-title-screen');
@@ -198,7 +198,7 @@ function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||land
 if(candle)document.addEventListener('focusin',e=>{if(pendingActionFocus&&e.target!==action&&e.target!==document.body)pendingActionFocus=false});
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
- if(open){holdRelease();memoryTouch.hidden=true;candleDialog=panel;const isolate=parent=>{for(const el of parent.children){if(el===panel)continue;if(el.contains(panel))isolate(el);else{candleInert.push([el,el.inert]);el.inert=true}}};isolate(document.querySelector('.game-shell'))}
+ if(open){holdRelease();memoryPointers.clear();memoryTouch.hidden=true;candleDialog=panel;const isolate=parent=>{for(const el of parent.children){if(el===panel)continue;if(el.contains(panel))isolate(el);else{candleInert.push([el,el.inert]);el.inert=true}}};isolate(document.querySelector('.game-shell'))}
  else{if(candleDialog!==panel)return;for(const [el,inert] of candleInert)el.inert=inert;candleInert=[];candleDialog=null}
  panel.hidden=!open;
  queueMicrotask(syncCandleAudio);
@@ -331,6 +331,10 @@ function collectCandleMemory(input){
  if(document.activeElement===memoryTouch)focusCandleAction();memoryTouch.hidden=true;setStory(m.title,m.line);return true;
 }
 memoryTouch?.addEventListener('click',()=>collectCandleMemory('button'));
+// Browsers may omit click for a non-primary finger while another finger holds the flame.
+memoryTouch?.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!e.isPrimary&&e.button===0&&state.mote)memoryPointers.set(e.pointerId,state.mote.id)});
+memoryTouch?.addEventListener('pointerup',e=>{const id=memoryPointers.get(e.pointerId);memoryPointers.delete(e.pointerId);if(!id||id!==state.mote?.id)return;const r=memoryTouch.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)collectCandleMemory('button')});
+for(const type of ['pointercancel','lostpointercapture'])memoryTouch?.addEventListener(type,e=>memoryPointers.delete(e.pointerId));
 canvas.addEventListener('click',e=>{
  if(mode!=='play'||(candle&&(candleDialog||document.hidden||landscapeMode.matches)))return;
  const s=state;
@@ -401,7 +405,7 @@ let candlePointer=null,candleKey=null,shelterRelease=false;
 function beginCandleShield(){state.releaseAt=-100;state.shield=true;KA.init();KA.resume();KA.cues.shield(true)}
 function releaseCandleInput(){const pointer=candlePointer;candlePointer=null;candleKey=null;if(pointer!==null&&action.hasPointerCapture?.(pointer))action.releasePointerCapture(pointer)}
 function holdRelease(intent=false){if(!down)return;down=false;if(candle)releaseCandleInput();if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;shelterRelease=!!intent;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
-landscapeMode?.addEventListener('change',e=>{if(e.matches)holdRelease();syncCandleAudio()});
+landscapeMode?.addEventListener('change',e=>{if(e.matches){holdRelease();memoryPointers.clear()}syncCandleAudio()});
 action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(action.disabled||landscapeMode.matches||candleDialog||document.hidden||chapterLoading)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide')beginCandleShield();if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 const pointerRelease=(e,intent=false)=>{if(!candle||e.pointerId===candlePointer)holdRelease(intent)};
 action.addEventListener('pointerup',e=>pointerRelease(e,true));action.addEventListener('pointercancel',pointerRelease);
@@ -412,7 +416,7 @@ if(candle){
  window.addEventListener('pointermove',e=>{if(e.pointerId===candlePointer&&!action.hasPointerCapture?.(e.pointerId))holdRelease()});
 }
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
-window.addEventListener('blur',()=>holdRelease());document.addEventListener('visibilitychange',()=>{if(document.hidden)holdRelease()});
+window.addEventListener('blur',()=>{holdRelease();memoryPointers.clear()});document.addEventListener('visibilitychange',()=>{if(document.hidden){holdRelease();memoryPointers.clear()}});
 action.addEventListener('contextmenu',e=>e.preventDefault());
 // Keyboard play for 004: hold Space/Enter on the button to shield, M (or Enter on the scene) to touch a memory.
 if(candle){
@@ -452,6 +456,7 @@ function drawDoor(dt){bg('#11121c');const s=state;ctx.fillStyle='#1a1926';for(le
 let lastShield=false;
 function startCandle(){
  saveJourneyProgress('started');
+ memoryPointers.clear();
  momentCard.reset();
  chapterLoading=false;chapterLoadingError=false;chapterLoadingTarget=-1;chapterWait.hidden=true;
  memoryTouch.hidden=true;
@@ -559,7 +564,7 @@ function candleEnding(){
 }
 function syncChapterWait(chapter){
  const waiting=!KV.chapterReady(chapter);
- if(waiting&&!chapterLoading)holdRelease();
+ if(waiting&&!chapterLoading){holdRelease();memoryPointers.clear()}
  if(waiting!==chapterLoading){chapterLoading=waiting;syncCandleAudio()}
  chapterLoadingTarget=waiting?chapter:-1;
  chapterWait.hidden=!waiting;
