@@ -332,17 +332,20 @@ function collectCandleMemory(input){
 }
 memoryTouch?.addEventListener('click',()=>collectCandleMemory('button'));
 // Browsers may omit click for a non-primary finger while another finger holds the flame.
-memoryTouch?.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!e.isPrimary&&e.button===0&&state.mote)memoryPointers.set(e.pointerId,state.mote.id)});
-memoryTouch?.addEventListener('pointerup',e=>{const id=memoryPointers.get(e.pointerId);memoryPointers.delete(e.pointerId);if(!id||id!==state.mote?.id)return;const r=memoryTouch.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)collectCandleMemory('button')});
+memoryTouch?.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!e.isPrimary&&e.button===0&&state.mote)memoryPointers.set(e.pointerId,{id:state.mote.id,target:'button'})});
+memoryTouch?.addEventListener('pointerup',e=>{const touch=memoryPointers.get(e.pointerId);memoryPointers.delete(e.pointerId);if(touch?.target!=='button'||touch.id!==state.mote?.id)return;const r=memoryTouch.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)collectCandleMemory('button')});
 for(const type of ['pointercancel','lostpointercapture'])memoryTouch?.addEventListener(type,e=>memoryPointers.delete(e.pointerId));
+function hitsCandleMemory(e,m){if(!m)return false;const p=KV.toWorld(canvas,e.clientX,e.clientY);return Math.hypot(p.x-m.u*KV.view.W,p.y-m.y)<=40}
+canvas.addEventListener('pointerdown',e=>{if(candle&&e.pointerType==='touch'&&!e.isPrimary&&e.button===0&&hitsCandleMemory(e,state.mote))memoryPointers.set(e.pointerId,{id:state.mote.id,target:'canvas'})});
+canvas.addEventListener('pointerup',e=>{if(!candle)return;const touch=memoryPointers.get(e.pointerId);memoryPointers.delete(e.pointerId);if(touch?.target==='canvas'&&touch.id===state.mote?.id&&hitsCandleMemory(e,state.mote))collectCandleMemory('canvas')});
+for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>memoryPointers.delete(e.pointerId));
 canvas.addEventListener('click',e=>{
  if(mode!=='play'||(candle&&(candleDialog||document.hidden||landscapeMode.matches)))return;
  const s=state;
  if(slug==='micha-dame'){if(!s.knocks||elapsed-s.knockTime>1.3)s.knocks=0;s.knocks++;s.knockTime=elapsed;if(s.knocks>=3)finish('knock',75)}
  if(state.micro){const box=canvas.getBoundingClientRect();const x=(e.clientX-box.left)*360/box.width,y=(e.clientY-box.top)*400/box.height;window.EmotionMissions.canvasTap(state.micro,x,y,elapsed,finish)}
  if(slug==='kienaide'){
-  const p=KV.toWorld(canvas,e.clientX,e.clientY),m=s.mote;
-  if(!m||Math.hypot(p.x-m.u*KV.view.W,p.y-m.y)>40)return;
+  if(!hitsCandleMemory(e,s.mote))return;
   collectCandleMemory('canvas');
  }
 });

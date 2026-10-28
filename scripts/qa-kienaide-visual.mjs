@@ -55,8 +55,18 @@ try{
    await memory.page.evaluate(()=>{const a=document.querySelector('#memory-touch'),r=a.getBoundingClientRect(),p=type=>new PointerEvent(type,{pointerId:33,pointerType:'touch',isPrimary:false,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,bubbles:true});a.dispatchEvent(p('pointerdown'));a.dispatchEvent(p('pointerup'))});
    await memory.page.waitForFunction(()=>document.querySelector('#best').textContent==='1 / 3',null,{timeout:3000});
    assert.equal(await memory.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),true,'collecting with another pointer keeps the hold '+tag);
+   await memory.page.waitForFunction(()=>!document.querySelector('#stage').dataset.mote,null,{timeout:3000});
    await memory.page.screenshot({path:path.join(out,`${engine}-${tag}-held-memory.png`)});await memory.page.keyboard.up('Space');
    assert.deepEqual(memory.errors,[]);await memory.ctx.close();
+   const scene=await open(size,'?qa=1&seed=2&speed=0.0001&t=14.5');await scene.page.locator('#play').click();await scene.page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
+   await scene.page.locator('#action').focus();await scene.page.keyboard.down('Space');await scene.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await scene.page.evaluate(()=>{const a=document.querySelector('#stage'),r=a.getBoundingClientRect(),[mx,my]=a.dataset.mote.split(',').map(Number),x=r.x+mx,y=r.y+my;const p=(type,id,px=x,py=y)=>new PointerEvent(type,{pointerId:id,pointerType:'touch',isPrimary:false,button:0,clientX:px,clientY:py,bubbles:true});a.dispatchEvent(p('pointerdown',41));a.dispatchEvent(p('pointercancel',41));a.dispatchEvent(p('pointerup',41));a.dispatchEvent(p('pointerdown',42));a.dispatchEvent(p('pointerup',42,x+100,y))});
+   assert.equal(await scene.page.locator('#best').innerText(),'0 / 3','canceled or dragged-away scene touches do not collect '+tag);
+   await scene.page.evaluate(()=>{const a=document.querySelector('#stage'),r=a.getBoundingClientRect(),[x,y]=a.dataset.mote.split(',').map(Number),p=type=>new PointerEvent(type,{pointerId:43,pointerType:'touch',isPrimary:false,button:0,clientX:r.x+x,clientY:r.y+y,bubbles:true});a.dispatchEvent(p('pointerdown'));a.dispatchEvent(p('pointerup'))});
+   await scene.page.waitForFunction(()=>document.querySelector('#best').textContent==='1 / 3',null,{timeout:3000});
+   assert.equal(await scene.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),true,'collecting from the scene keeps the hold '+tag);
+   await scene.page.waitForFunction(()=>!document.querySelector('#stage').dataset.mote,null,{timeout:3000});
+   await scene.page.screenshot({path:path.join(out,`${engine}-${tag}-held-scene-memory.png`)});await scene.page.keyboard.up('Space');assert.deepEqual(scene.errors,[]);await scene.ctx.close();
    if(engine==='chromium'){
     const touch=await open(size,'?qa=1&seed=2&speed=0.0001&t=14.5');await touch.page.locator('#play').click();await touch.page.locator('#memory-touch').waitFor({state:'visible'});
     const a=await touch.page.locator('#action').boundingBox(),m=await touch.page.locator('#memory-touch').boundingBox(),cdp=await touch.ctx.newCDPSession(touch.page);
@@ -67,6 +77,15 @@ try{
     assert.equal(await touch.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),true,'the first finger remains held after the second collects '+tag);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[first]});await touch.page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
     assert.deepEqual(touch.errors,[]);await touch.ctx.close();
+    const canvasTouch=await open(size,'?qa=1&seed=2&speed=0.0001&t=14.5');await canvasTouch.page.locator('#play').click();await canvasTouch.page.waitForFunction(()=>document.querySelector('#stage').dataset.mote);
+    const hold=await canvasTouch.page.locator('#action').boundingBox(),point=await canvasTouch.page.evaluate(()=>{const e=document.querySelector('#stage'),r=e.getBoundingClientRect(),[x,y]=e.dataset.mote.split(',').map(Number);return {x:Math.round(r.x+x),y:Math.round(r.y+y)}}),session=await canvasTouch.ctx.newCDPSession(canvasTouch.page);
+    const finger={x:Math.round(hold.x+hold.width/2),y:Math.round(hold.y+hold.height/2),id:1},other={...point,id:2};
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger]});await canvasTouch.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger,other]});await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[other]});
+    await canvasTouch.page.waitForFunction(()=>document.querySelector('#best').textContent==='1 / 3',null,{timeout:3000});
+    assert.equal(await canvasTouch.page.locator('#action').evaluate(el=>el.classList.contains('is-held')),true,'touching the memory in the scene keeps the first finger held '+tag);
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[finger]});await canvasTouch.page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
+    assert.deepEqual(canvasTouch.errors,[]);await canvasTouch.ctx.close();
    }
    done('held memory collection with another touch '+tag);
   }
