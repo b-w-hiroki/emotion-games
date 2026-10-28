@@ -37,6 +37,12 @@ try{
     await page.locator('.studio-works-all').click();
     assert.equal(new URL(page.url()).pathname,'/works/');
     assert.equal(await page.locator('.studio-library h1').innerText(),'作品一覧');
+    const index=page.locator('.studio-library-index');
+    assert.equal(await index.locator('a').count(),2,'collection has two category links');
+    assert.equal(await page.locator('.studio-library-shorts .studio-short-card').count(),catalog.length-1,'short games are grouped as compact cards');
+    await index.getByRole('link',{name:'ショートゲームの試作 19'}).click();
+    assert.equal(new URL(page.url()).hash,'#library-shorts','category link reaches the short games');
+    assert.ok(await page.locator('#library-shorts').isVisible());
     const listed=page.locator('.studio-library .studio-work-card');
     assert.equal(await listed.count(),catalog.length+2,`${name} ${width}: all games and two standalone projects`);
     const hrefs=await listed.evaluateAll(links=>links.map(link=>link.href));
