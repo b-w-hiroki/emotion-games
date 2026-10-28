@@ -198,6 +198,19 @@ test('events have real effects on the rules',()=>{
  {const {s,t}=at('eddy');s.oxygen=80;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.oxygen=80;K.step(s,t,1,{shield:true});K.step(b,t,1,{shield:true});assert.ok(s.oxygen<b.oxygen,'eddies make holding cost more breath')}
  {const {s,t}=at('lantern');s.flame=50;s.oxygen=50;const b=K.create({seed:3});b.events=[];b.chapter=s.chapter;b.flame=50;b.oxygen=50;K.step(s,t,1,{});K.step(b,t,1,{});assert.ok(s.wind<b.wind*.21,'a neighbour lantern actually blocks the wind');assert.ok(s.flame>b.flame,'the shelter keeps the flame warmer');assert.ok(s.oxygen>=b.oxygen,'releasing remains safe for breath recovery')}
 });
+test('eddy eases only after an intentional release, not an interrupted hold',()=>{
+ const make=()=>{const s=K.create({seed:1});s.routeChoice='legacy-test';s.decisionIndex=2;return s};
+ const t=67.1,dt=1/60,canceled=make(),released=make();
+ for(const s of [canceled,released])K.step(s,t,dt,{shield:true,wasShield:false});
+ K.step(canceled,t+.1,dt,{shield:false,wasShield:true,releaseIntent:false});
+ K.step(released,t+.1,dt,{shield:false,wasShield:true,releaseIntent:true});
+ K.step(canceled,t+.2,dt,{shield:false,wasShield:false});
+ K.step(released,t+.2,dt,{shield:false,wasShield:false});
+ assert.equal(canceled.eddyReleasedEvent,'','input cancellation must not claim the opening');
+ assert.ok(canceled.wind>.5,'the interrupted hold leaves the eddy active');
+ assert.equal(released.eddyReleasedEvent,'eddy-3');
+ assert.ok(released.wind<=.38,'a deliberate release creates the opening');
+});
 test('lantern shelter ends on time and does not consume the tunnel shelter',()=>{
  const s=K.create({seed:3}),e=s.events.find(x=>x.kind==='lantern');s.events=[{...e,at:30,end:33,warnAt:30}];s.chapter=1;
  const active=K.step(s,30.5,DT,{});assert.equal(active.some(x=>x.type==='shelter'),false);

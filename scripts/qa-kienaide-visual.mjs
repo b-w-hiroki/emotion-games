@@ -477,6 +477,23 @@ try{
     assert.deepEqual(fastCancel.errors,[]);await fastCancel.ctx.close();
    }
    done('same-frame interrupted holds cannot reuse rescue release');
+   // The late eddy responds to the player's release, not a lost input.
+   const eddy=await open(size,'?qa=1&seed=1&speed=.0001&t=67.1');await eddy.page.locator('#play').click();
+   await eddy.page.waitForFunction(()=>{const s=document.querySelector('#stage').dataset;return s.event==='eddy'&&Number(s.wind)>.5},null,{timeout:3000});
+   await eddy.page.locator('#action').focus();await eddy.page.keyboard.down('Space');
+   await eddy.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await eddy.page.evaluate(()=>window.dispatchEvent(new Event('blur')));await eddy.page.keyboard.up('Space');
+   await eddy.page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
+   await eddy.page.waitForTimeout(200);
+   assert.ok(Number(await eddy.page.locator('#stage').getAttribute('data-wind'))>.5,'an interrupted hold leaves the eddy strong');
+   assert.doesNotMatch(await eddy.page.locator('#hint').innerText(),/渦の隙間/,'interruption does not announce a discovered opening');
+   await eddy.page.screenshot({path:path.join(out,`${engine}-eddy-interrupted.png`)});
+   await eddy.page.locator('#action').focus();await eddy.page.keyboard.down('Space');
+   await eddy.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));await eddy.page.keyboard.up('Space');
+   await eddy.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)<=.38,null,{timeout:3000});
+   assert.match(await eddy.page.locator('#hint').innerText(),/渦の隙間/,'a deliberate release opens the eddy');
+   await eddy.page.screenshot({path:path.join(out,`${engine}-eddy-release.png`)});
+   assert.deepEqual(eddy.errors,[]);await eddy.ctx.close();done('eddy interruption and deliberate release');
    const gust=await open(size,'?qa=1&seed=2&speed=.25&t=80.8&mem=2&vital=flame');await gust.page.locator('#play').click();
    await gust.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)>.55,null,{timeout:3000});
    await gust.page.locator('#action').focus();await gust.page.keyboard.down('Space');await gust.page.waitForTimeout(150);
