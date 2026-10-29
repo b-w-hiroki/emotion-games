@@ -2,6 +2,7 @@
 // replayed deterministically in Node tests (same seed + same input → same ending).
 (function(root){'use strict';
 const JOURNEY=90;
+const WIND_DAMAGE_THRESHOLD=.5;
 const CHAPTERS=[
  {at:0,label:'第一章　雪の路地',line:'窓の灯りが、帰り道の目印だった。'},
  {at:20,label:'第二章　風のトンネル',line:'「灯りがあれば、きっと帰れる」'},
@@ -128,7 +129,7 @@ function step(s,time,dt,input){
  }else{
   s.oxygen=Math.min(100,s.oxygen+(sheltered||(live&&ev.kind==='lull')?23:15)*dt);
   const warm=(live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut'?2.6:0)+(live&&ev.kind==='lull'?3.5:0);
-  s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>.5?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45+s.bridgeFrost*1.4:0)+warm)*dt));
+  s.flame=Math.max(0,Math.min(100,s.flame+(s.wind>WIND_DAMAGE_THRESHOLD?-(7+s.wind*8)*bridgeCold:1.3-(chapter===2?.45+s.bridgeFrost*1.4:0)+warm)*dt));
  }
  // The rescue remembers a release only if the air was calm at that exact moment.
  if(!s.shield&&input.wasShield&&input.releaseIntent&&s.wind<.46)s.releaseAt=time;
@@ -181,7 +182,7 @@ function routeDistance(s,time){
  return Math.max(0,Math.ceil((s.routeChoiceAt==null?100:s.routeStartMeters)*(1-Math.max(0,Math.min(1,fraction)))));
 }
 function score(s){return Math.round(s.flame*.65+s.oxygen*.15+s.memories*7)}
-const api={JOURNEY,CHAPTERS,MEMORIES,EVENT_KINDS,create,step,collect,chooseRoute,chooseDecision,routeDistance,score,flameExpression,vitalState,canTriggerMiracle,chapterAt,finalePhaseAt,arrivalEnding,eventSchedule,memorySlots,baseWind};
+const api={JOURNEY,WIND_DAMAGE_THRESHOLD,CHAPTERS,MEMORIES,EVENT_KINDS,create,step,collect,chooseRoute,chooseDecision,routeDistance,score,flameExpression,vitalState,canTriggerMiracle,chapterAt,finalePhaseAt,arrivalEnding,eventSchedule,memorySlots,baseWind};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.KienaideCore=api;
 })(typeof window!=='undefined'?window:globalThis);

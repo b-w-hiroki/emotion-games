@@ -6,7 +6,7 @@ import '../assets/kienaide-core.js';
 const app=readFileSync(new URL('../assets/app.js',import.meta.url),'utf8');
 const start=app.indexOf('function candleCaption(s){'),end=app.indexOf('\nfunction drawCandle',start);
 assert.ok(start>=0&&end>start,'caption function remains available for contract tests');
-const caption=Function('elapsed',app.slice(start,end)+'\nreturn candleCaption;')(12);
+const caption=Function('elapsed','K',app.slice(start,end)+'\nreturn candleCaption;')(12,globalThis.KienaideCore);
 const actionCopy=Function(app.slice(start,end)+'\nreturn candleActionCopy;')();
 const base={flame:18,oxygen:80,wind:.2,chapter:0,bridgeFrost:0,finalePhase:'approach',shield:false,memories:0};
 
@@ -33,6 +33,17 @@ test('low breath while shielding does not claim strong wind has calmed',()=>{
  assert.deepEqual(caption(guarded),['息が苦しい — いま離して',true]);
  assert.deepEqual(caption({...guarded,oxygen:40,wind:.2}),['風が弱まった — いま離して',false]);
  assert.deepEqual(caption({...guarded,oxygen:40}),['灯りをかばっている',false]);
+});
+
+test('wind that damages an exposed flame is not described as a lull',()=>{
+ const K=globalThis.KienaideCore,s=K.create({seed:2});s.events=[];s.flame=72;s.oxygen=70;
+ K.step(s,5,1,{shield:false,wasShield:false});
+ assert.ok(s.wind>.5&&s.wind<.61,'the real wind lies in the previously unannounced damage range');
+ assert.ok(s.flame<72,'that wind actually damages the exposed flame');
+ assert.deepEqual(caption(s),['風が来る — 長押し',true]);
+ assert.deepEqual(caption({...s,wind:.5}),['凪いでいる — 息を戻す',false]);
+ assert.deepEqual(caption({...s,wind:.5001}),['風が来る — 長押し',true]);
+ assert.match(caption({...s,oxygen:20})[0],/息が危ない/,'critical breath still takes priority');
 });
 
 test('the final storm and silence outrank a temporary calm wind',()=>{

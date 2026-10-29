@@ -40,6 +40,18 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // The warning must match the wind that actually damages an exposed flame.
+  {
+   const wind=await open(size,'?qa=1&seed=2&speed=.25&t=5&vital=flame-full');await wind.page.locator('#play').click();
+   await wind.page.waitForFunction(()=>{const s=document.querySelector('#stage');return Number(s.dataset.wind)>.5&&Number(s.dataset.wind)<.61&&document.querySelector('.action-cue').textContent.includes('風が来る')},null,{timeout:5000});
+   await wind.page.waitForFunction(()=>Number(document.querySelector('#light-meter').getAttribute('aria-valuenow'))<=97,null,{timeout:8000});
+   assert.match(await wind.page.locator('.action-cue').innerText(),/風が来る.*長押し/,'damaging wind asks the player to shield '+tag);
+   await wind.page.screenshot({path:path.join(out,`${engine}-${tag}-wind-damage-warning.png`)});
+   await wind.page.locator('#action').focus();await wind.page.keyboard.down('Space');await wind.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   const guarded=Number(await wind.page.locator('#light-meter').getAttribute('aria-valuenow'));await wind.page.waitForTimeout(1000);
+   assert.ok(Number(await wind.page.locator('#light-meter').getAttribute('aria-valuenow'))>=guarded,'shielding prevents the flame loss '+tag);
+   await wind.page.keyboard.up('Space');assert.deepEqual(wind.errors,[]);await wind.ctx.close();done('damaging wind warning and protection '+tag);
+  }
   // A second touch can collect a memory without releasing the first hold.
   {
    const memory=await open(size,'?qa=1&seed=2&speed=0.0001&t=14.5');await memory.page.locator('#play').click();
