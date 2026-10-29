@@ -43,6 +43,11 @@ try {
           for (const [label, update] of Object.entries({ rest: { panPush: 0, lastToss: -10 }, push: { panPush: 1, lastToss: -10 }, airborne: { panPush: 0, lastToss: 1.64, lastLift: .7, tossOutcome: 'caught' }, raw: { lastToss: -10, cook: .12 }, burnt: { cook: 1.35 }, scoop: { cook: .86, scoopProgress: 1 } })) {
             Object.assign(game, update); drawScene(ctx, game, label !== 'airborne'); frames[label] = canvas.toDataURL();
           }
+          const spills = {};
+          for (const [label, fault, lean] of [['strong', 'strong', 0], ['left', 'sideways', -1], ['right', 'sideways', 1]]) {
+            Object.assign(game, { lastToss: 1.7, lastLift: 1, lastLean: lean, tossOutcome: 'spilled', tossSpill: .3, lastTossFault: fault, scoopProgress: 0 });
+            drawScene(ctx, game, false); spills[label] = canvas.toDataURL();
+          }
           Object.assign(game, { cook: .86, scoopProgress: 0, riceClumps: [0, 0, 0], fluff: 1 });
           drawScene(ctx, game, true); frames.separated = canvas.toDataURL();
           Object.assign(game, { lastLadleAt: 1.88, ladleX: .5, lastLadleQuality: 1 });
@@ -70,10 +75,12 @@ try {
           game.tossOutcome = 'spilled'; game.combo = 0;
           const friendsAfterSpill = cheeringFriends(game);
           game.tossOutcome = 'caught'; game.combo = 5; drawScene(ctx, game, true); frames.crowd = canvas.toDataURL();
-          return { assets, frames, dishes, mascotFrames, cheerLevels, friendsAfterSpill };
+          return { assets, frames, spills, dishes, mascotFrames, cheerLevels, friendsAfterSpill };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
         assert.equal(new Set(Object.values(art.frames)).size, 9, `${name} ${width}: push, flight, ladle, scoop, separated rice and cheering states have distinct art`);
+        assert.equal(new Set(Object.values(art.spills)).size, 3, `${name} ${width}: strong, left and right spills have distinct flight`);
+        if (width === 390) for (const [label, data] of Object.entries(art.spills)) fs.writeFileSync(path.join(output, `spill-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         assert.equal(new Set(art.dishes).size, 5, `${name} ${width}: doneness, separated rice and round plating change the finished dish`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.caught, `${name} ${width}: every caught toss gets a celebration`);

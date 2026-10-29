@@ -113,6 +113,7 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
   game.lastToss = game.time;
   game.tossed++;
   const { lift, lean, quality, state } = tossForecast(game, gesture);
+  game.lastTossFault = state;
   game.lastLift = lift;
   game.lastLean = lean;
   const safe = state === 'safe';
@@ -127,14 +128,14 @@ export function toss(game, gesture = { lift: 0.65, lean: 0 }) {
     game.mix = Math.min(1, game.mix + (game.ingredients.egg || game.ingredients.veg ? 0.025 + quality * 0.075 : .012));
     game.cook = Math.min(1.35, game.cook + 0.005 + quality * 0.008);
     if (game.ingredients.veg) game.fillingTosses++;
-    game.message = quality >= .82 ? '会心の返し！ 米がきれいに舞った。' : quality > 0.65 ? 'ふわっ！ 米がきれいに回った。' : '返った！ 次はもう少しまっすぐ。';
+    game.message = quality >= .82 ? '会心の返し！ 米がきれいに舞った。' : quality > 0.65 ? 'ふわっ！ 米がきれいに回った。' : Math.abs(lean) >= .3 ? '返った！ 次はもう少しまっすぐ。' : lift > .7 ? '返った！ 次はもう少しやさしく。' : '返った！ 次はもう少し大きくあおろう。';
   } else {
     game.combo = 0;
     const loss = game.tossOutcome === 'weak' ? 0 : Math.min(game.rice, 0.025 + Math.max(0, lift - 1.25) * 0.12 + Math.abs(lean) * 0.08);
     game.rice -= loss;
     game.lost += loss;
     game.tossSpill = loss;
-    game.message = state === 'weak' ? 'フリックが弱かった。米は鍋の底に残った。' : '斜めか強すぎ！ 米がこぼれた。';
+    game.message = state === 'weak' ? 'フリックが弱かった。米は鍋の底に残った。' : state === 'strong' ? '強すぎて米が飛び出した。もう少しやさしく。' : '斜めにあおって米がこぼれた。まっすぐ手前へ。';
   }
   return safe;
 }
