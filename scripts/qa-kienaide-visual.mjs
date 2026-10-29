@@ -597,6 +597,32 @@ try{
   assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('kienaide-art-endings-v1'))),['dawn','survive','not-an-ending'],'legacy data remains untouched');
   assert.deepEqual(errors,[]);await ctx.close();done('ending save migration');
  }
+ // Two open production-route tabs must retain each other's discoveries and old preview saves.
+ {
+  const ctx=await browser.newContext({viewport:sizes[0]});
+  await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  const first=await ctx.newPage(),second=await ctx.newPage(),repeat=await ctx.newPage(),errors=[];
+  for(const p of [first,second,repeat])p.on('pageerror',e=>errors.push(e.message));
+  await first.goto(base);await first.evaluate(()=>{localStorage.setItem('emotion-endings-v1-kienaide',JSON.stringify(['blown']));localStorage.setItem('kienaide-art-endings-v1',JSON.stringify(['dawn']))});
+  await first.goto(base+'?qa=1&seed=2&speed=6&t=89&mem=3&vital=flame-full');
+  await second.goto(base+'?qa=1&seed=2&speed=6&t=89&vital=flame-full');
+  await repeat.goto(base+'?qa=1&seed=2&speed=6&t=89&mem=3&vital=flame-full');
+  await first.locator('#play').click();await first.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='wish',null,{timeout:10000});
+  await second.locator('#play').click();await second.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='survive',null,{timeout:10000});
+  const saved=await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide')));
+  assert.deepEqual([...saved].sort(),['blown','dawn','survive','wish'],'a later tab must keep both discoveries and migrated endings');
+  assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('kienaide-art-endings-v1'))),['dawn'],'the old collection key remains intact');
+  await repeat.locator('#play').click();await repeat.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='wish',null,{timeout:10000});
+  assert.match(await repeat.locator('#discovery-state').innerText(),/発見済み/,'an ending discovered in another tab is not new');
+  await first.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
+  await first.locator('#open-collection').evaluate(el=>el.click());
+  assert.equal(await first.locator('#collection-list .found').count(),4,'opening an older tab refreshes the collection');
+  assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:3,completed:3},'all three journeys remain recorded across tabs');
+  await second.reload();await second.locator('#open-collection').evaluate(el=>el.click());
+  assert.equal(await second.locator('#collection-list .found').count(),4,'all discoveries remain after reload');
+  await second.screenshot({path:path.join(out,`${engine}-concurrent-collection.png`)});
+  assert.deepEqual(errors,[]);await ctx.close();done('concurrent collection preserves migrated and new endings');
+ }
  // Every ending scene, reached through real play rules (QA speed only).
  const size=sizes[0];
  const routes={
