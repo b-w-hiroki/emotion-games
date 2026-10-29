@@ -228,7 +228,7 @@ if(candle){
  menu.querySelectorAll('[data-pause-action]').forEach(button=>button.addEventListener('click',()=>showJourneyMenuConfirm(button.dataset.pauseAction)));
  $('pause-cancel').addEventListener('click',()=>showJourneyMenuConfirm(''));
  $('pause-confirm-action').addEventListener('click',()=>{const next=journeyMenuAction;if(!next)return;if(next==='title'||next==='home'){mark('journey_exit',{elapsed:Math.round(elapsed),destination:next});location.assign(next==='home'?base+'works/':'./');return}setCandleDialog(menu,false);last=0;mark('game_retry',{source:'pause-menu'});run();action.focus()});
- $('pause-collection').addEventListener('click',()=>{setCandleDialog(menu,false);collectionFromMenu=true;renderCollection();setCandleDialog($('collection-panel'),true);$('close-collection').focus()});
+ $('pause-collection').addEventListener('click',()=>{setCandleDialog(menu,false);collectionFromMenu=true;syncCandleCollection();renderCollection();setCandleDialog($('collection-panel'),true);$('close-collection').focus()});
 }
 function showJourneyMenuConfirm(next){journeyMenuAction=next;$('pause-normal').hidden=!!next;$('pause-confirm').hidden=!next;$('journey-menu-title').textContent=next?'今の旅を終えますか？':'ひと息つこう。';if(next){$('pause-confirm-text').innerHTML=guidanceMarkup('途中の記憶と進行は引き継ぎません。発見済みの結末は残ります。');$('pause-confirm-action').textContent=next==='restart'?'新しい旅をはじめる':next==='home'?'作品一覧へ戻る':'タイトルへ戻る';$('pause-cancel').focus()}else $('pause-resume').focus()}
 function openJourneyMenu(){if(mode!=='play'||candleDialog)return;setCandleDialog($('journey-menu'),true);showJourneyMenuConfirm('');last=0}
@@ -312,8 +312,14 @@ function renderJourneyProgress(){
  $('open-collection').textContent='結末図鑑 '+collected.length+'/'+endingList.length+' · 旅 '+journeyProgress.started+'回';
  $('journey-progress').textContent='この端末の記録：旅 '+journeyProgress.started+'回 · 結末まで '+journeyProgress.completed+'回 · 発見 '+collected.length+'/'+endingList.length;
 }
+function syncCandleCollection(){
+ if(!candle)return;
+ try{const saved=JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)||'[]');if(Array.isArray(saved))collected=[...new Set([...collected,...saved.filter(id=>endingList.some(e=>e.id===id))])]}catch(_){}
+}
 function unlock(id){
- if(collected.includes(id))return false;
+ // Another open tab may have discovered an ending since this journey began.
+ syncCandleCollection();
+ if(collected.includes(id)){if(candle)renderCollection();return false}
  collected.push(id);
  try{localStorage.setItem('emotion-endings-v1-'+slug,JSON.stringify(collected))}catch(_){}
  renderCollection();
@@ -322,7 +328,7 @@ function unlock(id){
 }
 renderCollection();
 $('collection-awards').addEventListener('click',event=>{if(event.target.closest('[data-share-completion]'))shareComplete()});
-$('open-collection').addEventListener('click',()=>{renderCollection();if(candle)setCandleDialog($('collection-panel'),true);else $('collection-panel').hidden=false;$('close-collection').focus();mark('collection_open')});
+$('open-collection').addEventListener('click',()=>{syncCandleCollection();renderCollection();if(candle)setCandleDialog($('collection-panel'),true);else $('collection-panel').hidden=false;$('close-collection').focus();mark('collection_open')});
 $('close-collection').addEventListener('click',()=>{ if(candle)setCandleDialog($('collection-panel'),false);else $('collection-panel').hidden=true;if(collectionFromMenu){collectionFromMenu=false;openJourneyMenu();return}if(candle&&mode==='play')focusCandleAction();else $('open-collection').focus()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!candle)$('collection-panel').hidden=true});
 function collectCandleMemory(input){
