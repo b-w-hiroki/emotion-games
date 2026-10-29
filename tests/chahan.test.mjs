@@ -190,6 +190,23 @@ test('the pull preview predicts the same outcome as releasing the wok', () => {
   assert.equal(tossForecast(createGame(), { lift: .8, lean: 0 }).state, 'safe');
 });
 
+test('toss feedback explains the actual direction or strength of the gesture', () => {
+  const cases = [
+    [{ lift: .12, lean: 0 }, 'weak', /弱かった/],
+    [{ lift: 1.6, lean: 0 }, 'strong', /強すぎて/],
+    [{ lift: .7, lean: -1 }, 'sideways', /斜め/],
+    [{ lift: .3, lean: 0 }, 'safe', /大きく/],
+    [{ lift: 1.2, lean: 0 }, 'safe', /やさしく/],
+    [{ lift: .3, lean: .5 }, 'safe', /まっすぐ/],
+  ];
+  for (const [gesture, fault, cue] of cases) {
+    const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.time = 2;
+    toss(game, gesture);
+    assert.equal(game.lastTossFault, fault);
+    assert.match(game.message, cue);
+  }
+});
+
 test('the wok begins empty and ingredient order changes preparation quality', () => {
   const g = createGame(); g.phase = 'playing';
   assert.equal(g.rice, 0); assert.deepEqual(g.ingredients, { egg: false, rice: false, veg: false });

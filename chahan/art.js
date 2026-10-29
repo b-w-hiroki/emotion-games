@@ -207,6 +207,7 @@ function wok(ctx, game, reduced) {
   const fly=!hasRice||game.tossOutcome==='weak'?0:arc*Math.min(1.35,game.lastLift);
   const escaping=game.tossOutcome==='spilled'&&age>=0&&age<.9&&!reduced;
   const escapeSide=Math.sign(game.lastLean)||1;
+  const escapeBias=game.lastTossFault==='strong'?0:escapeSide;
   const push=game.panPush||0;
   ctx.save();ctx.translate(310,548-push*54+fly*44);ctx.scale(1-push*.09+fly*.09,1-push*.06+fly*.05);ctx.rotate(-push*.08+fly*.18);
   const hasPaintedWok = paintedWok.complete && paintedWok.naturalWidth;
@@ -250,7 +251,7 @@ function wok(ctx, game, reduced) {
     ctx.save();ctx.globalAlpha*=1-flyingPortion;
     ellipse(ctx,0,36,178*amount,42*amount,rgba('#1b100d',.35));
     ctx.save();
-    ctx.translate(escaping?escapeSide*fly*28:0,hasFlight?0:-fly*155);
+    ctx.translate(escaping?escapeBias*fly*28:0,hasFlight?0:-fly*155);
     ctx.rotate(-game.lastLean*fly*.14);
     const scoop = Math.max(0, Math.min(1, game.scoopProgress || 0));
     ctx.translate(0, -13 * scoop);
@@ -281,7 +282,7 @@ function wok(ctx, game, reduced) {
   if(hasRice)ctx.restore();
   if(hasFlight&&fly>.04){
     ctx.save();ctx.globalAlpha=Math.min(1,fly*1.5);
-    ctx.translate(game.lastLean*fly*76+(escaping?escapeSide*fly*50:0),-fly*145);
+    ctx.translate(game.lastLean*fly*76+(escaping?escapeBias*fly*50:0),-fly*145);
     ctx.rotate(-game.lastLean*fly*.12);
     ctx.scale(amount,amount);
     if(game.ingredients.egg&&paintedFlightEgg.complete&&paintedFlightEgg.naturalWidth)drawCookingRice(ctx,paintedFlightEgg,[-242,-105,484,160],game.cook);
@@ -291,7 +292,8 @@ function wok(ctx, game, reduced) {
   if(escaping) {
     const progress=Math.min(1,age/.9), count=Math.max(8,Math.round(game.tossSpill*180));
     for(let i=0;i<count;i++){
-      const spread=(i%7-3)*18, x=escapeSide*(160+progress*(150+i%5*19))+spread;
+      const side=game.lastTossFault==='strong'?(i%2===0?-1:1):escapeSide;
+      const spread=(i%7-3)*18, x=side*(160+progress*(150+i%5*19))+spread;
       const y=-70-progress*(95+i%6*17)+progress*progress*(190+i%4*25);
       ellipse(ctx,x,y,5+i%3,2+i%2,game.ingredients.veg&&i%9===0?'#8bb667':game.ingredients.veg&&i%7===0?'#e67d4c':'#fff0bb',i*.43);
     }
