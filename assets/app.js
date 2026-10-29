@@ -155,6 +155,10 @@ function readJourneyProgress(){
 const journeyProgress=candle?readJourneyProgress():null;
 function saveJourneyProgress(kind){
  if(!journeyProgress)return;
+ // Keep journeys already recorded by another tab since this one opened.
+ const saved=readJourneyProgress();
+ journeyProgress.started=Math.max(journeyProgress.started,saved.started);
+ journeyProgress.completed=Math.max(journeyProgress.completed,saved.completed);
  journeyProgress[kind]++;
  try{localStorage.setItem(journeyKey,JSON.stringify(journeyProgress))}catch(_){}
  renderJourneyProgress();

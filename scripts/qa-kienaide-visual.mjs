@@ -617,6 +617,7 @@ try{
   await first.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
   await first.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await first.locator('#collection-list .found').count(),4,'opening an older tab refreshes the collection');
+  assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:3,completed:3},'all three journeys remain recorded across tabs');
   await second.reload();await second.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await second.locator('#collection-list .found').count(),4,'all discoveries remain after reload');
   await second.screenshot({path:path.join(out,`${engine}-concurrent-collection.png`)});
