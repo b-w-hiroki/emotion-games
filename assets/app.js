@@ -525,8 +525,8 @@ function candleCaption(s){
  if(s.shield)return s.oxygen<28?['息が苦しい — いま離して',true]:[s.wind<.44?'風が弱まった — いま離して':'灯りをかばっている',false];
  if(elapsed<4.2)return ['風が来たら長押し、凪では離す',false];
  if(ev&&(ev.kind==='lull'||ev.kind==='lantern'))return [ev.tip,false];
- if(s.routeChoice==='shortcut'&&elapsed<s.shortcutUntil&&s.wind>.5)return ['近道の風 — 長押しでかばって',true];
- return s.wind>.5&&s.flame<60&&s.memories===2?['風が来る — 長押し',true]:s.wind>.61?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
+ if(s.routeChoice==='shortcut'&&elapsed<s.shortcutUntil&&s.wind>K.WIND_DAMAGE_THRESHOLD)return ['近道の風 — 長押しでかばって',true];
+ return s.wind>K.WIND_DAMAGE_THRESHOLD?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
 }
 function candleActionCopy(s){
  if(s.finalePhase==='silence'||s.finalePhase==='window-reply'){
