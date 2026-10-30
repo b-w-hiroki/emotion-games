@@ -149,7 +149,8 @@ export function tapLadle(game, x = .5, inputTime = game.time) {
   if (!game.ingredients.rice) { game.message = 'ごはんを入れてから、おたまでほぐそう。'; return null; }
   // Rendering may cap game.time during a slow frame; input cadence uses real elapsed seconds.
   const interval = inputTime - game.lastLadleInputAt;
-  if (interval < .12) return null;
+  if (interval < .12) { game.message = '少し間をあけて、カンカンと叩こう。'; return null; }
+  const first = game.ladleHits === 0;
   const rhythmic = interval >= .17 && interval <= .7;
   const cooked = game.cook >= .16 && game.cook <= 1.1;
   const quality = Math.min(1, (rhythmic ? 1 : .4) * (cooked ? 1 : game.cook < .16 ? .6 : .3) * (.55 + heatReadiness(game).quality * .45));
@@ -158,6 +159,7 @@ export function tapLadle(game, x = .5, inputTime = game.time) {
   game.ladleHits++;
   game.ladleX = Math.max(.2, Math.min(.8, Number.isFinite(x) ? x : .5));
   game.lastLadleQuality = quality;
+  game.lastLadleRhythmic = rhythmic;
   const pocket = Math.min(2, Math.floor((game.ladleX - .2) / .2));
   const wasClumped = game.riceClumps[pocket];
   game.riceClumps[pocket] = Math.max(0, wasClumped - .5 * quality);
@@ -166,8 +168,9 @@ export function tapLadle(game, x = .5, inputTime = game.time) {
   game.mix = Math.min(1, game.mix + .024 * separated);
   game.message = wasClumped < .05 && game.fluff < .9 ? 'そこはほぐれた！ 別の場所もカンカン。'
     : !cooked ? game.cook < .16 ? 'カン！ まだ米が湿っている。少し炒めよう。' : 'カン！ 焦げる前に盛り付けよう。'
+    : first ? 'カン！ もう一度リズムよく叩こう。'
     : rhythmic ? game.fluff >= .7 ? 'カンカン！ 米がパラパラにほどけた。' : 'カンカン！ 米のかたまりがほぐれてきた。'
-    : 'カン！ 少し間をあけて、リズムよくほぐそう。';
+    : interval < .17 ? '少し間をあけて、カンカンと叩こう。' : 'もう少し続けて、カンカンと叩こう。';
   return quality;
 }
 

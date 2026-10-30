@@ -33,6 +33,21 @@ test('ladle input rhythm follows touch time when rendering advances fewer game f
   assert.equal(game.lastLadleAt, .05, 'the art effect remains on the game clock');
 });
 
+test('ladle feedback distinguishes first, too fast, too slow and rhythmic taps', () => {
+  const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.cook = .5;
+  tapLadle(game, .5, 10);
+  assert.match(game.message, /もう一度/);
+  assert.equal(tapLadle(game, .5, 10.05), null);
+  assert.match(game.message, /間をあけて/);
+  tapLadle(game, .5, 10.13);
+  assert.match(game.message, /間をあけて/);
+  tapLadle(game, .5, 11.13);
+  assert.match(game.message, /続けて/);
+  tapLadle(game, .75, 11.43);
+  assert.equal(game.lastLadleRhythmic, true);
+  assert.match(game.message, /カンカン/);
+});
+
 test('ladle taps break nearby rice clumps and reward moving around the wok', () => {
   const game = createGame(); game.phase = 'playing'; addIngredient(game, 'rice'); game.cook = .7; game.heat = STAGES[0].idealHeat;
   for (let i = 0; i < 4; i++) tapLadle(game, .25, 10 + i * .3);
