@@ -334,7 +334,10 @@ test('seasoning has one chance and scores timing plus mixing', () => {
   assert.deepEqual(seasoningReadiness(ideal), { quality: 1, cue: '今が入れどき！', ready: true });
   assert.equal(seasoningReadiness(early).cue, 'まず米と具を混ぜる');
   assert.equal(seasoningReadiness({ ...ideal, seasoned: false, cook: .15 }).cue, 'まだ早い・火を通す');
-  assert.equal(seasoningReadiness({ ...ideal, seasoned: false, cook: .9 }).cue, '遅くなる前に入れる');
+  assert.equal(seasoningReadiness({ ...ideal, seasoned: false, cook: .9 }).cue, '味付けして盛り付けへ');
+  assert.match(seasoningReadiness({ ...ideal, seasoned: false, mix: .1, cook: 1.2 }).cue, /焦げてきた/);
+  assert.match(seasoningReadiness({ ...ideal, seasoned: false, cook: .73 }).cue, /今/);
+  assert.match(platingReadiness({ ...ideal, mix: .1, cook: 1.2 }).cue, /皿へ/);
 });
 
 test('selected heat stays lit and can cook a meal during the full route', () => {
@@ -358,6 +361,8 @@ test('heat, stirring and rice all contribute to the final meal', () => {
 test('ending feedback points to the actual cooking shortfall', () => {
   const good = createGame(); good.phase = 'playing'; addIngredient(good, 'egg'); addIngredient(good, 'rice'); addIngredient(good, 'veg'); Object.assign(good, { rice: 1, mix: 1, fluff: 1, cook: .86, eggCook: .48, seasoning: 1, seasoned: true, prep: 1, fillingCook: .3, fillingTosses: 2, heatFitSum: 8, heatTime: 10 });
   assert.match(result(good).comment, /一粒ずつ/);
+  assert.match(result({ ...good, cook: 1.4 }).comment, /炒めすぎ/);
+  assert.match(result({ ...good, cook: .2 }).comment, /芯が少し残った/);
   assert.match(result({ ...good, rice: .2 }).comment, /米が鍋から/);
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
   assert.match(result({ ...good, cook: .15 }).comment, /芯が少し/);

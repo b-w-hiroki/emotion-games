@@ -176,11 +176,12 @@ export function seasoningReadiness(game) {
   const cookTiming = Math.max(0, 1 - Math.abs(game.cook - 0.56) / 0.5);
   const mixTiming = Math.min(1, game.mix / 0.45);
   const quality = Math.round(100 * cookTiming * mixTiming) / 100;
-  const cue = game.mix < 0.25 ? 'まず米と具を混ぜる'
+  const cue = game.cook > 1.05 ? '焦げてきた・味付けして盛ろう'
+    : game.cook > 0.76 ? '味付けして盛り付けへ'
+    : game.mix < 0.25 ? 'まず米と具を混ぜる'
     : game.cook < 0.36 ? 'まだ早い・火を通す'
-    : game.cook > 0.76 ? '遅くなる前に入れる'
     : quality >= 0.7 ? '今が入れどき！'
-    : game.mix < 0.35 ? 'もう少し米を返す' : 'もう少し火を通す';
+    : game.mix < 0.35 ? 'もう少し米を返す' : game.cook >= 0.56 ? '味付けするなら今' : 'もう少し火を通す';
   return { quality, cue, ready: quality >= 0.7 };
 }
 
@@ -196,9 +197,9 @@ export function addSeasoning(game) {
 
 export function platingReadiness(game) {
   const quality = Math.max(0, 1 - Math.abs(game.cook - .86) / .86);
-  const cue = game.mix < .35 ? 'もう少し米と具を混ぜる'
+  const cue = game.cook > 1.05 ? '焦げてきた！ おたまで皿へ'
+    : game.mix < .35 ? 'もう少し米と具を混ぜる'
     : game.cook < .68 ? 'もう少し火を通す'
-    : game.cook > 1.05 ? '焦げる前におたまで集めよう！'
     : '今が盛りどき！ 円を描いて中心へ';
   return { ready: game.mix >= .35 && cookMeter(game).state === 'ready', cue, quality };
 }
@@ -234,6 +235,7 @@ export function result(game) {
     : game.eggCook < .14 ? '卵がまだ生っぽい。少し火を通してからごはんを入れよう。'
     : !game.ingredients.veg ? '具材がまだ入っていない。ごはんを返したら加えよう。'
     : game.mix < 0.35 ? '具と米がまだ別々。鍋を小さく、何度か返してみよう。'
+    : game.cook > 1.05 ? '少し炒めすぎた。次は焦げる前に皿へ移そう。'
     : doneness < 0.45 ? '芯が少し残った。火力を見ながら、もうひと炒め。'
     : game.seasoning < 0.35 ? '香りが惜しい。具が混ざり、火が通った瞬間を狙おう。'
     : game.filling && fillingReadiness(game).state === 'burnt' ? `${FILLING_NAMES[game.filling]}を炒めすぎた。火力を下げるか、入れるタイミングを遅らせよう。`
