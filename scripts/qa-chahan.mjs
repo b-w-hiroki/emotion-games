@@ -52,6 +52,11 @@ try {
           drawScene(ctx, game, true); frames.separated = canvas.toDataURL();
           Object.assign(game, { lastLadleAt: 1.88, ladleX: .5, lastLadleQuality: 1 });
           drawScene(ctx, game, false); frames.ladle = canvas.toDataURL();
+          const ladleStates = {};
+          for (const rhythmic of [false, true]) {
+            game.lastLadleRhythmic = rhythmic; drawScene(ctx, game, false);
+            ladleStates[rhythmic ? 'rhythmic' : 'single'] = canvas.toDataURL();
+          }
           const dishes = [];
           const dish = document.createElement('canvas'); dish.width = 640; dish.height = 280;
           game.fluff = 0;
@@ -75,11 +80,13 @@ try {
           game.tossOutcome = 'spilled'; game.combo = 0;
           const friendsAfterSpill = cheeringFriends(game);
           game.tossOutcome = 'caught'; game.combo = 5; drawScene(ctx, game, true); frames.crowd = canvas.toDataURL();
-          return { assets, frames, spills, dishes, mascotFrames, cheerLevels, friendsAfterSpill };
+          return { assets, frames, spills, ladleStates, dishes, mascotFrames, cheerLevels, friendsAfterSpill };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
         assert.equal(new Set(Object.values(art.frames)).size, 9, `${name} ${width}: push, flight, ladle, scoop, separated rice and cheering states have distinct art`);
         assert.equal(new Set(Object.values(art.spills)).size, 3, `${name} ${width}: strong, left and right spills have distinct flight`);
+        assert.notEqual(art.ladleStates.single, art.ladleStates.rhythmic, `${name} ${width}: rhythmic ladle taps have distinct visual feedback`);
+        if (width === 390) for (const [label, data] of Object.entries(art.ladleStates)) fs.writeFileSync(path.join(output, `ladle-rhythm-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         if (width === 390) for (const [label, data] of Object.entries(art.spills)) fs.writeFileSync(path.join(output, `spill-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         assert.equal(new Set(art.dishes).size, 5, `${name} ${width}: doneness, separated rice and round plating change the finished dish`);
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.dance, `${name} ${width}: a good toss makes the mascot dance`);
@@ -352,6 +359,32 @@ try {
           await zone.press('Space');
           assert.equal(await keys.locator('#combo').textContent(), '1', `${name}: Space tosses when the cooking scene has focus`);
           await keyboard.close();
+          const rhythmPage = await browser.newPage({ viewport: { width, height }, hasTouch: true });
+          await rhythmPage.goto(base);
+          await rhythmPage.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+          const rhythmKitchen = rhythmPage.frameLocator('.chahan-shelf iframe');
+          await rhythmKitchen.locator('#start').click();
+          await rhythmKitchen.locator('[data-ingredient="rice"]').click();
+          await rhythmKitchen.locator('#heatControl').evaluate(input => { input.value = '100'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+          await rhythmKitchen.locator('#cookBar').evaluate(async el => {
+            const deadline = performance.now() + 15000;
+            while (parseFloat(el.style.width) < 12 && performance.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
+            if (parseFloat(el.style.width) < 12) throw new Error('rice did not reach the ladle timing test');
+          });
+          const rhythmBox = await rhythmKitchen.locator('#swipeZone').boundingBox();
+          const rx = rhythmBox.x + rhythmBox.width * .5, ry = rhythmBox.y + rhythmBox.height * .55;
+          await rhythmPage.mouse.click(rx, ry);
+          assert.match(await rhythmKitchen.locator('#tip').innerText(), /もう一度/, `${name}: first ladle hit invites another tap`);
+          await rhythmPage.waitForTimeout(300);
+          await rhythmPage.mouse.dblclick(rx, ry, { delay: 20 });
+          assert.match(await rhythmKitchen.locator('#tip').innerText(), /間をあけて/, `${name}: rapid taps suggest waiting`);
+          await rhythmPage.waitForTimeout(1000);
+          await rhythmPage.mouse.click(rx, ry);
+          assert.match(await rhythmKitchen.locator('#tip').innerText(), /続けて/, `${name}: a slow tap suggests continuing sooner`);
+          await rhythmPage.waitForTimeout(300);
+          await rhythmPage.mouse.click(rx, ry);
+          assert.match(await rhythmKitchen.locator('#tip').innerText(), /カンカン/, `${name}: rhythmic taps earn positive feedback`);
+          await rhythmPage.close();
           const reduced = await browser.newPage({ viewport: { width, height }, hasTouch: true, reducedMotion: 'reduce' });
           await reduced.goto(base);
           await reduced.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();

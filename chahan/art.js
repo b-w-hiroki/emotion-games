@@ -402,7 +402,8 @@ function ladleEffect(ctx, game, reduced) {
       ellipse(ctx, x + Math.cos(angle) * radius, y - 25 + Math.sin(angle) * radius * .45 - 25 * spread, 6 + i % 3, 2.5, i % 4 ? '#fff0bd' : '#edb86a', angle);
     }
     ctx.save(); ctx.textAlign = 'center'; ctx.font = 'bold 34px sans-serif'; ctx.lineWidth = 6; ctx.strokeStyle = '#322022'; ctx.fillStyle = '#fff4bc';
-    ctx.strokeText('カン！', x, y - 115 - 20 * spread); ctx.fillText('カン！', x, y - 115 - 20 * spread); ctx.restore();
+    const sound = game.lastLadleRhythmic ? 'カンカン！' : 'カン！';
+    ctx.strokeText(sound, x, y - 115 - 20 * spread); ctx.fillText(sound, x, y - 115 - 20 * spread); ctx.restore();
   }
 }
 function drawMascot(ctx, x, y, scale, beat, dancing, band) {
