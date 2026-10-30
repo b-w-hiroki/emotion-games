@@ -40,6 +40,18 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A critical flame still recovers in the upper part of the weak-wind range.
+  {
+   const calm=await open(size,'?qa=1&seed=1&speed=.0001&t=7.1&vital=flame');await calm.page.locator('#play').click();
+   await calm.page.waitForFunction(()=>{const w=Number(document.querySelector('#stage').dataset.wind);return w>.44&&w<=.5},null,{timeout:3000});
+   assert.match(await calm.page.locator('.action-cue').innerText(),/息を戻して/,'weak wind permits recovery '+tag);
+   await calm.page.locator('#action').focus();await calm.page.keyboard.down('Space');
+   await calm.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   assert.match(await calm.page.locator('.action-cue').innerText(),/いま離して/,'holding should prompt release '+tag);
+   await calm.page.keyboard.up('Space');await calm.page.waitForFunction(()=>!document.querySelector('#action').classList.contains('is-held'));
+   await calm.page.screenshot({path:path.join(out,`${engine}-${tag}-critical-weak-wind.png`)});
+   assert.deepEqual(calm.errors,[]);await calm.ctx.close();done('critical flame recovery in weak wind '+tag);
+  }
   // An opened eddy cannot make the still-dangerous shortcut wind safe.
   {
    const eddy=await open(size,'?qa=1&seed=5&speed=.1&t=29.2&vital=flame-full');await eddy.page.locator('#play').click();
