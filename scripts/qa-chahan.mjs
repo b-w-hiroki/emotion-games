@@ -62,7 +62,7 @@ try {
           game.fluff = 0;
           for (const cook of [.12, .86, 1.35]) { game.cook = cook; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL()); }
           game.cook = .86; game.fluff = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
-          game.plated = true; game.platingQuality = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
+          game.plated = true; game.platingQuality = 1; game.platingShape = 1; drawDish(dish.getContext('2d'), game); dishes.push(dish.toDataURL());
           const mascot = document.createElement('canvas'); mascot.width = 780; mascot.height = 900;
           const mascotCtx = mascot.getContext('2d'), mascotFrames = {};
           const captureMascot = (label, update, reduced = false) => { Object.assign(game, update); mascotCtx.clearRect(0, 0, 780, 900); drawRiceMascot(mascotCtx, game, reduced); mascotFrames[label] = mascot.toDataURL(); };
@@ -204,6 +204,7 @@ try {
           await frame.locator('#resultDish[data-revealed="true"]').waitFor();
           assert.match(await frame.locator('.card.result .eyebrow').innerText(), /おたまで盛り付け/);
           assert.match(await frame.locator('[data-stat="plating"]').innerText(), /^\d+%$/);
+          assert.ok(parseInt(await frame.locator('[data-stat="plating"]').innerText(), 10) >= 75, `${name} ${width}: a rounded scoop earns its shape grade even when the rice is early`);
           const resultBox = await frame.locator('.card.result').boundingBox(), frameBox = await page.locator('.chahan-shelf iframe').boundingBox();
           assert.ok(resultBox.y >= frameBox.y - 1 && resultBox.y + resultBox.height <= frameBox.y + frameBox.height + 1, `${name} ${width}: the result and replay control fit inside the game`);
           await page.screenshot({ path: path.join(output, `plated-${venue}-${name}-${width}.png`), fullPage: true });
