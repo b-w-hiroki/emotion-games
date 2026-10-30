@@ -195,10 +195,28 @@ try {
           await page.mouse.up();
           await frame.locator('#overlayTitle').waitFor();
           await frame.locator('#resultDish[data-revealed="true"]').waitFor();
+          assert.match(await frame.locator('.card.result .eyebrow').innerText(), /おたまで盛り付け/);
+          assert.match(await frame.locator('[data-stat="plating"]').innerText(), /^\d+%$/);
+          const resultBox = await frame.locator('.card.result').boundingBox(), frameBox = await page.locator('.chahan-shelf iframe').boundingBox();
+          assert.ok(resultBox.y >= frameBox.y - 1 && resultBox.y + resultBox.height <= frameBox.y + frameBox.height + 1, `${name} ${width}: the result and replay control fit inside the game`);
           await page.screenshot({ path: path.join(output, `plated-${venue}-${name}-${width}.png`), fullPage: true });
         }
         assert.deepEqual(errors, [], `${name} ${width}: no JavaScript errors`);
         await page.close();
+        const timeoutPage = await browser.newPage({ viewport: { width, height }, hasTouch: true });
+        await timeoutPage.goto(base);
+        await timeoutPage.locator('.chahan-shelf iframe').scrollIntoViewIfNeeded();
+        const timeoutKitchen = timeoutPage.frameLocator('.chahan-shelf iframe');
+        await timeoutKitchen.locator('#start').click();
+        for (const ingredient of ['egg', 'rice', 'veg']) await timeoutKitchen.locator(`[data-ingredient="${ingredient}"]`).click();
+        await timeoutKitchen.locator('[data-filling="scallion"]').click();
+        await timeoutKitchen.locator('.card.result').waitFor({ timeout: 120000 });
+        await timeoutKitchen.locator('#resultDish[data-revealed="true"]').waitFor();
+        assert.match(await timeoutKitchen.locator('.card.result .eyebrow').innerText(), /時間切れ/, `${name} ${width}: timeout is identified`);
+        assert.match(await timeoutKitchen.locator('#overlayText').innerText(), /時間切れ.*味付け/, `${name} ${width}: timeout explains the unfinished seasoning`);
+        assert.equal(await timeoutKitchen.locator('[data-stat="plating"]').innerText(), '—', `${name} ${width}: timeout does not claim a plated score`);
+        await timeoutPage.screenshot({ path: path.join(output, `timeout-${name}-${width}.png`) });
+        await timeoutPage.close();
         for (const mode of ['settled', 'immediate', 'thumbnail']) {
           const slow = await browser.newPage({ viewport: { width, height }, hasTouch: true });
           await slow.goto(base);

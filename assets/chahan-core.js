@@ -230,6 +230,8 @@ export function result(game) {
   const title = game.rice <= 0.25 ? '空っぽの鍋' : score >= 80 ? '伝説のパラパラ' : score >= 60 ? 'うまいチャーハン' : score >= 40 ? 'まだまだ食べられる' : '次はもっとおいしく';
   const comment = !game.ingredients.rice ? 'ごはんが入らないまま完成。次は卵を炒めて、ごはんを入れよう。'
     : game.rice <= 0.25 ? '米が鍋から飛んでいった。次は少しやさしく、まっすぐ返そう。'
+    : !game.plated && game.time >= COOK_SECONDS && !game.seasoned ? '時間切れ。次は具材を入れ、味付けしてから盛り付けよう。'
+    : !game.plated && game.time >= COOK_SECONDS ? '時間切れ。次はおたまで円を描いて、丸く盛り付けよう。'
     : !game.ingredients.egg ? '卵がないと香りと食感が惜しい。最初に卵を入れてみよう。'
     : game.eggCook > .9 ? '卵を炒めすぎた。ふんわりしたらごはんを入れよう。'
     : game.eggCook < .14 ? '卵がまだ生っぽい。少し火を通してからごはんを入れよう。'
@@ -246,7 +248,7 @@ export function result(game) {
     : game.tossed > 0 && skill < .25 ? '鍋を手前へまっすぐフリックすると、米が軽くほどける。'
     : fluff < .35 ? 'おたまで鍋をカンカン。米のかたまりをほぐすと、もっとパラパラになる。'
     : game.plated && game.platingQuality < .45 ? 'おたまで円を描き、中心へ集めると丸く盛れる。'
-    : score >= 80 ? '一粒ずつ香ばしく、丸く盛れた会心のひと皿。'
+    : score >= 80 ? game.plated && game.platingQuality >= .65 ? '一粒ずつ香ばしく、丸く盛れた会心のひと皿。' : '一粒ずつ香ばしく仕上がった、会心のひと皿。'
     : '香ばしく仕上がった。次はもっと軽やかに返せそうだ。';
   return { score, title, doneness, seasoning: game.seasoning, skill, heatFit, fluff, plating: game.platingQuality || 0, comment };
 }
