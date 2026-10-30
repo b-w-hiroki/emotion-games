@@ -24,6 +24,39 @@ async function noShortTail(page,selector){
  assert.ok(lines.length<=1||lines.at(-1).length>5,selector+' has a short tail: '+JSON.stringify(lines));
 }
 try{
+ // A window can lose focus while the page stays visible (for example an OS overlay).
+ for(const size of [{width:390,height:844},{width:360,height:640}]){
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=1&t=82.2&mem=2');
+  await page.evaluate(()=>{const AC=window.AudioContext||window.webkitAudioContext;if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.focusAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}});
+  await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='gust-active');
+  await page.locator('#action').focus();await page.keyboard.down('Space');await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.keyboard.up('Space');
+  assert.equal(await page.evaluate(()=>document.hidden),false,'the focus-only case remains visible');
+  const before=await page.locator('#stage').getAttribute('data-elapsed'),vitals=await facts(page);
+  await page.waitForTimeout(1200);
+  assert.equal(await page.locator('#stage').getAttribute('data-elapsed'),before,'losing window focus freezes the journey');
+  assert.deepEqual(await facts(page),vitals,'flame, breath, distance and timer stay unchanged');
+  if(await page.evaluate(()=>!!window.focusAudio))await page.waitForFunction(()=>window.focusAudio.state==='suspended');
+  assert.equal(await page.locator('#stage').getAttribute('data-phase'),'gust-active');
+  await page.screenshot({path:path.join(out,`${engine}-${size.width}-focus-pause.png`)});
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await page.waitForFunction(t=>Number(document.querySelector('#stage').dataset.elapsed)>Number(t),before,{timeout:3000});
+  assert.equal(await page.locator('#action').evaluate(el=>el.classList.contains('is-held')),false,'focus does not restore an old hold');
+  if(await page.evaluate(()=>!!window.focusAudio))await page.waitForFunction(()=>window.focusAudio.state==='running');
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS focus-only pause and recovery',size.width);
+ }
+ // The prologue also freezes when only window focus changes.
+ {
+  const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});await page.locator('#play').click();
+  await page.waitForFunction(()=>document.querySelector('#kienaide-intro .intro-line')?.textContent);
+  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+  await page.waitForTimeout(100);const line=await page.locator('#kienaide-intro .intro-line').innerText();
+  await page.waitForTimeout(1200);
+  assert.equal(await page.locator('#kienaide-intro .intro-line').innerText(),line,'prologue time stays frozen without window focus');
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await page.waitForFunction(previous=>document.querySelector('#kienaide-intro .intro-line')?.textContent!==previous,line,{timeout:5000});
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS focus-only prologue pause and recovery');
+ }
  for(const size of [{width:390,height:844},{width:360,height:640}]){
   const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001');
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);

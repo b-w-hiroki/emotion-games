@@ -147,6 +147,7 @@ if(!game){
  return;
 }
 const candle=slug==='kienaide';
+let candleWindowFocused=true;
 const journeyKey='emotion-kienaide-journeys-v1';
 const safeJourneyCount=n=>Number.isSafeInteger(n)&&n>=0?n:0;
 function readJourneyProgress(){
@@ -198,7 +199,7 @@ let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
 let pendingActionFocus=false;
 function focusCandleAction(){const fallback=action.disabled;(fallback?$('journey-menu-open'):action).focus();pendingActionFocus=fallback}
-function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||landscapeMode.matches||chapterLoading||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()}
+function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||!candleWindowFocused||landscapeMode.matches||chapterLoading||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()}
 if(candle)document.addEventListener('focusin',e=>{if(pendingActionFocus&&e.target!==action&&e.target!==document.body)pendingActionFocus=false});
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
@@ -336,7 +337,7 @@ $('open-collection').addEventListener('click',()=>{syncCandleCollection();render
 $('close-collection').addEventListener('click',()=>{ if(candle)setCandleDialog($('collection-panel'),false);else $('collection-panel').hidden=true;if(collectionFromMenu){collectionFromMenu=false;openJourneyMenu();return}if(candle&&mode==='play')focusCandleAction();else $('open-collection').focus()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!candle)$('collection-panel').hidden=true});
 function collectCandleMemory(input){
- const s=state,m=s.mote;if(mode!=='play'||candleDialog||document.hidden||landscapeMode.matches||chapterLoading||!m||!K.collect(s,m.id))return false;
+ const s=state,m=s.mote;if(mode!=='play'||candleDialog||document.hidden||!candleWindowFocused||landscapeMode.matches||chapterLoading||!m||!K.collect(s,m.id))return false;
  s.storyPause=elapsed+4;best.textContent=s.memories+' / 3';KA.cues.memory(s.memories);mark('memory_collected',{memory_id:m.id,count:s.memories,input});
  if(document.activeElement===memoryTouch)focusCandleAction();memoryTouch.hidden=true;setStory(m.title,m.line);return true;
 }
@@ -350,7 +351,7 @@ canvas.addEventListener('pointerdown',e=>{if(candle&&e.pointerType==='touch'&&!e
 canvas.addEventListener('pointerup',e=>{if(!candle)return;const touch=memoryPointers.get(e.pointerId);memoryPointers.delete(e.pointerId);if(touch?.target==='canvas'&&touch.id===state.mote?.id&&hitsCandleMemory(e,state.mote))collectCandleMemory('canvas')});
 for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>memoryPointers.delete(e.pointerId));
 canvas.addEventListener('click',e=>{
- if(mode!=='play'||(candle&&(candleDialog||document.hidden||landscapeMode.matches)))return;
+ if(mode!=='play'||(candle&&(candleDialog||document.hidden||!candleWindowFocused||landscapeMode.matches)))return;
  const s=state;
  if(slug==='micha-dame'){if(!s.knocks||elapsed-s.knockTime>1.3)s.knocks=0;s.knocks++;s.knockTime=elapsed;if(s.knocks>=3)finish('knock',75)}
  if(state.micro){const box=canvas.getBoundingClientRect();const x=(e.clientX-box.left)*360/box.width,y=(e.clientY-box.top)*400/box.height;window.EmotionMissions.canvasTap(state.micro,x,y,elapsed,finish)}
@@ -405,7 +406,7 @@ function showKienaideIntro(){
  const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);setCandleDialog(overlay,false);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:introTime<iv.INTRO_LENGTH});run()};
  skip.addEventListener('click',done,{once:true});
  overlay.addEventListener('keydown',e=>{if(e.key==='Escape')done()});
- const loop=now=>{if(finished)return;if(!t0)t0=now;const paused=document.hidden||landscapeMode?.matches;if(paused&&!wasHidden){hiddenAt=now;wasHidden=true}else if(!paused&&wasHidden){t0+=now-hiddenAt;wasHidden=false}const t=((wasHidden?hiddenAt:now)-t0)/1000*speed;introTime=t;iv.resize(stage);iv.introFrame(g,t,{reduced});
+ const loop=now=>{if(finished)return;if(!t0)t0=now;const paused=document.hidden||!candleWindowFocused||landscapeMode?.matches;if(paused&&!wasHidden){hiddenAt=now;wasHidden=true}else if(!paused&&wasHidden){t0+=now-hiddenAt;wasHidden=false}const t=((wasHidden?hiddenAt:now)-t0)/1000*speed;introTime=t;iv.resize(stage);iv.introFrame(g,t,{reduced});
   const cur=[...iv.INTRO].reverse().find(l=>t>=l.at);if(cur&&cur.text!==shown){shown=cur.text;line.textContent=cur.text}
   KA.ambient(t<11?.02:.32,t<8?Math.min(1,t/3)*.8:.4);if(!voiced[0]&&t>=5){voiced[0]=1;KA.cues.voice()}if(!voiced[1]&&t>=14.7){voiced[1]=1;KA.cues.voice()}
   if(t>=iv.INTRO_LENGTH)return done();introRaf=requestAnimationFrame(loop)};
@@ -419,7 +420,7 @@ function beginCandleShield(){state.releaseAt=-100;state.shield=true;KA.init();KA
 function releaseCandleInput(){const pointer=candlePointer;candlePointer=null;candleKey=null;if(pointer!==null&&action.hasPointerCapture?.(pointer))action.releasePointerCapture(pointer)}
 function holdRelease(intent=false){if(!down)return;down=false;if(candle)releaseCandleInput();if(mode!=='play')return;if(slug==='girigiri'&&state.pour){state.pour=false;state.stopping=elapsed}if(slug==='micha-dame'){state.hold=false;if(state.held<12)finish(state.held>=5.5?'whisper':'peek',0)}if(slug==='kienaide'){state.shield=false;shelterRelease=!!intent;KA.cues.shield(false)}if(state.micro)window.EmotionMissions.up(state.micro)}
 landscapeMode?.addEventListener('change',e=>{if(e.matches){holdRelease();memoryPointers.clear()}syncCandleAudio()});
-action.addEventListener('pointerdown',e=>{if(mode!=='play'||down||e.button!==0||(candle&&(action.disabled||landscapeMode.matches||candleDialog||document.hidden||chapterLoading)))return;e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide')beginCandleShield();if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
+action.addEventListener('pointerdown',e=>{const returning=candle&&!candleWindowFocused&&e.isTrusted&&!document.hidden;if(returning){candleWindowFocused=true;last=0;syncCandleAudio()}if(mode!=='play'||down||e.button!==0||(candle&&(action.disabled||landscapeMode.matches||candleDialog||document.hidden||!candleWindowFocused||chapterLoading)))return;if(!returning)e.preventDefault();down=true;if(candle)candlePointer=e.pointerId;action.setPointerCapture?.(e.pointerId);if(slug==='girigiri'){state.pour=true;state.started=true}if(slug==='micha-dame'){state.hold=true;state.started=true}if(slug==='kienaide')beginCandleShield();if(state.micro)window.EmotionMissions.down(state.micro,elapsed)});
 const pointerRelease=(e,intent=false)=>{if(!candle||e.pointerId===candlePointer)holdRelease(intent)};
 action.addEventListener('pointerup',e=>pointerRelease(e,true));action.addEventListener('pointercancel',pointerRelease);
 if(candle){
@@ -429,11 +430,12 @@ if(candle){
  window.addEventListener('pointermove',e=>{if(e.pointerId===candlePointer&&!action.hasPointerCapture?.(e.pointerId))holdRelease()});
 }
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
-window.addEventListener('blur',()=>{holdRelease();memoryPointers.clear()});document.addEventListener('visibilitychange',()=>{if(document.hidden){holdRelease();memoryPointers.clear()}});
+window.addEventListener('blur',()=>{holdRelease();memoryPointers.clear();if(candle){candleWindowFocused=false;last=0;syncCandleAudio()}});
+if(candle)window.addEventListener('focus',()=>{candleWindowFocused=true;last=0;syncCandleAudio()});document.addEventListener('visibilitychange',()=>{if(document.hidden){holdRelease();memoryPointers.clear()}});
 action.addEventListener('contextmenu',e=>e.preventDefault());
 // Keyboard play for 004: hold Space/Enter on the button to shield, M (or Enter on the scene) to touch a memory.
 if(candle){
- const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down&&!action.disabled&&!candleDialog&&!document.hidden&&!landscapeMode.matches){e.preventDefault();down=true;candleKey=e.key;beginCandleShield()}};
+ const press=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&mode==='play'&&!down&&!action.disabled&&!candleDialog&&!document.hidden&&candleWindowFocused&&!landscapeMode.matches){e.preventDefault();down=true;candleKey=e.key;beginCandleShield()}};
  const lift=e=>{if(e.key===candleKey){e.preventDefault();holdRelease(true)}};
  action.addEventListener('keydown',press);document.addEventListener('keyup',lift);
  action.addEventListener('blur',()=>{if(candleKey!==null)holdRelease()});
@@ -541,7 +543,7 @@ function drawCandle(dt){
  const s=state;KV.resize(canvas);
  if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
- const paused=!!(document.hidden||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'||s.decisionPending),step=paused?0:dt*(s.qaSpeed||1);
+ const paused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'||s.decisionPending),step=paused?0:dt*(s.qaSpeed||1);
  // An intentional down/up can happen between frames; its release proves the hold existed.
  const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield||shelterRelease,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
@@ -595,7 +597,7 @@ function syncChapterWait(chapter){
 }
 function tick(now){
  let dt=last?Math.min((now-last)/1000,.035):0;last=now;
- const orientationPaused=!!(candle&&(landscapeMode.matches||document.hidden));if(orientationPaused)dt=0;
+ const orientationPaused=!!(candle&&(landscapeMode.matches||document.hidden||!candleWindowFocused));if(orientationPaused)dt=0;
  if(mode==='play'&&$('collection-panel').hidden){
  if(!(candle&&(state.routeChoice==='pending'||state.decisionPending||orientationPaused||candleDialog))){
    const advance=dt*(candle?(state.qaSpeed||1):1);

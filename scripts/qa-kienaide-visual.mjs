@@ -199,6 +199,7 @@ try{
    await fast.page.evaluate(()=>{const a=document.querySelector('#action');a.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));window.dispatchEvent(new Event('blur'));document.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}))});
    await fast.page.waitForTimeout(200);
    assert.doesNotMatch(await fast.page.locator('#story-beat').innerText(),/息が少し戻る/,'a same-frame cancellation must not earn warmth '+tag);
+   await fast.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
    await fast.page.locator('#action').focus();
    await fast.page.evaluate(()=>{const a=document.querySelector('#action');a.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}))});
    await fast.page.waitForFunction(()=>document.querySelector('.action-cue').textContent.includes('火の子が手を温めた'),null,{timeout:3000});
@@ -330,6 +331,7 @@ try{
    await page.keyboard.up('Space');
    const box=await action.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
    await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   assert.equal(await page.evaluate(()=>document.hasFocus()),true,'the first pointer press restores window focus and starts the hold');
    await action.dispatchEvent('pointerup',{pointerId:999,pointerType:'touch'});await page.waitForTimeout(80);
    assert.ok(await action.evaluate(el=>el.classList.contains('is-held')),'another finger must not release the active hold');
    const released=await action.evaluate(el=>{for(let id=1;id<10;id++)if(el.hasPointerCapture(id)){el.releasePointerCapture(id);return true}return false});
@@ -548,6 +550,7 @@ try{
      return s.releaseAt;
     },kind);
     assert.equal(recorded,-100,'a same-frame '+kind+' hold invalidates the earlier release immediately');
+    if(kind==='keyboard')await fastCancel.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
     await fastCancel.page.waitForFunction(()=>window.qaRescueState.oxygen>=30,null,{timeout:5000});
     assert.equal(await fastCancel.page.evaluate(()=>window.qaRescueState.rescue),false,'cancellation cannot reuse the earlier release');
     assert.deepEqual(fastCancel.errors,[]);await fastCancel.ctx.close();
@@ -563,6 +566,7 @@ try{
    await eddy.page.waitForTimeout(200);
    assert.ok(Number(await eddy.page.locator('#stage').getAttribute('data-wind'))>.5,'an interrupted hold leaves the eddy strong');
    assert.doesNotMatch(await eddy.page.locator('#hint').innerText(),/渦の隙間/,'interruption does not announce a discovered opening');
+   await eddy.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
    await eddy.page.screenshot({path:path.join(out,`${engine}-eddy-interrupted.png`)});
    await eddy.page.locator('#action').focus();await eddy.page.keyboard.down('Space');
    await eddy.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));await eddy.page.keyboard.up('Space');
@@ -634,12 +638,12 @@ try{
   await first.goto(base+'?qa=1&seed=2&speed=6&t=89&mem=3&vital=flame-full');
   await second.goto(base+'?qa=1&seed=2&speed=6&t=89&vital=flame-full');
   await repeat.goto(base+'?qa=1&seed=2&speed=6&t=89&mem=3&vital=flame-full');
-  await first.locator('#play').click();await first.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='wish',null,{timeout:10000});
-  await second.locator('#play').click();await second.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='survive',null,{timeout:10000});
+  await first.bringToFront();await first.locator('#play').click();await first.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='wish',null,{timeout:10000});
+  await second.bringToFront();await second.locator('#play').click();await second.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='survive',null,{timeout:10000});
   const saved=await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide')));
   assert.deepEqual([...saved].sort(),['blown','dawn','survive','wish'],'a later tab must keep both discoveries and migrated endings');
   assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('kienaide-art-endings-v1'))),['dawn'],'the old collection key remains intact');
-  await repeat.locator('#play').click();await repeat.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='wish',null,{timeout:10000});
+  await repeat.bringToFront();await repeat.locator('#play').click();await repeat.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='wish',null,{timeout:10000});
   assert.match(await repeat.locator('#discovery-state').innerText(),/発見済み/,'an ending discovered in another tab is not new');
   await first.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
   await first.locator('#open-collection').evaluate(el=>el.click());
