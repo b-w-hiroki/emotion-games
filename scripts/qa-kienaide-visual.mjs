@@ -316,6 +316,7 @@ try{
    await page.keyboard.up('Space');
    const box=await action.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
    await page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   assert.equal(await page.evaluate(()=>document.hasFocus()),true,'the first pointer press restores window focus and starts the hold');
    await action.dispatchEvent('pointerup',{pointerId:999,pointerType:'touch'});await page.waitForTimeout(80);
    assert.ok(await action.evaluate(el=>el.classList.contains('is-held')),'another finger must not release the active hold');
    const released=await action.evaluate(el=>{for(let id=1;id<10;id++)if(el.hasPointerCapture(id)){el.releasePointerCapture(id);return true}return false});
