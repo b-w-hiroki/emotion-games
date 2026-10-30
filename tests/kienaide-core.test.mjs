@@ -203,7 +203,13 @@ test('eddy eases only after an intentional release, not an interrupted hold',()=
  const t=67.1,dt=1/60,canceled=make(),released=make();
  for(const s of [canceled,released])K.step(s,t,dt,{shield:true,wasShield:false});
  K.step(canceled,t+.1,dt,{shield:false,wasShield:true,releaseIntent:false});
+ const flameBeforeRelease=released.flame;
  K.step(released,t+.1,dt,{shield:false,wasShield:true,releaseIntent:true});
+ assert.ok(released.wind<=.38,'the opening applies on the release frame');
+ assert.ok(released.flame>=flameBeforeRelease,'the release itself does not damage the flame in the opened eddy');
+ const fragile=make();fragile.flame=.01;
+ K.step(fragile,t+.1,dt,{shield:false,wasShield:true,releaseIntent:true});
+ assert.equal(fragile.ended,'','a timely release does not extinguish an otherwise survivable flame');
  K.step(canceled,t+.2,dt,{shield:false,wasShield:false});
  K.step(released,t+.2,dt,{shield:false,wasShield:false});
  assert.equal(canceled.eddyReleasedEvent,'','input cancellation must not claim the opening');

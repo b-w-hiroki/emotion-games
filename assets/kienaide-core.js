@@ -94,6 +94,8 @@ function step(s,time,dt,input){
  if(ev&&!s.eventSeen.has(ev.id)){s.eventSeen.add(ev.id);emit('event',{event:ev});}
  s.event=ev;
  const live=ev&&time>=ev.at;
+ // Apply a deliberate release before calculating this frame's wind and damage.
+ if(!s.shield&&input.wasShield&&input.releaseIntent&&live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;
  if(live&&ev.kind==='gust')wind+=.55;
  if(live&&ev.kind==='eddy')wind=s.eddyReleasedEvent===ev.id?Math.min(wind,.38):Math.max(wind,.5+Math.abs(Math.sin(time*7))*.35);
  if(live&&ev.kind==='lull')wind*=.3;
@@ -139,7 +141,6 @@ function step(s,time,dt,input){
   const before=s.oxygen;s.oxygen=Math.min(100,s.oxygen+6);s.companionGain=+(s.oxygen-before).toFixed(1);
   s.companionSeen=true;s.companionUntil=time+2.4;emit('companion-warmth',{oxygenGain:s.companionGain});
  }
- if(!s.shield&&input.wasShield&&input.releaseIntent&&live&&ev.kind==='eddy')s.eddyReleasedEvent=ev.id;
  if(chapter===3&&!s.miracleHint&&s.flame<36&&s.memories>=2){s.miracleHint=true;emit('foreshadow');}
  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,s.wind);
  if(canTriggerMiracle(s,time)){s.rescue=true;s.rescueAt=time;s.flame=Math.min(100,s.flame+24);emit('miracle');}

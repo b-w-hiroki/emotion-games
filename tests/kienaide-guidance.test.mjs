@@ -52,6 +52,12 @@ test('the final storm and silence outrank a temporary calm wind',()=>{
  assert.match(caption({...base,finalePhase:'silence',shield:true})[0],/いま離して/);
 });
 
+test('eddy guidance describes the opening as a consequence of release',()=>{
+ const s={...base,flame:60,wind:.7,shield:true,event:{id:'eddy-1',kind:'eddy',at:10},eddyReleasedEvent:''};
+ assert.deepEqual(caption(s),['手を離すと渦がほどける',false]);
+ assert.deepEqual(caption({...s,shield:false,wind:.3,eddyReleasedEvent:'eddy-1'}),['渦の隙間 — 息を整える',false]);
+});
+
 test('the final control names an open hand after release, including low breath and the window reply',()=>{
  assert.deepEqual(actionCopy({...base,finalePhase:'silence',shield:true}),['はなす','窓に灯りを見せる']);
  assert.deepEqual(actionCopy({...base,finalePhase:'silence',shield:false}),['手をひらいている','そのまま窓の返事を待つ']);
