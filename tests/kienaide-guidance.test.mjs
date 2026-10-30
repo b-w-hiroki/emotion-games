@@ -28,6 +28,19 @@ test('critical guidance still protects against wind and bridge frost',()=>{
  assert.match(caption({...base,oxygen:20})[0],/息が危ない/);
 });
 
+test('critical flame can recover across the entire non-damaging wind range',()=>{
+ const K=globalThis.KienaideCore,open=K.create({seed:1}),held=K.create({seed:1});
+ for(const s of [open,held]){s.events=[];s.flame=18;s.oxygen=55}
+ K.step(open,7.1,1,{shield:false});K.step(held,7.1,1,{shield:true});
+ assert.ok(open.wind>.44&&open.wind<=K.WIND_DAMAGE_THRESHOLD);
+ assert.ok(open.flame>held.flame&&open.oxygen>held.oxygen,'opening recovers both resources faster');
+ assert.match(caption(open)[0],/息を戻して/);
+ assert.match(caption(held)[0],/いま離して/);
+ assert.match(caption({...open,wind:.5})[0],/息を戻して/);
+ assert.match(caption({...open,wind:.5001})[0],/かばって/);
+ assert.match(caption({...open,chapter:2,bridgeFrost:.8})[0],/かばって/,'bridge frost remains dangerous');
+});
+
 test('low breath while shielding does not claim strong wind has calmed',()=>{
  const guarded={...base,flame:60,shield:true,wind:.57,oxygen:26};
  assert.deepEqual(caption(guarded),['息が苦しい — いま離して',true]);
