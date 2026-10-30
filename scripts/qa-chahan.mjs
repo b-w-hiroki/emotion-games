@@ -214,6 +214,7 @@ try {
         await timeoutKitchen.locator('#resultDish[data-revealed="true"]').waitFor();
         assert.match(await timeoutKitchen.locator('.card.result .eyebrow').innerText(), /時間切れ/, `${name} ${width}: timeout is identified`);
         assert.match(await timeoutKitchen.locator('#overlayText').innerText(), /時間切れ.*味付け/, `${name} ${width}: timeout explains the unfinished seasoning`);
+        assert.doesNotMatch(await timeoutKitchen.locator('#overlayText').innerText(), /具材を入れ/, `${name} ${width}: timeout does not ask for an ingredient already added`);
         assert.equal(await timeoutKitchen.locator('[data-stat="plating"]').innerText(), '—', `${name} ${width}: timeout does not claim a plated score`);
         await timeoutPage.screenshot({ path: path.join(output, `timeout-${name}-${width}.png`) });
         await timeoutPage.close();
