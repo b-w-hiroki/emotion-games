@@ -58,6 +58,17 @@ test('eddy guidance describes the opening as a consequence of release',()=>{
  assert.deepEqual(caption({...s,shield:false,wind:.3,eddyReleasedEvent:'eddy-1'}),['渦の隙間 — 息を整える',false]);
 });
 
+test('an opened eddy does not hide damaging shortcut wind',()=>{
+ const K=globalThis.KienaideCore,s=K.create({seed:5}),time=29.2;
+ Object.assign(s,{routeChoice:'shortcut',shortcutUntil:36,decisionIndex:2,shelterReady:false});
+ K.step(s,time,.1,{shield:false,wasShield:true,releaseIntent:true});
+ assert.ok(s.wind>K.WIND_DAMAGE_THRESHOLD&&s.flame<72,'the real shortcut wind still damages the flame');
+ const read=Function('elapsed','K',app.slice(start,end)+'\nreturn candleCaption;')(time,K);
+ assert.match(read(s)[0],/近道の風.*かばって/);
+ assert.match(read({...s,shield:true})[0],/近道の風/,'holding must not recommend releasing into the same wind');
+ assert.match(read({...s,shield:true,oxygen:26})[0],/息が苦しい/,'low breath takes priority over sheltering');
+});
+
 test('the final control names an open hand after release, including low breath and the window reply',()=>{
  assert.deepEqual(actionCopy({...base,finalePhase:'silence',shield:true}),['はなす','窓に灯りを見せる']);
  assert.deepEqual(actionCopy({...base,finalePhase:'silence',shield:false}),['手をひらいている','そのまま窓の返事を待つ']);
