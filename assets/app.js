@@ -402,11 +402,14 @@ function showKienaideIntro(){
  const back=document.createElement('a');back.className='intro-back';back.href=base+'works/';back.textContent='← 作品一覧へ';
  overlay.append(stage,line,back,skip);document.body.append(overlay);setCandleDialog(overlay,true);
  const iv=KV,g=stage.getContext('2d'),reduced=reducedMotion(),speed=qa?6:1;
- let t0=0,hiddenAt=0,introTime=0,wasHidden=false,finished=false,shown='';const voiced=[0,0];
- const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);setCandleDialog(overlay,false);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:introTime<iv.INTRO_LENGTH});run()};
+ let introTime=0,clockAt=performance.now(),clockPaused=!!(document.hidden||!candleWindowFocused||landscapeMode?.matches),finished=false,shown='';const voiced=[0,0];
+ // Focus and visibility may change without any animation frame being delivered.
+ const syncClock=()=>{const now=performance.now();if(!clockPaused)introTime+=(now-clockAt)/1000*speed;clockAt=now;clockPaused=!!(document.hidden||!candleWindowFocused||landscapeMode?.matches)};
+ window.addEventListener('blur',syncClock);window.addEventListener('focus',syncClock);document.addEventListener('visibilitychange',syncClock);landscapeMode?.addEventListener('change',syncClock);
+ const done=()=>{if(finished)return;finished=true;cancelAnimationFrame(introRaf);window.removeEventListener('blur',syncClock);window.removeEventListener('focus',syncClock);document.removeEventListener('visibilitychange',syncClock);landscapeMode?.removeEventListener('change',syncClock);setCandleDialog(overlay,false);overlay.remove();try{localStorage.setItem(introKey,'1')}catch(_){}mark('intro_end',{skipped:introTime<iv.INTRO_LENGTH});run()};
  skip.addEventListener('click',done,{once:true});
  overlay.addEventListener('keydown',e=>{if(e.key==='Escape')done()});
- const loop=now=>{if(finished)return;if(!t0)t0=now;const paused=document.hidden||!candleWindowFocused||landscapeMode?.matches;if(paused&&!wasHidden){hiddenAt=now;wasHidden=true}else if(!paused&&wasHidden){t0+=now-hiddenAt;wasHidden=false}const t=((wasHidden?hiddenAt:now)-t0)/1000*speed;introTime=t;iv.resize(stage);iv.introFrame(g,t,{reduced});
+ const loop=()=>{if(finished)return;syncClock();const t=introTime;iv.resize(stage);iv.introFrame(g,t,{reduced});
   const cur=[...iv.INTRO].reverse().find(l=>t>=l.at);if(cur&&cur.text!==shown){shown=cur.text;line.textContent=cur.text}
   KA.ambient(t<11?.02:.32,t<8?Math.min(1,t/3)*.8:.4);if(!voiced[0]&&t>=5){voiced[0]=1;KA.cues.voice()}if(!voiced[1]&&t>=14.7){voiced[1]=1;KA.cues.voice()}
   if(t>=iv.INTRO_LENGTH)return done();introRaf=requestAnimationFrame(loop)};

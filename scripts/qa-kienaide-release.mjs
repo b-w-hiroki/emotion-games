@@ -46,6 +46,19 @@ try{
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS focus-only pause and recovery',size.width);
  }
  // The prologue also freezes when only window focus changes.
+ // A browser may stop animation frames throughout the interruption.
+ {
+  const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});
+  await page.evaluate(()=>{const raf=window.requestAnimationFrame.bind(window);window.qaHeldFrames=[];window.qaHoldFrames=false;window.requestAnimationFrame=cb=>raf(t=>{if(window.qaHoldFrames)window.qaHeldFrames.push(cb);else cb(t)});window.qaResumeFrames=()=>{window.qaHoldFrames=false;for(const cb of window.qaHeldFrames.splice(0))raf(cb)}});
+  await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#kienaide-intro .intro-line')?.textContent);
+  const line=await page.locator('#kienaide-intro .intro-line').innerText();
+  await page.evaluate(()=>{window.qaHoldFrames=true;window.dispatchEvent(new Event('blur'))});
+  await page.waitForTimeout(1200);
+  await page.evaluate(()=>{window.dispatchEvent(new Event('focus'));window.qaResumeFrames()});
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#kienaide-intro .intro-line').innerText(),line,'a focus interruption without animation frames does not advance the prologue');
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS prologue focus pause without animation frames');
+ }
  {
   const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});await page.locator('#play').click();
   await page.waitForFunction(()=>document.querySelector('#kienaide-intro .intro-line')?.textContent);

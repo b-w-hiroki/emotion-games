@@ -150,7 +150,14 @@ test('audio follows the active journey, modal dialogs and background state',asyn
   context.document.hidden=false;context.landscapeMode.matches=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);
  }
  assert.ok(app.includes("document.addEventListener('visibilitychange',()=>{last=0;syncCandleAudio()})"),'visibility changes must apply the shared audio policy');
- assert.ok(app.includes('((wasHidden?hiddenAt:now)-t0)/1000*speed'),'time spent in a background tab must not skip the intro');
+ const clock=app.match(/const syncClock=\(\)=>\{([^\n]+)\};/)[1];
+ const c={performance:{now:()=>c.now},now:0,clockAt:0,clockPaused:false,introTime:0,speed:1,document:{hidden:false},candleWindowFocused:true,landscapeMode:{matches:false}};
+ const sync=()=>vm.runInNewContext('(function(){'+clock+'})()',c);
+ c.now=500;c.candleWindowFocused=false;sync();
+ c.now=2500;c.candleWindowFocused=true;sync();
+ c.now=3000;sync();
+ assert.equal(c.introTime,1,'an interruption without animation frames does not advance intro time');
+ for(const event of ['blur','focus'])assert.ok(app.includes("window.addEventListener('"+event+"',syncClock)"));
  assert.ok(app.includes('skipped:introTime<iv.INTRO_LENGTH'),'background time must not distort the intro skip metric');
 });
 
