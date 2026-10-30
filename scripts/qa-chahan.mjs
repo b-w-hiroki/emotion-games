@@ -109,6 +109,12 @@ try {
           await frame.locator(`[data-venue="${venue}"]`).click();
           assert.equal(await frame.locator(`[data-venue="${venue}"]`).getAttribute('aria-pressed'), 'true', 'thumbnail choice is stable before starting');
           await frame.locator('#start').click();
+          const guidance = await frame.locator('#recipeHint').evaluate(el => {
+            el.textContent = '焦げてきた・味付けして盛ろう';
+            const box = el.getBoundingClientRect();
+            return { width: el.clientWidth, scrollWidth: el.scrollWidth, height: box.height };
+          });
+          assert.ok(guidance.width >= guidance.scrollWidth && guidance.height >= 12, `${name} ${width}: cooking guidance remains readable without clipping`);
           assert.ok(Math.abs((await page.locator('.chahan-shelf iframe').boundingBox()).y) <= 2, `${name} ${width}: starting aligns the game with the top of the screen`);
           const feedback = await frame.locator('.kitchen-feedback').boundingBox(), stage = await frame.locator('#swipeZone').boundingBox();
           assert.ok(feedback.y >= stage.y + stage.height - 1, `${name} ${width}: feedback stays outside the character scene`);
