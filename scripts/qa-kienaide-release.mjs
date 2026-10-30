@@ -63,7 +63,9 @@ try{
   const {ctx,page,errors}=await open({width:390,height:844},'?qa=1',{intro:true});await page.locator('#play').click();
   await page.waitForFunction(()=>document.querySelector('#kienaide-intro .intro-line')?.textContent);
   await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
-  await page.waitForTimeout(100);const line=await page.locator('#kienaide-intro .intro-line').innerText();
+  // Wait for the intro animation to observe blur before sampling its paused line.
+  // A wall-clock delay does not guarantee a frame has run on a busy CI worker.
+  const line=await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(document.querySelector('#kienaide-intro .intro-line').textContent)))));
   await page.waitForTimeout(1200);
   assert.equal(await page.locator('#kienaide-intro .intro-line').innerText(),line,'prologue time stays frozen without window focus');
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
