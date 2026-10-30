@@ -367,6 +367,12 @@ test('ending feedback points to the actual cooking shortfall', () => {
   assert.match(result({ ...good, mix: .2 }).comment, /具と米/);
   assert.match(result({ ...good, cook: .15 }).comment, /芯が少し/);
   assert.match(result({ ...good, seasoning: 0 }).comment, /香りが惜しい/);
+  const timedOut = { ...good, time: COOK_SECONDS, phase: 'finished', plated: false };
+  assert.ok(result(timedOut).score >= 80);
+  assert.match(result(timedOut).comment, /時間切れ.*おたま/);
+  assert.doesNotMatch(result(timedOut).comment, /丸く盛れた/);
+  assert.match(result({ ...timedOut, seasoned: false, seasoning: 0 }).comment, /時間切れ.*味付け/);
+  assert.match(result({ ...good, plated: true, platingQuality: 1 }).comment, /丸く盛れた/);
 });
 test('the plated dish reflects mixing, seasoning, doneness and remaining rice', () => {
   const good = { ...createGame(), rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, ingredients: { egg: true, rice: true, veg: true } };
