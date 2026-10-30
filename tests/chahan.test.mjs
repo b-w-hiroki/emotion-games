@@ -372,6 +372,8 @@ test('ending feedback points to the actual cooking shortfall', () => {
   assert.match(result(timedOut).comment, /時間切れ.*おたま/);
   assert.doesNotMatch(result(timedOut).comment, /丸く盛れた/);
   assert.match(result({ ...timedOut, seasoned: false, seasoning: 0 }).comment, /時間切れ.*味付け/);
+  assert.doesNotMatch(result({ ...timedOut, seasoned: false, seasoning: 0 }).comment, /具材を入れ/);
+  assert.match(result({ ...timedOut, seasoned: false, seasoning: 0, ingredients: { ...timedOut.ingredients, veg: false } }).comment, /具材を入れ/);
   assert.match(result({ ...good, plated: true, platingQuality: 1 }).comment, /丸く盛れた/);
 });
 test('the plated dish reflects mixing, seasoning, doneness and remaining rice', () => {
