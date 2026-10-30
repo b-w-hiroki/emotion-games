@@ -169,6 +169,9 @@ test('a well-timed rounded scoop improves the plate and finished score', () => {
   assert.equal(plate(loose, .45), true);
   assert.ok(ready.platingQuality > early.platingQuality);
   assert.ok(ready.platingQuality > loose.platingQuality);
+  assert.equal(dishAppearance(ready).roundness, dishAppearance(early).roundness, 'the same scoop produces the same shape regardless of doneness');
+  assert.equal(result(early).platingShape, 1, 'the displayed plating grade reflects the scoop');
+  assert.match(early.message, /丸く盛り付けた/);
   assert.ok(dishAppearance(ready).roundness > dishAppearance(loose).roundness);
   assert.ok(result(ready).score > result(loose).score);
 });
@@ -389,7 +392,7 @@ test('ending feedback points to the actual cooking shortfall', () => {
   assert.match(result({ ...timedOut, seasoned: false, seasoning: 0 }).comment, /時間切れ.*味付け/);
   assert.doesNotMatch(result({ ...timedOut, seasoned: false, seasoning: 0 }).comment, /具材を入れ/);
   assert.match(result({ ...timedOut, seasoned: false, seasoning: 0, ingredients: { ...timedOut.ingredients, veg: false } }).comment, /具材を入れ/);
-  assert.match(result({ ...good, plated: true, platingQuality: 1 }).comment, /丸く盛れた/);
+  assert.match(result({ ...good, plated: true, platingQuality: 1, platingShape: 1 }).comment, /丸く盛れた/);
 });
 test('the plated dish reflects mixing, seasoning, doneness and remaining rice', () => {
   const good = { ...createGame(), rice: 1, mix: 1, cook: .86, seasoning: 1, seasoned: true, ingredients: { egg: true, rice: true, veg: true } };
