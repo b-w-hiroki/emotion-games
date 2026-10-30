@@ -518,7 +518,7 @@ function candleCaption(s){
  if(s.flame<=20)return ['灯りが消えそう — 風からかばって',true];
  if(ev&&elapsed<ev.at)return [ev.tip,ev.kind==='gust'||ev.kind==='eddy'];
  if(s.chapter===2&&s.bridgeFrost>.3&&s.wind>.5)return [s.shield?'橋の霜をしのいでいる':'橋の霜が迫る — 長押しでかばって',!s.shield];
- if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['渦がほどけた — いま離して',false];
+ if(ev?.kind==='eddy'&&s.shield&&elapsed>=ev.at+1)return ['手を離すと渦がほどける',false];
  if(ev?.kind==='eddy'&&s.eddyReleasedEvent===ev.id)return ['渦の隙間 — 息を整える',false];
  if(ev?.kind==='eddy'&&!s.shield&&elapsed>=ev.at)return ['渦風 — 一瞬かばって',true];
  if(s.chapter===1&&s.shelterReady&&s.shield&&s.wind<.44&&elapsed>=s.restUntil&&ev?.kind!=='lantern')return ['軒先の陰 — いま離して',false];
