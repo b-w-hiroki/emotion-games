@@ -89,6 +89,22 @@ test('finale input paths: no input / hold all / alternate produce explainable di
  assert.ok(all.oxygen<alt.oxygen-40,'holding the whole time costs the breath');
  assert.ok(alt.gustShield>=2.5&&alt.silenceRelease>=.45);
 });
+test('finale counts only the time inside each phase before deciding the window reply',()=>{
+ for(const journey of [82,90,98]){
+  const s=K.create({seed:1});Object.assign(s,{journey,routeChoice:'legacy-test',decisionIndex:2,events:[],flame:80,oxygen:80,memories:3,previousFinalePhase:'silence',gustShield:2.5,silenceRelease:.4});
+  const transition=journey-1.5;
+  const events=K.step(s,transition+.02,.12,{shield:false,wasShield:false});
+  assert.ok(Math.abs(s.silenceRelease-.5)<1e-9,'the last tenth of silence is counted before the reply');
+  assert.equal(events.find(e=>e.type==='reply')?.level,'bright','a real .5 seconds of open hands earns the bright reply');
+  const edge=K.create({seed:1});Object.assign(edge,{journey,routeChoice:'legacy-test',decisionIndex:2,events:[],flame:80,oxygen:80,previousFinalePhase:'gust-active'});
+  K.step(edge,journey-2.96,.1,{shield:false,wasShield:false});
+  assert.ok(Math.abs(edge.gustExposed-.06)<1e-9,'only the part before silence counts as gust exposure');
+  assert.ok(Math.abs(edge.silenceRelease-.04)<1e-9,'only the part after the gust counts as silence');
+  const warning=K.create({seed:1});Object.assign(warning,{journey,routeChoice:'legacy-test',decisionIndex:2,events:[],flame:80,oxygen:80,previousFinalePhase:'gust-warning'});
+  K.step(warning,journey-7.96,.1,{shield:true,wasShield:true});
+  assert.ok(Math.abs(warning.gustShield-.04)<1e-9,'warning time does not count as guarding the gust');
+ }
+});
 test('a dead flame never gets a rescue reply',()=>{
  const s=K.create({seed:6});Object.assign(s,{flame:0.01,oxygen:90,memories:3,silenceRelease:1,gustShield:5});
  K.step(s,88.49,DT,{shield:false});

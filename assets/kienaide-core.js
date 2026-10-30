@@ -102,6 +102,12 @@ function step(s,time,dt,input){
  if(time<s.emberRiskUntil)wind=Math.min(1.15,wind+.24);
  // Finale: deterministic storm tied to the player's shielding decision.
  const phase=finalePhaseAt(time,s.journey);s.finalePhase=phase;
+ // A frame can straddle a phase boundary. Count only its overlap with each
+ // interval, including the final slice of silence before judging the reply.
+ const finaleStart=s.journey-10,frameStart=time-Math.max(0,dt);
+ const overlap=(from,to)=>Math.max(0,Math.min(time,to)-Math.max(frameStart,from));
+ const gustTime=overlap(finaleStart+2,finaleStart+7),silenceTime=overlap(finaleStart+7,finaleStart+8.5);
+ if(s.shield)s.gustShield+=gustTime;else{s.gustExposed+=gustTime;s.silenceRelease+=silenceTime}
  if(phase==='gust-active')wind=1.15;else if(phase==='silence'||phase==='window-reply')wind=.08;
  if(phase!==s.previousFinalePhase){s.previousFinalePhase=phase;emit('finale',{phase});
   if(phase==='window-reply'){
@@ -113,8 +119,6 @@ function step(s,time,dt,input){
    emit('reply',{level:s.replyLevel});
   }
  }
- if(phase==='gust-active'){if(s.shield)s.gustShield+=dt;else s.gustExposed+=dt}
- if(phase==='silence'&&!s.shield)s.silenceRelease+=dt;
  s.wind=Math.min(1.15,wind);
  const resting=time<s.restUntil;
  if(chapter===1&&!resting&&s.shelterReady&&s.wind<.44&&!s.shield&&input.wasShield&&input.releaseIntent&&!(live&&ev.kind==='lantern')){s.shelterReady=false;s.shelterUntil=Math.min(time+3.5,CHAPTERS[2].at);emit('shelter');}

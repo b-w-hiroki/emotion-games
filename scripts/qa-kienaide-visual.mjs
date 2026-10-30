@@ -635,6 +635,24 @@ try{
   await second.screenshot({path:path.join(out,`${engine}-concurrent-collection.png`)});
   assert.deepEqual(errors,[]);await ctx.close();done('concurrent collection preserves migrated and new endings');
  }
+ // Run the boundary contract in the browser against the shipped core for every route.
+ {
+  const {ctx,page,errors}=await open(sizes[0],'?qa=1&speed=.0001');
+  const results=await page.evaluate(()=>[82,90,98].map(journey=>{
+   const K=window.KienaideCore,run=elapsed=>{
+    const state=K.create({seed:1});Object.assign(state,{journey,routeChoice:'legacy-test',decisionIndex:2,events:[],flame:80,oxygen:80,memories:3,previousFinalePhase:'silence',gustShield:2.5,silenceRelease:elapsed});
+    K.step(state,journey-1.48,.12,{shield:false,wasShield:false});
+    return {reply:state.replyLevel,ending:K.arrivalEnding(state),silence:state.silenceRelease};
+   };return {journey,enough:run(.4),short:run(.34)};
+  }));
+  for(const result of results){
+   assert.equal(result.enough.reply,'bright','last slice of silence counts for route '+result.journey);
+   assert.equal(result.enough.ending,'dawn');
+   assert.equal(result.short.reply,'faint','less than .45s stays faint');
+   assert.equal(result.short.ending,'wish');
+  }
+  assert.deepEqual(errors,[]);await ctx.close();done('finale boundary timing for all routes');
+ }
  // Every ending scene, reached through real play rules (QA speed only).
  const size=sizes[0];
  const routes={
