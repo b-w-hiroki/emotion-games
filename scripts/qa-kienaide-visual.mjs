@@ -40,6 +40,21 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // An opened eddy cannot make the still-dangerous shortcut wind safe.
+  {
+   const eddy=await open(size,'?qa=1&seed=5&speed=.1&t=29.2&vital=flame-full');await eddy.page.locator('#play').click();
+   await eddy.page.locator('#route-choice [data-route="shortcut"]').click();
+   await eddy.page.waitForFunction(()=>document.querySelector('#stage').dataset.event==='eddy',null,{timeout:3000});
+   await eddy.page.locator('#action').focus();await eddy.page.keyboard.down('Space');
+   await eddy.page.waitForFunction(()=>document.querySelector('#action').classList.contains('is-held'));
+   await eddy.page.keyboard.up('Space');
+   await eddy.page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.wind)>.5&&document.querySelector('.action-cue').textContent.includes('近道の風'),null,{timeout:3000});
+   const before=Number(await eddy.page.locator('#light-meter').getAttribute('aria-valuenow'));
+   await eddy.page.waitForFunction(n=>Number(document.querySelector('#light-meter').getAttribute('aria-valuenow'))<n,before,{timeout:5000});
+   assert.match(await eddy.page.locator('.action-cue').innerText(),/近道の風.*かばって/,'damaging shortcut remains visible after opening the eddy '+tag);
+   await eddy.page.screenshot({path:path.join(out,`${engine}-${tag}-eddy-shortcut-warning.png`)});
+   assert.deepEqual(eddy.errors,[]);await eddy.ctx.close();done('eddy opening preserves shortcut wind warning '+tag);
+  }
   // The warning must match the wind that actually damages an exposed flame.
   {
    const wind=await open(size,'?qa=1&seed=2&speed=.25&t=5&vital=flame-full');await wind.page.locator('#play').click();
