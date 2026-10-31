@@ -7,8 +7,16 @@ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://loc
 if(!remote)await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const base=remote?remote.replace(/\/$/,'')+'/kienaide/':'http://127.0.0.1:'+server.address().port+'/emotion-games/kienaide/';
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{args:['--no-sandbox']}:{})});
+// Production may show the optional analytics choice on a first visit. These
+// isolated gameplay audits use an explicit opt-out; qa-analytics covers the
+// unanswered prompt and both choices separately.
+async function qaContext(options){
+ const ctx=await browser.newContext(options);
+ if(remote)await ctx.addInitScript(()=>localStorage.setItem('emotion-analytics-consent-v1','no'));
+ return ctx;
+}
 async function open(size,query='',{save=false,noAudio=false,intro=false}={}){
- const ctx=await browser.newContext({viewport:size,hasTouch:true,isMobile:engine==='chromium'});
+ const ctx=await qaContext({viewport:size,hasTouch:true,isMobile:engine==='chromium'});
  await ctx.addInitScript(({save,noAudio,intro})=>{
   if(!intro)localStorage.setItem('emotion-kienaide-intro-v1','1');
   if(save&&!sessionStorage.getItem('qa-save-seeded')){localStorage.setItem('emotion-endings-v1-kienaide','["dawn","dawn"]');localStorage.setItem('kienaide-art-endings-v1','["wish"]');sessionStorage.setItem('qa-save-seeded','1')}
@@ -143,7 +151,7 @@ try{
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS personal journey count, reload and collection',size.width);
  }
  {
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});
+  const ctx=await qaContext({viewport:{width:360,height:640}});
   await ctx.addInitScript(()=>{
    localStorage.setItem('emotion-kienaide-intro-v1','1');
    const AC=window.AudioContext||window.webkitAudioContext;
@@ -162,7 +170,7 @@ try{
   await ctx.close();console.log(audioAvailable?'PASS immediate pause settles audio before resuming':'PASS immediate pause; Web Audio unavailable in this runner');
  }
  {
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/hero-body.*',async route=>{await gate;await route.continue()});
   const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=1',{waitUntil:'domcontentloaded'});
   assert.ok(await page.locator('#play').isDisabled());assert.ok(await page.locator('#journey-loading').isVisible());
@@ -179,7 +187,7 @@ try{
   await ctx.close();console.log('PASS delayed opening paintings gate the start without consuming play time',formats);
  }
  {
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{
    localStorage.setItem('emotion-kienaide-intro-v1','1');const AC=window.AudioContext||window.webkitAudioContext;
    if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.waitAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}
   });
@@ -207,7 +215,7 @@ try{
   assert.ok(await page.locator('#chapter-wait').isHidden());await ctx.close();console.log('PASS deferred chapter freezes without a blank scene and resumes after loading');
  }
  {
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/ch2-mid.*',async route=>{await gate;await route.continue()});
   const page=await ctx.newPage();await page.goto(base+'?qa=1&seed=7&t=19.8&speed=1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
@@ -221,7 +229,7 @@ try{
   await ctx.close();console.log('PASS deferred chapter also freezes keyboard memory collection');
  }
  {
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
   await ctx.route('**/paint/ch2-mid.*',route=>route.abort());const page=await ctx.newPage();await page.goto(base+'?qa=1&speed=12',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
   await page.locator('#chapter-wait button').waitFor({state:'visible',timeout:12000});
@@ -232,7 +240,7 @@ try{
   await ctx.close();console.log('PASS failed deferred chapter offers a visible recovery');
  }
  {
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   let release;const gate=new Promise(resolve=>{release=resolve});await ctx.route('**/paint/end-dawn.*',async route=>{await gate;await route.continue()});
   const page=await ctx.newPage();await page.goto(base+'?qa=1&t=70&speed=1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);await page.locator('#play').click();
@@ -242,9 +250,11 @@ try{
   assert.ok(await page.locator('#action').isEnabled());await ctx.close();console.log('PASS final chapter waits for return ending art without delaying Play');
  }
  for(const asset of ['hero-body','manifest.json']){
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>{localStorage.setItem('emotion-kienaide-intro-v1','1');localStorage.setItem('emotion-endings-v1-kienaide','["dawn"]')});
   const pattern='**/paint/'+asset+(asset==='hero-body'?'.*':'');await ctx.route(pattern,route=>route.abort());const page=await ctx.newPage();
-  await page.goto(base,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('#play').dataset.loadFailed);
+  await page.goto(base,{waitUntil:'domcontentloaded'});
+  if(remote){assert.equal(await page.evaluate(()=>localStorage.getItem('emotion-analytics-consent-v1')),'no','production gameplay QA explicitly opts out');assert.equal(await page.locator('#analytics-choice').count(),0,'a declined consent prompt cannot cover recovery');}
+  await page.waitForFunction(()=>document.querySelector('#play').dataset.loadFailed);
   assert.match(await page.locator('#journey-loading').innerText(),/読み込めません/);
   await page.screenshot({path:path.join(out,`${engine}-loading-error-${asset.replace('.','-')}.png`)});
   await ctx.unroute(pattern);await Promise.all([page.waitForEvent('domcontentloaded'),page.locator('#play').click()]);
@@ -252,7 +262,7 @@ try{
   assert.equal(await page.locator('#collection-progress').innerText(),'結末 1 / 5');await ctx.close();console.log('PASS failed painting reload preserves discoveries',asset);
  }
  if(engine==='chromium'&&!remote){
-  const ctx=await browser.newContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
+  const ctx=await qaContext({viewport:{width:360,height:640}});await ctx.addInitScript(()=>localStorage.setItem('emotion-kienaide-intro-v1','1'));
   await ctx.route('**/paint/hero-body.avif',route=>route.abort());const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);await page.waitForFunction(()=>!document.querySelector('#play').disabled);
   assert.ok(await page.evaluate(()=>performance.getEntriesByType('resource').some(entry=>entry.name.endsWith('/paint/hero-body.webp'))),'a failed AVIF painting falls back to WebP');
