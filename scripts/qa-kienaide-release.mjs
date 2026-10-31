@@ -45,6 +45,25 @@ try{
   if(await page.evaluate(()=>!!window.focusAudio))await page.waitForFunction(()=>window.focusAudio.state==='running');
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS focus-only pause and recovery',size.width);
  }
+ // After a focus interruption in the final gust, the player can resume guarding
+ // and the silence choice still determines the window's response.
+ for(const size of [{width:390,height:844},{width:360,height:640}])for(const openHands of [true,false]){
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=1&t=82.1&mem=2');
+  await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='gust-active');
+  await page.locator('#action').focus();await page.keyboard.down('Space');
+  await page.waitForFunction(()=>Number(document.querySelector('#stage').dataset.elapsed)>=85.1);
+  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.keyboard.up('Space');
+  const pausedAt=await page.locator('#stage').getAttribute('data-elapsed');await page.waitForTimeout(500);
+  assert.equal(await page.locator('#stage').getAttribute('data-elapsed'),pausedAt,'the final gust remains paused during interruption');
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.locator('#action').focus();await page.keyboard.down('Space');
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='silence');
+  if(openHands)await page.keyboard.up('Space');
+  await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply');
+  assert.equal(await page.locator('#stage').getAttribute('data-reply'),openHands?'bright':'faint','the resumed silence choice determines the reply');
+  await page.screenshot({path:path.join(out,`${engine}-${size.width}-finale-focus-${openHands?'open':'held'}.png`)});
+  if(!openHands)await page.keyboard.up('Space');assert.deepEqual(errors,[]);await ctx.close();
+  console.log('PASS interrupted final gust and '+(openHands?'open':'held')+' silence',size.width);
+ }
  // The prologue also freezes when only window focus changes.
  // A browser may stop animation frames throughout the interruption.
  {
