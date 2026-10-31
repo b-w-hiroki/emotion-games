@@ -541,9 +541,10 @@ function candleCaption(s){
  return s.wind>K.WIND_DAMAGE_THRESHOLD?['風が来る — 長押し',true]:['凪いでいる — 息を戻す',false];
 }
 function candleActionCopy(s){
- if(s.finalePhase==='silence'||s.finalePhase==='window-reply'){
+ if(s.finalePhase==='silence'){
   return s.shield?['はなす','窓に灯りを見せる']:['手をひらいている',s.oxygen<=22?'そのまま息を戻す':'そのまま窓の返事を待つ'];
  }
+ if(s.finalePhase==='window-reply')return s.shield?['はなす','息を戻す']:['手をひらいている',s.oxygen<=22?'そのまま息を戻す':'家まであと少し'];
  return s.oxygen<=22?[s.shield?'はなす':'ひと休み','手を離して息を戻す']:s.shield?['はなす','息を戻す']:['押さえる','灯りを守る'];
 }
 function drawCandle(dt){
