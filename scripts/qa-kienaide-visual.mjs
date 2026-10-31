@@ -40,6 +40,18 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // The ending tableau must not advance past its music while focus is lost.
+  {
+   const ending=await open(size,'?qa=1&seed=2&speed=1&t=89&mem=3&vital=flame-full');await ending.page.locator('#play').click();
+   await ending.page.waitForFunction(()=>!!document.querySelector('#stage').dataset.ending,null,{timeout:8000});
+   await ending.page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+   await ending.page.waitForTimeout(3200);
+   assert.ok(await ending.page.locator('#curtain').evaluate(el=>el.classList.contains('hidden')),'the ending must not reveal its result while interrupted '+tag);
+   await ending.page.screenshot({path:path.join(out,`${engine}-${tag}-ending-focus-paused.png`)});
+   await ending.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+   await ending.page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
+   assert.deepEqual(ending.errors,[]);await ending.ctx.close();done('ending pauses with lost focus '+tag);
+  }
   // A critical flame still recovers in the upper part of the weak-wind range.
   {
    const calm=await open(size,'?qa=1&seed=1&speed=.0001&t=7.1&vital=flame');await calm.page.locator('#play').click();

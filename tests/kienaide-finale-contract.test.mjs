@@ -2,8 +2,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 const app=readFileSync(new URL('../assets/app.js',import.meta.url),'utf8');
 const core=readFileSync(new URL('../assets/kienaide-core.js',import.meta.url),'utf8');
+test('the ending clock excludes focus and gallery interruptions even without frames',()=>{
+ const clock=app.match(/function syncEndingClock\(\)\{([^\n]+)\}/)[1];
+ const s={mode:'end',endingAt:1,endingTime:0,endingClockAt:0,endingPaused:false,document:{hidden:false},candleWindowFocused:true,landscapeMode:{matches:false},candleDialog:null,now:0};
+ s.performance={now:()=>s.now};const sync=()=>vm.runInNewContext('(function(){'+clock+'})()',s);
+ s.now=500;s.candleWindowFocused=false;sync();s.now=4500;s.candleWindowFocused=true;sync();
+ s.now=5000;s.candleDialog={id:'collection-panel'};sync();s.now=8000;s.candleDialog=null;sync();
+ s.now=8500;sync();assert.equal(s.endingTime,1.5,'only visible, focused time advances the ending');
+});
 test('finale phases are produced by the core and drive story, sound and analytics',()=>{
  for(const phase of ['approach','gust-warning','gust-active','silence','window-reply'])assert.ok(core.includes("'"+phase+"'"),phase);
  for(const hook of ["e.phase==='gust-warning'","e.phase==='silence'","e.type==='reply'","KA.cues.reply(e.level)","mark('finale_window'"])assert.ok(app.includes(hook),hook);
