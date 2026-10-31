@@ -101,3 +101,8 @@ test('the final control names an open hand after release, including low breath a
  assert.deepEqual(actionCopy({...base,finalePhase:'window-reply',shield:false,oxygen:80}),['手をひらいている','家まであと少し']);
  assert.deepEqual(actionCopy({...base,finalePhase:'gust-active',shield:false}),['押さえる','灯りを守る']);
 });
+
+test('low breath at the window reflects whether the hand is still shielding',()=>{
+ assert.deepEqual(caption({...base,finalePhase:'window-reply',oxygen:18,shield:true}),['窓の返事 — 手を離して息を',true]);
+ assert.deepEqual(caption({...base,finalePhase:'window-reply',oxygen:18,shield:false}),['窓の返事 — そのまま息を戻す',true]);
+});

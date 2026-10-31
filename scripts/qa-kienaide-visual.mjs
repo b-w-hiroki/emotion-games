@@ -562,7 +562,10 @@ try{
    assert.deepEqual(breath.errors,[]);await breath.ctx.close();done('critical breath keeps final release cue '+finalTag);
    const reply=await open(finalSize,'?qa=1&seed=3&speed=.2&t=88.5&vital=breath');await reply.page.locator('#play').click();
    await reply.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply',null,{timeout:3000});
-   assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*手を離して息を/,'the reply keeps urgent breathing advice without hiding the scene '+finalTag);
+   assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*そのまま息を戻す/,'the visible reply guidance acknowledges the open hand '+finalTag);
+   assert.ok(await reply.page.locator('.action-cue').isVisible(),'the recovery guidance is visible '+finalTag);
+   const cue=await reply.page.locator('.action-cue').boundingBox();assert.ok(cue.y>=0&&cue.y+cue.height<=finalSize.height,'the recovery guidance fits inside the viewport '+finalTag);
+   await reply.page.screenshot({path:path.join(out,`${engine}-${finalTag}-open-hand-low-breath-reply.png`)});
    assert.match(await reply.page.locator('.action-main b').innerText(),/手をひらいている/,'the window reply keeps the hand open '+finalTag);
    assert.deepEqual(reply.errors,[]);await reply.ctx.close();done('critical breath during window reply '+finalTag);
   }
