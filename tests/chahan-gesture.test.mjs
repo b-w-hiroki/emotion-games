@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeGather, analyzePull, forwardPeak } from '../assets/chahan-gesture.js';
+import { analyzeGather, analyzePull, forwardPeak, gatherPresentation } from '../assets/chahan-gesture.js';
 
 test('only the forward reach determines a wok toss', () => {
   const start = { x: 150, y: 100, at: 0 };
@@ -40,4 +40,24 @@ test('tap, straight flick and outside-only circles cannot trigger plating', () =
   assert.equal(analyzeGather([[150, 90], [150, 120], [150, 150], [150, 185]], 300, 300).progress, 0, 'a straight toss must not pull rice into a mound');
   assert.equal(analyzeGather(curve.slice(0, -1), 300, 300).valid, false);
   assert.equal(analyzeGather(curve, 0, 300).valid, false);
+});
+
+test('finishing an airborne toss lands the rice before gathering without advancing cooking', () => {
+  const game = { time: 5, lastToss: 4.8, tossOutcome: 'caught', ingredients: { rice: true }, phase: 'finished' };
+  const initial = gatherPresentation(game, .4, 0);
+  const landing = gatherPresentation(game, .4, .5);
+  const gathered = gatherPresentation(game, .4, 1);
+  assert.equal(initial.time, 5);
+  assert.equal(initial.scoopProgress, .4);
+  assert.ok(Math.abs(landing.time - 5.52) < 1e-9, 'airborne rice reaches the end of its arc');
+  assert.equal(landing.scoopProgress, .4, 'gathering waits until the rice lands');
+  assert.equal(gathered.time, landing.time);
+  assert.equal(gathered.scoopProgress, 1);
+  assert.equal(game.time, 5, 'presentation never changes the cooking clock');
+  assert.equal(game.phase, 'finished');
+  const resting = gatherPresentation({ ...game, lastToss: 3 }, .4, .5);
+  assert.equal(resting.time, 5);
+  assert.ok(resting.scoopProgress > .4, 'rice already in the wok gathers immediately');
+  const weak = gatherPresentation({ ...game, tossOutcome: 'weak' }, .4, .5);
+  assert.equal(weak.time, 5, 'a weak toss leaves the rice in the wok');
 });
