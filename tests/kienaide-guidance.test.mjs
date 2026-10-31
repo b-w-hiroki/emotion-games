@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 import '../assets/kienaide-core.js';
 
 const app=readFileSync(new URL('../assets/app.js',import.meta.url),'utf8');
@@ -9,6 +10,16 @@ assert.ok(start>=0&&end>start,'caption function remains available for contract t
 const caption=Function('elapsed','K',app.slice(start,end)+'\nreturn candleCaption;')(12,globalThis.KienaideCore);
 const actionCopy=Function(app.slice(start,end)+'\nreturn candleActionCopy;')();
 const base={flame:18,oxygen:80,wind:.2,chapter:0,bridgeFrost:0,finalePhase:'approach',shield:false,memories:0};
+
+test('story reading and fade clocks stop together through interruptions without frames',()=>{
+ const body=app.match(/function syncStoryAnimation\(\)\{([^\n]+)\}/)[1],el={style:{}};
+ const c={candle:true,storyReadingTime:4.2,storyClockAt:1,storyPaused:false,now:501,document:{hidden:false},candleWindowFocused:true,landscapeMode:{matches:false},candleDialog:null,chapterLoading:false,$:()=>el};
+ c.performance={now:()=>c.now};const sync=()=>vm.runInNewContext('(function(){'+body+'})()',c);
+ c.candleDialog={id:'journey-menu'};sync();assert.equal(el.style.animationPlayState,'paused');
+ c.now=5501;c.candleDialog=null;sync();assert.equal(c.storyReadingTime,3.7);assert.equal(el.style.animationPlayState,'running');
+ c.now=6001;c.candleWindowFocused=false;sync();c.now=11001;c.candleWindowFocused=true;sync();
+ assert.equal(c.storyReadingTime,3.2,'background time cannot consume reading time');
+});
 
 test('weak wind tells a weakened traveller to recover breath instead of wasting it',()=>{
  assert.deepEqual(caption({...base,shield:true}),['風が弱い — いま離して',false]);
