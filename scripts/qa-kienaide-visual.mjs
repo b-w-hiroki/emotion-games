@@ -704,13 +704,17 @@ try{
     const state=K.create({seed:1});Object.assign(state,{journey,routeChoice:'legacy-test',decisionIndex:2,events:[],flame:80,oxygen:80,memories:3,previousFinalePhase:'silence',gustShield:2.5,silenceRelease:elapsed});
     K.step(state,journey-1.48,.12,{shield:false,wasShield:false});
     return {reply:state.replyLevel,ending:K.arrivalEnding(state),silence:state.silenceRelease};
-   };return {journey,enough:run(.4),short:run(.34)};
+   };
+   const storm=shield=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-active',flame:shield?80:.2,oxygen:shield?.2:80});const events=K.step(s,journey-2.99,.035,{shield});return {ending:s.ended,phase:s.finalePhase,silence:events.some(e=>e.type==='finale'&&e.phase==='silence')}};
+   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true)};
   }));
   for(const result of results){
    assert.equal(result.enough.reply,'bright','last slice of silence counts for route '+result.journey);
    assert.equal(result.enough.ending,'dawn');
    assert.equal(result.short.reply,'faint','less than .45s stays faint');
    assert.equal(result.short.ending,'wish');
+   assert.deepEqual(result.blown,{ending:'blown',phase:'gust-active',silence:false},'the final gust still reaches the exposed flame on route '+result.journey);
+   assert.deepEqual(result.smother,{ending:'smother',phase:'gust-active',silence:false},'the final gust still costs breath on route '+result.journey);
   }
   assert.deepEqual(errors,[]);await ctx.close();done('finale boundary timing for all routes');
  }
