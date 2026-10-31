@@ -1,6 +1,6 @@
 import { STAGES, COOK_SECONDS, FILLING_NAMES, heatReadiness, createGame, advance, toss, tossForecast, tapLadle, addIngredient, ingredientCue, eggReadiness, fillingReadiness, addSeasoning, seasoningReadiness, platingReadiness, cookMeter, plate, result } from '../assets/chahan-core.js';
 import { motionToss } from '../assets/chahan-motion.js';
-import { analyzeGather, analyzePull, forwardPeak } from '../assets/chahan-gesture.js';
+import { analyzeGather, analyzePull, forwardPeak, gatherPresentation } from '../assets/chahan-gesture.js';
 import { drawScene, drawDish } from './art.js';
 import { createKitchenAudio } from './audio.js';
 const $ = id => document.getElementById(id);
@@ -159,9 +159,9 @@ function doPlate(quality) {
   scoopTrace.dataset.state = 'finish';
   function gatherFrame(now) {
     const progress = clamp((now - started) / 480, 0, 1);
-    game.scoopProgress = from + (1 - from) * (1 - (1 - progress) ** 3);
+    const presentation = gatherPresentation(game, from, progress);
     scoopTrace.style.opacity = String(1 - progress);
-    draw();
+    drawScene(ctx, { ...game, ...presentation, phase: 'playing' }, false);
     if (progress < 1) animation = requestAnimationFrame(gatherFrame);
     else { resetScoopTrace(); finish(); }
   }
