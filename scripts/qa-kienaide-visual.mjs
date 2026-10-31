@@ -40,6 +40,24 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A paused journey must not consume the reading time of its first guidance.
+  {
+   const story=await open(size,'?qa=1&seed=3&speed=.0001');await story.page.locator('#play').click();
+   await story.page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#story-beat')).opacity)>.7);
+   const text=await story.page.locator('#story-beat strong').innerText();
+   await story.page.locator('#journey-menu-open').click();await story.page.waitForTimeout(4500);
+   await story.page.locator('#pause-resume').click();
+   assert.ok(await story.page.locator('#story-beat').evaluate(el=>el.classList.contains('show')),'pause must preserve the guidance '+tag);
+   assert.ok(await story.page.locator('#story-beat').evaluate(el=>Number(getComputedStyle(el).opacity)>.5),'guidance must remain visible after pause '+tag);
+   assert.equal(await story.page.locator('#story-beat strong').innerText(),text);
+   await story.page.screenshot({path:path.join(out,`${engine}-${tag}-story-after-pause.png`)});
+   await story.page.evaluate(()=>window.dispatchEvent(new Event('blur')));await story.page.waitForTimeout(4500);
+   assert.ok(await story.page.locator('#story-beat').evaluate(el=>el.classList.contains('show')),'lost focus must preserve the guidance '+tag);
+   await story.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+   assert.ok(await story.page.locator('#story-beat').evaluate(el=>Number(getComputedStyle(el).opacity)>.5),'guidance must remain visible after focus returns '+tag);
+   await story.page.waitForFunction(()=>!document.querySelector('#story-beat').classList.contains('show'),null,{timeout:7000});
+   assert.deepEqual(story.errors,[]);await story.ctx.close();done('story reading time survives interruptions '+tag);
+  }
   // The ending tableau must not advance past its music while focus is lost.
   {
    const ending=await open(size,'?qa=1&seed=2&speed=1&t=89&mem=3&vital=flame-full');await ending.page.locator('#play').click();
