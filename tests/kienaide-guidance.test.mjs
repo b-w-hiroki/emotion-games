@@ -93,6 +93,14 @@ test('an opened eddy does not hide damaging shortcut wind',()=>{
  assert.match(read({...s,shield:true,oxygen:26})[0],/息が苦しい/,'low breath takes priority over sheltering');
 });
 
+test('the visible window reply cue tells a player still holding to recover breath',()=>{
+ const reply={...base,finalePhase:'window-reply',shield:true,oxygen:35,reply:.45};
+ assert.deepEqual(caption(reply),['窓の返事 — 手を離して息を',false]);
+ assert.deepEqual(caption({...reply,reply:0}),['あと少し — 手を離して息を',false]);
+ assert.deepEqual(caption({...reply,shield:false}),['窓が答えている',false]);
+ assert.deepEqual(caption({...reply,shield:false,oxygen:18}),['窓の返事 — そのまま息を戻す',true]);
+});
+
 test('the final control names an open hand after release, including low breath and the window reply',()=>{
  assert.deepEqual(actionCopy({...base,finalePhase:'silence',shield:true}),['はなす','窓に灯りを見せる']);
  assert.deepEqual(actionCopy({...base,finalePhase:'silence',shield:false}),['手をひらいている','そのまま窓の返事を待つ']);
@@ -100,4 +108,9 @@ test('the final control names an open hand after release, including low breath a
  assert.deepEqual(actionCopy({...base,finalePhase:'window-reply',shield:true}),['はなす','息を戻す']);
  assert.deepEqual(actionCopy({...base,finalePhase:'window-reply',shield:false,oxygen:80}),['手をひらいている','家まであと少し']);
  assert.deepEqual(actionCopy({...base,finalePhase:'gust-active',shield:false}),['押さえる','灯りを守る']);
+});
+
+test('low breath at the window reflects whether the hand is still shielding',()=>{
+ assert.deepEqual(caption({...base,finalePhase:'window-reply',oxygen:18,shield:true}),['窓の返事 — 手を離して息を',true]);
+ assert.deepEqual(caption({...base,finalePhase:'window-reply',oxygen:18,shield:false}),['窓の返事 — そのまま息を戻す',true]);
 });

@@ -562,7 +562,10 @@ try{
    assert.deepEqual(breath.errors,[]);await breath.ctx.close();done('critical breath keeps final release cue '+finalTag);
    const reply=await open(finalSize,'?qa=1&seed=3&speed=.2&t=88.5&vital=breath');await reply.page.locator('#play').click();
    await reply.page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply',null,{timeout:3000});
-   assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*手を離して息を/,'the reply keeps urgent breathing advice without hiding the scene '+finalTag);
+   assert.match(await reply.page.locator('.action-cue').innerText(),/窓の返事.*そのまま息を戻す/,'the visible reply guidance acknowledges the open hand '+finalTag);
+   assert.ok(await reply.page.locator('.action-cue').isVisible(),'the recovery guidance is visible '+finalTag);
+   const cue=await reply.page.locator('.action-cue').boundingBox();assert.ok(cue.y>=0&&cue.y+cue.height<=finalSize.height,'the recovery guidance fits inside the viewport '+finalTag);
+   await reply.page.screenshot({path:path.join(out,`${engine}-${finalTag}-open-hand-low-breath-reply.png`)});
    assert.match(await reply.page.locator('.action-main b').innerText(),/手をひらいている/,'the window reply keeps the hand open '+finalTag);
    assert.deepEqual(reply.errors,[]);await reply.ctx.close();done('critical breath during window reply '+finalTag);
   }
@@ -708,7 +711,8 @@ try{
    const storm=shield=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-active',flame:shield?80:.2,oxygen:shield?.2:80});const events=K.step(s,journey-2.99,.035,{shield});return {ending:s.ended,phase:s.finalePhase,silence:events.some(e=>e.type==='finale'&&e.phase==='silence')}};
    const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'silence',flame:80,oxygen:.05,gustShield:3,silenceRelease:.5});
    const events=K.step(s,journey-1.49,.035,{shield:true});
-   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true),silenceExhaustion:{ending:s.ended,phase:s.finalePhase,reply:events.some(e=>e.type==='reply')}};
+   const starts=shield=>{const boundary=journey-8,wind=K.baseWind(boundary,3),s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-warning',flame:shield?80:(wind>.5?(7+wind*8)*.025:0)+(7+1.15*8)*.01+.04,oxygen:shield?((4.5+wind*3.8)*.025+(4.5+1.15*3.8)*.045)/2:80});K.step(s,boundary+.01,.035,{shield});return s.ended};
+   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true),silenceExhaustion:{ending:s.ended,phase:s.finalePhase,reply:events.some(e=>e.type==='reply')},startOpen:starts(false),startHeld:starts(true)};
   }));
   for(const result of results){
    assert.equal(result.enough.reply,'bright','last slice of silence counts for route '+result.journey);
@@ -718,6 +722,8 @@ try{
    assert.deepEqual(result.blown,{ending:'blown',phase:'gust-active',silence:false},'the final gust still reaches the exposed flame on route '+result.journey);
    assert.deepEqual(result.smother,{ending:'smother',phase:'gust-active',silence:false},'the final gust still costs breath on route '+result.journey);
    assert.deepEqual(result.silenceExhaustion,{ending:'smother',phase:'silence',reply:false},'breath can run out before the window replies on route '+result.journey);
+   assert.equal(result.startOpen,'','the wind before the gust cannot prematurely extinguish the flame on route '+result.journey);
+   assert.equal(result.startHeld,'','the time before the gust cannot prematurely exhaust breath on route '+result.journey);
   }
   assert.deepEqual(errors,[]);await ctx.close();done('finale boundary timing for all routes');
  }

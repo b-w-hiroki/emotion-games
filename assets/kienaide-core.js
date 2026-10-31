@@ -109,6 +109,18 @@ function step(s,time,dt,input){
  const finaleStart=s.journey-10,frameStart=time-Math.max(0,dt);
  const overlap=(from,to)=>Math.max(0,Math.min(time,to)-Math.max(frameStart,from));
  const gustTime=overlap(finaleStart+2,finaleStart+7),silenceTime=overlap(finaleStart+7,finaleStart+8.5);
+ // A frame can begin during the warning and finish in the storm. Resolve
+ // the pre-storm slice using its actual wind before applying the gust.
+ const warningTime=phase==='gust-active'?Math.max(0,Math.min(dt,finaleStart+2-frameStart)):0;
+ if(warningTime>0){
+  const sheltered=time<s.restUntil||time<s.shelterUntil;
+  const warningWind=Math.min(1.15,wind)*(sheltered?.2:1);s.wind=warningWind;s.peakWind=Math.max(s.peakWind,warningWind);
+  if(s.shield){const cost=live&&ev.kind==='eddy'?1.6:1;s.oxygen=Math.max(0,s.oxygen-(4.5+warningWind*3.8)*cost*warningTime);s.flame=Math.min(100,s.flame+(.7-warningWind*.25)*warningTime)}
+  else{const warm=(live&&ev.kind==='lantern'&&s.routeChoice!=='shortcut'?2.6:0)+(live&&ev.kind==='lull'?3.5:0);s.oxygen=Math.min(100,s.oxygen+(sheltered||(live&&ev.kind==='lull')?23:15)*warningTime);s.flame=Math.max(0,Math.min(100,s.flame+(warningWind>WIND_DAMAGE_THRESHOLD?-(7+warningWind*8):1.3+warm)*warningTime))}
+  s.lowestFlame=Math.min(s.lowestFlame,s.flame);
+  if(s.oxygen<=0||s.flame<=0){s.finalePhase='gust-warning';s.ended=s.oxygen<=0?'smother':'blown';emit('end',{ending:s.ended});return out}
+  dt=Math.max(0,dt-warningTime);
+ }
  if(s.shield)s.gustShield+=gustTime;else s.gustExposed+=gustTime;
  // Resolve the last slice of the storm before applying the silence to the
  // rest of a boundary-crossing frame. A flame or traveller lost in that slice
