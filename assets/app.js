@@ -206,6 +206,7 @@ function setCandleDialog(panel,open){
  if(open){holdRelease();memoryPointers.clear();memoryTouch.hidden=true;candleDialog=panel;const isolate=parent=>{for(const el of parent.children){if(el===panel)continue;if(el.contains(panel))isolate(el);else{candleInert.push([el,el.inert]);el.inert=true}}};isolate(document.querySelector('.game-shell'))}
  else{if(candleDialog!==panel)return;for(const [el,inert] of candleInert)el.inert=inert;candleInert=[];candleDialog=null}
  panel.hidden=!open;
+ if(mode==='end')syncEndingClock();
  queueMicrotask(syncCandleAudio);
 }
 document.addEventListener('keydown',e=>{
@@ -251,7 +252,8 @@ if(candle){
 }
 const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-let endingAt=0,runCount=0;
+let endingAt=0,endingTime=0,endingClockAt=0,endingPaused=false,endingRevealed=false,runCount=0;
+function syncEndingClock(){if(mode!=='end'||!endingAt)return;const now=performance.now();if(!endingPaused)endingTime+=(now-endingClockAt)/1000;endingClockAt=now;endingPaused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog)}
 function guidanceMarkup(text){return text.split(/(?<=[、。])|(?<= — )/u).map(part=>'<span class="guidance-phrase">'+esc(part)+'</span>').join('')}
 let storyHideTimer=0;
 function setStory(chapter,text){
@@ -435,6 +437,7 @@ if(candle){
 action.addEventListener('click',()=>{if(mode!=='play')return;if(slug==='ato-hitotsu')drop();if(state.micro)window.EmotionMissions.tap(state.micro,elapsed,finish)});
 window.addEventListener('blur',()=>{holdRelease();memoryPointers.clear();if(candle){candleWindowFocused=false;last=0;syncCandleAudio()}});
 if(candle)window.addEventListener('focus',()=>{candleWindowFocused=true;last=0;syncCandleAudio()});document.addEventListener('visibilitychange',()=>{if(document.hidden){holdRelease();memoryPointers.clear()}});
+if(candle){window.addEventListener('blur',syncEndingClock);window.addEventListener('focus',syncEndingClock);document.addEventListener('visibilitychange',syncEndingClock);landscapeMode.addEventListener('change',syncEndingClock)}
 action.addEventListener('contextmenu',e=>e.preventDefault());
 // Keyboard play for 004: hold Space/Enter on the button to shield, M (or Enter on the scene) to touch a memory.
 if(candle){
@@ -544,7 +547,7 @@ function candleActionCopy(s){
 function drawCandle(dt){
  if(candleDialog?.id==='kienaide-intro')return;
  const s=state;KV.resize(canvas);
- if(mode==='end'&&lastEnding){KV.endingFrame(ctx,s,lastEnding,(performance.now()-endingAt)/1000,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
+ if(mode==='end'&&lastEnding){syncEndingClock();if(!endingPaused&&!endingRevealed&&endingTime>=(reducedMotion()?.5:2.6)){endingRevealed=true;curtain.classList.remove('hidden');curtain.scrollTop=0;momentCard.prepare()}KV.endingFrame(ctx,s,lastEnding,endingTime,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
  const paused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'||s.decisionPending),step=paused?0:dt*(s.qaSpeed||1);
  // An intentional down/up can happen between frames; its release proves the hold existed.
@@ -576,11 +579,11 @@ function drawCandle(dt){
 }
 // Each ending plays its own short scene before the result card slides in.
 function candleEnding(){
- const s=state,reduced=reducedMotion();memoryTouch.hidden=true;endingAt=performance.now();curtain.classList.add('hidden','tableau');canvas.dataset.ending=lastEnding;$('story-beat').hidden=true;
+ const s=state;memoryTouch.hidden=true;endingAt=performance.now();endingClockAt=endingAt;endingTime=0;endingPaused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog);endingRevealed=false;curtain.classList.add('hidden','tableau');canvas.dataset.ending=lastEnding;$('story-beat').hidden=true;
  KA.update(s,elapsed,{playing:false,dt:0,ended:true});KA.cues.ending(lastEnding);
  const missing=endingList.filter(e=>!collected.includes(e.id));
  $('next-hint').hidden=!missing.length;if(missing.length){const next=missing[(runCount+missing.length)%missing.length];$('next-hint').textContent='まだ見ぬ結末のヒント：'+next.hint}
- const token=endingAt;momentCard.reset();setTimeout(()=>{if(mode==='end'&&endingAt===token){curtain.classList.remove('hidden');curtain.scrollTop=0;momentCard.prepare()}},reduced?500:2600);
+ momentCard.reset();
 }
 function syncChapterWait(chapter){
  const waiting=!KV.chapterReady(chapter);
