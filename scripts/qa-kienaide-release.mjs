@@ -276,6 +276,12 @@ try{
    assert.ok(layout.fits&&layout.targets.every(Boolean),'menu fits the viewport and primary actions have large touch targets');
    assert.ok(await page.locator('#stage').evaluate(el=>!!el.closest('[inert]')));
    await page.waitForFunction(()=>!window.menuAudio||window.menuAudio.state==='suspended');
+   if(await page.evaluate(()=>!!window.menuAudio)){
+    // Model an OS interrupt ending while the pause menu is still open.
+    await page.evaluate(()=>window.menuAudio.resume());
+    await page.waitForFunction(()=>window.menuAudio.state==='suspended',null,{timeout:3000});
+    assert.ok(await menu.isVisible(),'external audio resume must not dismiss the pause menu');
+   }
    const paused=await facts(page);await page.keyboard.press('m');await page.waitForTimeout(1200);assert.deepEqual(await facts(page),paused,'menu freezes clock, life, breath, distance and memory');
    for(let i=0;i<10;i++){await page.keyboard.press(i%2?'Shift+Tab':'Tab');assert.ok(await menu.evaluate(el=>el.contains(document.activeElement)))}
    await noShortTail(page,'#pause-normal .pause-guide');

@@ -11,10 +11,12 @@ function audioRig(saved='{}',opts={}){
  const param=onTarget=>({value:0,setValueAtTime(v){this.value=v},setTargetAtTime(v){this.value=v;onTarget?.(v)},exponentialRampToValueAtTime(){}});
  const node=extra=>Object.assign({connect(){return this}},extra);
  class AudioContext{
-  constructor(){this.currentTime=0;this.sampleRate=16;this.destination={};this.state=opts.initialState||'running'}
+  constructor(){this.currentTime=0;this.sampleRate=16;this.destination={};this.state=opts.initialState||'running';this.listeners={};stats.context=this}
+  addEventListener(type,listener){this.listeners[type]=listener}
+  externalState(next){this.state=next;this.listeners.statechange?.()}
   resume(){return this.transition('running')}
   suspend(){return this.transition('suspended')}
-  transition(next){if(!opts.defer){this.state=next;return Promise.resolve()}return new Promise(resolve=>pending.push({next,finish:()=>{this.state=next;resolve()}}))}
+  transition(next){if(!opts.defer){this.state=next;if(opts.syncEvents)this.listeners.statechange?.();return Promise.resolve()}return new Promise(resolve=>pending.push({next,finish:()=>{this.state=next;resolve()}}))}
   createGain(){return node({gain:param(v=>stats.gainTargets.push(v))})}
   createDelay(){return node({delayTime:param()})}
   createBiquadFilter(){return node({frequency:param(),Q:param()})}
@@ -188,4 +190,19 @@ test('returning to play during a pending suspend resumes after the pause settles
  assert.deepEqual(pending.map(x=>x.next),['running']);
  pending.shift().finish();await new Promise(setImmediate);
  assert.equal(audio.state,'running');assert.deepEqual(pending,[]);
+});
+
+test('an operating-system audio interruption cannot restart sound during a pause',async()=>{
+ const {audio,stats}=audioRig();
+ audio.suspend();await new Promise(setImmediate);assert.equal(audio.state,'suspended');
+ stats.context.externalState('interrupted');
+ stats.context.externalState('running');await new Promise(setImmediate);
+ assert.equal(audio.state,'suspended','a spontaneous system resume must be corrected while the game is paused');
+ audio.resume();await new Promise(setImmediate);assert.equal(audio.state,'running','sound resumes normally after returning to play');
+});
+
+test('synchronous state changes cannot reenter the audio transport',async()=>{
+ const {audio}=audioRig('{}',{syncEvents:true});
+ audio.suspend();await new Promise(setImmediate);assert.equal(audio.state,'suspended');
+ audio.resume();await new Promise(setImmediate);assert.equal(audio.state,'running');
 });
