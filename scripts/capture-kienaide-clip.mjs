@@ -42,12 +42,13 @@ try{
  if(errors.length)throw new Error(errors.join('; '));
  if(ending!=='dawn'||reply!=='bright')throw new Error('clip must show the window answering: '+ending+'/'+reply);
  const mp4=path.join(out,'clip-finale.mp4');
- // Drop pre-play loading, then fit the complete journey excerpt into 12 seconds.
- // Keeping only the tail can cut the gust entirely when a busy runner slows frames.
- const probe=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',webm],{encoding:'utf8'}),total=Number(probe.stdout)||length,start=Math.max(0,total-length),rate=Math.min(1,11.8/length);
+ // Drop pre-play loading, fit the complete excerpt into ten seconds and hold
+ // the last frame for two seconds so the destination remains readable even
+ // when a busy runner makes the source recording unusually long.
+ const probe=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',webm],{encoding:'utf8'}),total=Number(probe.stdout)||length,start=Math.max(0,total-length),rate=Math.min(1,9.8/length);
  // Keep every pixel of the narrow game viewport; fill the wider 9:16 canvas with
  // a dimmed, blurred copy of the same shot instead of black bars or a UI crop.
- const fill='[0:v]split=2[back][front];[back]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:4,eq=brightness=-0.20:saturation=0.65[bg];[front]scale=1080:1920:force_original_aspect_ratio=decrease[game];[bg][game]overlay=(W-w)/2:(H-h)/2,format=yuv420p,setpts='+rate+'*(PTS-STARTPTS)';
+ const fill='[0:v]split=2[back][front];[back]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:4,eq=brightness=-0.20:saturation=0.65[bg];[front]scale=1080:1920:force_original_aspect_ratio=decrease[game];[bg][game]overlay=(W-w)/2:(H-h)/2,format=yuv420p,setpts='+rate+'*(PTS-STARTPTS),tpad=stop_mode=clone:stop_duration=2';
  const r=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(start),'-i',webm,'-t','12','-filter_complex',fill,'-r','30','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',mp4],{encoding:'utf8'});
  fs.writeFileSync(path.join(out,'clip-finale.json'),JSON.stringify({ending,reply,recordedSeconds:Math.round(length*10)/10,mp4:r.status===0},null,1));
  if(r.status!==0&&process.env.CI)throw new Error('Release clip requires MP4: '+(r.stderr||r.error?.message||r.status));
