@@ -128,6 +128,27 @@ test('the final gust still costs flame and breath in a frame crossing into silen
   assert.equal(breath.ended,'smother','the last gust can exhaust breath before silence');
  }
 });
+test('the final gust does not damage the earlier warning part of a frame',()=>{
+ for(const journey of [82,90,98]){
+  const boundary=journey-8,make=()=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-warning',flame:80,oxygen:80});return s};
+  for(const shield of [false,true]){
+   const combined=make(),split=make();
+   K.step(combined,boundary+.01,.035,{shield});
+   K.step(split,boundary-.000001,.024999,{shield});K.step(split,boundary+.01,.010001,{shield});
+   assert.ok(Math.abs(combined.flame-split.flame)<.002,'flame reflects only the actual gust interval');
+   assert.ok(Math.abs(combined.oxygen-split.oxygen)<.002,'breath reflects only the actual gust interval');
+  }
+  const weak=make(),preWind=K.baseWind(boundary,3),preLoss=preWind>.5?(7+preWind*8)*.025:0;
+  weak.flame=preLoss+(7+1.15*8)*.01+.04;K.step(weak,boundary+.01,.035,{shield:false});
+  assert.equal(weak.ended,'','a surviving flame must not be lost to a gust before it began');
+  const tired=make(),actualCost=(4.5+preWind*3.8)*.025+(4.5+1.15*3.8)*.01,incorrectCost=(4.5+1.15*3.8)*.035;
+  tired.oxygen=(actualCost+incorrectCost)/2;K.step(tired,boundary+.01,.035,{shield:true});
+  assert.equal(tired.ended,'','breath must not be spent at full gust strength before the gust');
+  const exhausted=make();exhausted.oxygen=.01;const events=K.step(exhausted,boundary+.01,.035,{shield:true});
+  assert.equal(exhausted.ended,'smother');assert.equal(exhausted.finalePhase,'gust-warning');assert.equal(exhausted.gustShield,0);
+  assert.ok(!events.some(e=>e.type==='finale'&&e.phase==='gust-active'),'do not announce a gust after the traveller has fallen');
+ }
+});
 test("near-extinction recovery comes from the player's timely release, not RNG",()=>{
  const eligible=K.canTriggerMiracle,base={rescue:false,memories:2,flame:21,oxygen:51,shield:false,wind:.29,releaseAt:78.5};
  assert.equal(eligible(base,79),true);

@@ -709,7 +709,8 @@ try{
     return {reply:state.replyLevel,ending:K.arrivalEnding(state),silence:state.silenceRelease};
    };
    const storm=shield=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-active',flame:shield?80:.2,oxygen:shield?.2:80});const events=K.step(s,journey-2.99,.035,{shield});return {ending:s.ended,phase:s.finalePhase,silence:events.some(e=>e.type==='finale'&&e.phase==='silence')}};
-   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true)};
+   const starts=shield=>{const boundary=journey-8,wind=K.baseWind(boundary,3),s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-warning',flame:shield?80:(wind>.5?(7+wind*8)*.025:0)+(7+1.15*8)*.01+.04,oxygen:shield?((4.5+wind*3.8)*.025+(4.5+1.15*3.8)*.045)/2:80});K.step(s,boundary+.01,.035,{shield});return s.ended};
+   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true),startOpen:starts(false),startHeld:starts(true)};
   }));
   for(const result of results){
    assert.equal(result.enough.reply,'bright','last slice of silence counts for route '+result.journey);
@@ -718,6 +719,8 @@ try{
    assert.equal(result.short.ending,'wish');
    assert.deepEqual(result.blown,{ending:'blown',phase:'gust-active',silence:false},'the final gust still reaches the exposed flame on route '+result.journey);
    assert.deepEqual(result.smother,{ending:'smother',phase:'gust-active',silence:false},'the final gust still costs breath on route '+result.journey);
+   assert.equal(result.startOpen,'','the wind before the gust cannot prematurely extinguish the flame on route '+result.journey);
+   assert.equal(result.startHeld,'','the time before the gust cannot prematurely exhaust breath on route '+result.journey);
   }
   assert.deepEqual(errors,[]);await ctx.close();done('finale boundary timing for all routes');
  }
