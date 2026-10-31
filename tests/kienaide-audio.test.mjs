@@ -73,6 +73,15 @@ test('retry preserves mute, volume and the existing audio context',()=>{
  assert.equal(audio.volume,.35);assert.equal(audio.state,'running');
 });
 
+test('unmuting after zero volume restores the previous audible level',()=>{
+ const {audio,stats}=audioRig();audio.setVolume(.35);audio.setVolume(0);
+ assert.equal(audio.muted,true);assert.equal(audio.volume,.35,'keep the last audible level');
+ audio.setMuted(false);assert.equal(audio.muted,false);assert.equal(audio.volume,.35);
+ assert.equal(stats.gainTargets.at(-1),.175,'unmuting actually restores audible gain');
+ const legacy=audioRig('{"muted":true,"volume":0}').audio;
+ assert.equal(legacy.muted,true);legacy.setMuted(false);assert.ok(legacy.volume>0,'old zero-volume saves remain muted until explicitly enabled');
+});
+
 test('breathing cue grows more frequent and present as oxygen becomes critical',()=>{
  const {breathProfile}=(()=>{const scope={};vm.runInNewContext(source,scope);return scope.KienaideAudio})();
  assert.equal(breathProfile(37),null,'normal breathing stays out of the score');

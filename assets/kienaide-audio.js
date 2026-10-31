@@ -3,7 +3,7 @@
 // ending stingers. Silence is used on purpose before the window answers.
 (function(root){'use strict';
 const KEY='emotion-kienaide-audio-v1';
-function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return {muted:!!v.muted,volume:typeof v.volume==='number'?Math.min(1,Math.max(0,v.volume)):.8}}catch(_){return {muted:false,volume:.8}}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}'),n=typeof v.volume==='number'?Math.min(1,Math.max(0,v.volume)):.8;return {muted:!!v.muted||n===0,volume:n>0?n:.8}}catch(_){return {muted:false,volume:.8}}}
 function save(p){try{localStorage.setItem(KEY,JSON.stringify(p))}catch(_){}}
 // Pentatonic melody fragments per chapter (MIDI note numbers). Sparse on purpose.
 const SCALES=[[69,72,74,76,79],[67,69,72,74,76],[64,67,69,71,74],[72,74,76,79,81]];
@@ -55,7 +55,7 @@ function create(){
   nextNote=0;noteIndex=0;lastStep=0;nextBreath=0;chapter=-1;
  }
  function setMuted(m){prefs.muted=!!m;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
- function setVolume(v){prefs.volume=Math.min(1,Math.max(0,v));if(prefs.volume>0&&prefs.muted)prefs.muted=false;save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
+ function setVolume(v){const level=Math.min(1,Math.max(0,v));if(level===0)prefs.muted=true;else{prefs.volume=level;prefs.muted=false}save(prefs);if(master)master.gain.setTargetAtTime(prefs.muted?0:prefs.volume*.5,ac.currentTime,.05)}
  function tone(freq,dur=.6,vol=.12,type='sine',when=0,dest){
   if(!ac||prefs.muted)return;const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(dest||bus);track(o);o.start(t);o.stop(t+dur+.05);

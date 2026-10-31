@@ -266,7 +266,7 @@ if(candle){
  const paint=()=>{const supported=!!(window.AudioContext||window.webkitAudioContext);for(const sound of sounds){sound.disabled=!supported;sound.setAttribute('aria-pressed',String(supported&&!KA.muted));sound.textContent=!supported?'音 非対応':KA.muted?'音 OFF':'音 ON'}for(const vol of volumes){vol.disabled=!supported;vol.value=String(Math.round((KA.muted?0:KA.volume)*100))}};
  const prepare=()=>{KA.init();syncCandleAudio()};
  for(const sound of sounds)sound.addEventListener('click',()=>{prepare();KA.setMuted(!KA.muted);paint();mark('sound_toggle',{muted:KA.muted})});
- for(const vol of volumes)vol.addEventListener('input',()=>{prepare();KA.setVolume(Number(vol.value)/100);if(Number(vol.value)===0)KA.setMuted(true);paint()});
+ for(const vol of volumes)vol.addEventListener('input',()=>{prepare();KA.setVolume(Number(vol.value)/100);paint()});
  paint();
  // Background tabs must not keep playing or double the timers when they come back.
  document.addEventListener('visibilitychange',()=>{last=0;syncCandleAudio()});
