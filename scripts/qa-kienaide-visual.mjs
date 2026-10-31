@@ -839,7 +839,11 @@ try{
    await page.reload();assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF','mute survives reload');
    await page.locator('#play').click();await page.locator('#journey-menu-open').click();await page.locator('#pause-volume').fill('40');
    assert.equal(await page.locator('#sound-toggle').innerText(),'音 ON','raising the volume unmutes');
-   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','volume survives reload');
+   await page.locator('#pause-volume').fill('0');assert.equal(await page.locator('#pause-sound').innerText(),'音 OFF','zero volume mutes');
+   await page.reload();assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF','zero-volume mute survives reload');
+   await page.locator('#play').click();await page.locator('#journey-menu-open').click();await page.locator('#pause-sound').click();
+   assert.equal(await page.locator('#pause-sound').innerText(),'音 ON');assert.equal(await page.locator('#pause-volume').inputValue(),'40','unmuting restores the last audible volume');
+   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','restored volume survives reload');
   }else{assert.equal(await page.locator('#pause-sound').innerText(),'音 非対応');assert.ok(await page.locator('#pause-volume').isDisabled());await page.reload()}
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('sound settings');
