@@ -154,12 +154,16 @@ function readJourneyProgress(){
  try{const saved=JSON.parse(localStorage.getItem(journeyKey)||'{}');const started=safeJourneyCount(saved?.started);return {started,completed:Math.min(started,safeJourneyCount(saved?.completed))}}catch(_){return {started:0,completed:0}}
 }
 const journeyProgress=candle?readJourneyProgress():null;
-function saveJourneyProgress(kind){
+function syncJourneyProgress(){
  if(!journeyProgress)return;
- // Keep journeys already recorded by another tab since this one opened.
+ // Preserve this tab's in-memory counts if storage is unavailable or older.
  const saved=readJourneyProgress();
  journeyProgress.started=Math.max(journeyProgress.started,saved.started);
  journeyProgress.completed=Math.max(journeyProgress.completed,saved.completed);
+}
+function saveJourneyProgress(kind){
+ if(!journeyProgress)return;
+ syncJourneyProgress();
  journeyProgress[kind]++;
  try{localStorage.setItem(journeyKey,JSON.stringify(journeyProgress))}catch(_){}
  renderJourneyProgress();
@@ -266,7 +270,7 @@ if(candle){
  const paint=()=>{const supported=!!(window.AudioContext||window.webkitAudioContext);for(const sound of sounds){sound.disabled=!supported;sound.setAttribute('aria-pressed',String(supported&&!KA.muted));sound.textContent=!supported?'音 非対応':KA.muted?'音 OFF':'音 ON'}for(const vol of volumes){vol.disabled=!supported;vol.value=String(Math.round((KA.muted?0:KA.volume)*100))}};
  const prepare=()=>{KA.init();syncCandleAudio()};
  for(const sound of sounds)sound.addEventListener('click',()=>{prepare();KA.setMuted(!KA.muted);paint();mark('sound_toggle',{muted:KA.muted})});
- for(const vol of volumes)vol.addEventListener('input',()=>{prepare();KA.setVolume(Number(vol.value)/100);if(Number(vol.value)===0)KA.setMuted(true);paint()});
+ for(const vol of volumes)vol.addEventListener('input',()=>{prepare();KA.setVolume(Number(vol.value)/100);paint()});
  paint();
  // Background tabs must not keep playing or double the timers when they come back.
  document.addEventListener('visibilitychange',()=>{last=0;syncCandleAudio()});
@@ -323,6 +327,7 @@ function renderJourneyProgress(){
 }
 function syncCandleCollection(){
  if(!candle)return;
+ syncJourneyProgress();
  try{const saved=JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)||'[]');if(Array.isArray(saved))collected=[...new Set([...collected,...saved.filter(id=>endingList.some(e=>e.id===id))])]}catch(_){}
 }
 function unlock(id){

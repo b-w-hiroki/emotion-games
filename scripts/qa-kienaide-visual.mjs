@@ -693,6 +693,8 @@ try{
   await first.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
   await first.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await first.locator('#collection-list .found').count(),4,'opening an older tab refreshes the collection');
+  assert.match(await first.locator('#journey-progress').innerText(),/旅 3回 · 結末まで 3回/,'opening an older tab refreshes both journey counts');
+  assert.match(await first.locator('#open-collection').innerText(),/旅 3回/,'the gallery entry also shows the latest journey count');
   assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:3,completed:3},'all three journeys remain recorded across tabs');
   await second.reload();await second.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await second.locator('#collection-list .found').count(),4,'all discoveries remain after reload');
@@ -837,7 +839,11 @@ try{
    await page.reload();assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF','mute survives reload');
    await page.locator('#play').click();await page.locator('#journey-menu-open').click();await page.locator('#pause-volume').fill('40');
    assert.equal(await page.locator('#sound-toggle').innerText(),'音 ON','raising the volume unmutes');
-   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','volume survives reload');
+   await page.locator('#pause-volume').fill('0');assert.equal(await page.locator('#pause-sound').innerText(),'音 OFF','zero volume mutes');
+   await page.reload();assert.equal(await page.locator('#sound-toggle').innerText(),'音 OFF','zero-volume mute survives reload');
+   await page.locator('#play').click();await page.locator('#journey-menu-open').click();await page.locator('#pause-sound').click();
+   assert.equal(await page.locator('#pause-sound').innerText(),'音 ON');assert.equal(await page.locator('#pause-volume').inputValue(),'40','unmuting restores the last audible volume');
+   await page.reload();assert.equal(await page.locator('#volume').inputValue(),'40','restored volume survives reload');
   }else{assert.equal(await page.locator('#pause-sound').innerText(),'音 非対応');assert.ok(await page.locator('#pause-volume').isDisabled());await page.reload()}
   await page.locator('#play').click();await page.waitForTimeout(400);assert.ok(await page.locator('#action').isEnabled());
   assert.deepEqual(errors,[]);await ctx.close();done('sound settings');
