@@ -20,6 +20,8 @@ function create(){
   if(ac)return true;
   const AC=root.AudioContext||root.webkitAudioContext;if(!AC)return false;
   try{ac=new AC()}catch(_){ac=null;return false}
+  // The OS may resume an interrupted context independently of our requests.
+  ac.addEventListener?.('statechange',syncTransport);
   master=ac.createGain();master.gain.value=prefs.muted?0:prefs.volume*.5;master.connect(ac.destination);
   // A short feedback delay stands in for reverb and softens every note.
   bus=ac.createGain();const delay=ac.createDelay(1),fb=ac.createGain(),wet=ac.createGain();delay.delayTime.value=.33;fb.gain.value=.32;wet.gain.value=.35;
@@ -42,6 +44,7 @@ function create(){
   if(!method)return;
   try{
    const requestedPlay=shouldPlay,before=ac.state;
+   transport=true; // Guard even a synchronous statechange during the call.
    transport=Promise.resolve(ac[method]());
    transport.then(()=>{transport=null;if(shouldPlay!==requestedPlay||ac.state!==before)syncTransport()},()=>{transport=null});
   }catch(_){transport=null}
