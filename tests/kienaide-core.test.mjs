@@ -110,6 +110,24 @@ test('a dead flame never gets a rescue reply',()=>{
  K.step(s,88.49,DT,{shield:false});
  assert.notEqual(s.replyLevel,'bright');
 });
+test('the final gust still costs flame and breath in a frame crossing into silence',()=>{
+ for(const journey of [82,90,98]){
+  const boundary=journey-3,make=()=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-active',flame:80,oxygen:80});return s};
+  for(const shield of [false,true]){
+   const combined=make(),split=make();
+   K.step(combined,boundary+.01,.035,{shield});
+   K.step(split,boundary-.000001,.024999,{shield});K.step(split,boundary+.01,.010001,{shield});
+   assert.ok(Math.abs(combined.flame-split.flame)<.0001,'flame does not depend on the frame boundary');
+   assert.ok(Math.abs(combined.oxygen-split.oxygen)<.0001,'breath does not depend on the frame boundary');
+  }
+  const flame=make();flame.flame=.2;const events=K.step(flame,boundary+.01,.035,{shield:false});
+  assert.equal(flame.ended,'blown','the last gust can extinguish an exposed flame before silence');
+  assert.equal(flame.finalePhase,'gust-active','the ending retains the phase in which the flame went out');
+  assert.ok(!events.some(e=>e.type==='finale'&&e.phase==='silence'),'silence is not announced after the flame goes out');
+  const breath=make();breath.oxygen=.2;K.step(breath,boundary+.01,.035,{shield:true});
+  assert.equal(breath.ended,'smother','the last gust can exhaust breath before silence');
+ }
+});
 test("near-extinction recovery comes from the player's timely release, not RNG",()=>{
  const eligible=K.canTriggerMiracle,base={rescue:false,memories:2,flame:21,oxygen:51,shield:false,wind:.29,releaseAt:78.5};
  assert.equal(eligible(base,79),true);
