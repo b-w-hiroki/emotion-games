@@ -33,7 +33,7 @@ try {
         const shell = frame.locator('.shell');
         assert.ok(await shell.evaluate(el => el.scrollHeight <= innerHeight + 1), `${name} ${width}: controls fit without scrolling inside the game`);
         const art = await frame.locator('#scene').evaluate(async canvas => {
-          const [{ createGame }, { drawScene, drawDish, drawRiceMascot, cheeringFriends }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js')]);
+          const [{ createGame }, { drawScene, drawDish, drawRiceMascot, cheeringFriends }, { gatherPresentation }] = await Promise.all([import('../assets/chahan-core.js'), import('./art.js'), import('../assets/chahan-gesture.js')]);
           const assets = await Promise.all(['street','train','sky','wok-v2','toss-v2','rice-v2','rice-egg-v1','flight-v3','flight-egg-v1'].map(name => new Promise(resolve => {
             const image = new Image(); image.onload = () => resolve(image.width === 780); image.onerror = () => resolve(false);
             image.src = `./art/${name}.webp`;
@@ -80,7 +80,13 @@ try {
           game.tossOutcome = 'spilled'; game.combo = 0;
           const friendsAfterSpill = cheeringFriends(game);
           game.tossOutcome = 'caught'; game.combo = 5; drawScene(ctx, game, true); frames.crowd = canvas.toDataURL();
-          return { assets, frames, spills, ladleStates, dishes, mascotFrames, cheerLevels, friendsAfterSpill };
+          const finishing = { ...game, phase: 'finished', time: 3, lastToss: 2.8, lastLift: .7, bestCombo: 3, scoopProgress: .4 };
+          const gatherFrames = [0, .5, 1].map(progress => {
+            const presentation = { ...finishing, ...gatherPresentation(finishing, .4, progress), phase: 'playing' };
+            drawScene(ctx, presentation, false);
+            return { image: canvas.toDataURL(), friends: cheeringFriends(presentation), time: presentation.time };
+          });
+          return { assets, frames, spills, ladleStates, dishes, mascotFrames, cheerLevels, friendsAfterSpill, gatherFrames, frozenTime: finishing.time };
         });
         assert.deepEqual(art.assets, Array(9).fill(true), `${name} ${width}: painted layers decode`);
         assert.equal(new Set(Object.values(art.frames)).size, 9, `${name} ${width}: push, flight, ladle, scoop, separated rice and cheering states have distinct art`);
@@ -97,6 +103,10 @@ try {
         assert.notEqual(art.mascotFrames.idle, art.mascotFrames.empty, `${name} ${width}: the mascot appears after rice is added`);
         assert.deepEqual(art.cheerLevels, [0, 1, 2, 3], `${name} ${width}: friends join at consecutive toss milestones`);
         assert.equal(art.friendsAfterSpill, 3, `${name} ${width}: earned friends stay after a spill`);
+        assert.equal(new Set(art.gatherFrames.map(frame => frame.image)).size, 3, `${name} ${width}: airborne rice lands and gathers in distinct frames`);
+        assert.deepEqual(art.gatherFrames.map(frame => frame.friends), [2, 2, 2], `${name} ${width}: earned characters stay visible while plating`);
+        assert.equal(art.frozenTime, 3, `${name} ${width}: presenting the scoop does not advance cooking`);
+        if (width === 390) for (const [index, frame] of art.gatherFrames.entries()) fs.writeFileSync(path.join(output, `gather-landing-${index}-${name}.png`), Buffer.from(frame.image.split(',')[1], 'base64'));
         assert.equal(new Set([0, 1, 3, 5].map(n => art.mascotFrames[`friends${n}`])).size, 4, `${name} ${width}: each milestone has a visibly larger crowd`);
         if (width === 390) for (const [label, data] of Object.entries(art.frames)) fs.writeFileSync(path.join(output, `wok-${label}-${name}.png`), Buffer.from(data.split(',')[1], 'base64'));
         if (width === 390) fs.writeFileSync(path.join(output, `mascot-${name}.png`), Buffer.from(art.mascotFrames.dance.split(',')[1], 'base64'));
@@ -359,6 +369,23 @@ try {
           assert.ok(await keys.locator('#fluffBar').evaluate(el => parseFloat(el.style.width)) > 38, `${name}: keyboard ladle reaches more than the centre rice pocket`);
           await zone.press('Space');
           assert.equal(await keys.locator('#combo').textContent(), '1', `${name}: Space tosses when the cooking scene has focus`);
+          await keys.locator('[data-ingredient="veg"]').press('Space');
+          await keys.locator('[data-filling="pork"]').press('Space');
+          await keys.locator('#seasoning').press('Space');
+          await zone.evaluate(async el => {
+            const start = Number(el.dataset.gameTime), deadline = performance.now() + 5000;
+            while (Number(el.dataset.gameTime) < start + .5 && performance.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+            if (Number(el.dataset.gameTime) < start + .5) throw new Error('toss cooldown did not finish');
+          });
+          await zone.press('Space');
+          assert.equal(await keys.locator('#combo').textContent(), '2', `${name}: a second toss is caught before plating`);
+          const tossAt = Number(await zone.getAttribute('data-game-time'));
+          await zone.press('p');
+          const platedAt = Number(await zone.getAttribute('data-game-time'));
+          assert.ok(platedAt - tossAt < .72, `${name}: plating began while the rice was still airborne`);
+          await keys.locator('#resultDish[data-revealed="true"]').waitFor();
+          assert.equal(await zone.getAttribute('data-game-time'), platedAt.toFixed(3), `${name}: landing presentation does not spend cooking time`);
+          assert.equal(await keys.locator('[data-stat="plating"]').innerText(), '70%');
           await keyboard.close();
           const rhythmPage = await browser.newPage({ viewport: { width, height }, hasTouch: true });
           await rhythmPage.goto(base);

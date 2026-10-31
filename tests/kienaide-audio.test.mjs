@@ -141,7 +141,7 @@ test('audio follows the active journey, modal dialogs and background state',asyn
  audio.resume();await new Promise(setImmediate);assert.equal(audio.state,'running');
  const app=fs.readFileSync('assets/app.js','utf8');
  const lifecycle=app.match(/function syncCandleAudio\(\)\{([^\n]+)\}/)[1];
- for(const [mode,candleDialog,expected] of [['intro',null,'resume'],['intro',{id:'kienaide-intro'},'resume'],['play',null,'resume'],['play',{id:'journey-menu'},'suspend'],['play',{id:'collection-panel'},'suspend'],['play',{id:'route-choice'},'suspend'],['end',null,null]]){
+ for(const [mode,candleDialog,expected] of [['intro',null,'resume'],['intro',{id:'kienaide-intro'},'resume'],['play',null,'resume'],['play',{id:'journey-menu'},'suspend'],['play',{id:'collection-panel'},'suspend'],['play',{id:'route-choice'},'suspend'],['end',null,'resume'],['end',{id:'collection-panel'},'suspend']]){
   const calls=[],context={candle:true,candleWindowFocused:true,mode,candleDialog,chapterLoading:false,document:{hidden:false},landscapeMode:{matches:false},KA:{ready:true,resume:()=>calls.push('resume'),suspend:()=>calls.push('suspend')}};
   vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,expected?[expected]:[],mode+' '+candleDialog?.id);
   context.chapterLoading=true;calls.length=0;vm.runInNewContext('(function(){'+lifecycle+'})()',context);assert.deepEqual(calls,['suspend']);context.chapterLoading=false;

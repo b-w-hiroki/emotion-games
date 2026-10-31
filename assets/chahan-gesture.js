@@ -1,5 +1,18 @@
 const clamp = value => Math.max(0, Math.min(1, value));
 
+// Present an in-flight toss landing before the rice is gathered, without advancing cooking.
+export function gatherPresentation(game, from, progress) {
+  const p = clamp(progress);
+  const age = game.time - game.lastToss;
+  const remaining = game.ingredients.rice && game.tossOutcome !== 'none' && game.tossOutcome !== 'weak' && age >= 0 && age < .72 ? .72 - age : 0;
+  const landing = remaining ? clamp(p * 2) : 1;
+  const gathering = remaining ? clamp(p * 2 - 1) : p;
+  return {
+    time: game.time + remaining * landing,
+    scoopProgress: from + (1 - from) * (1 - (1 - gathering) ** 3),
+  };
+}
+
 // A wok toss has one active direction. Returning the finger cannot undo its pull.
 export function forwardPeak(peak, sample) {
   return sample.y > peak.y ? sample : peak;

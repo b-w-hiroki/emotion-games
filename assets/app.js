@@ -199,7 +199,7 @@ let candleDialog=null,candleInert=[];
 let collectionFromMenu=false,journeyMenuAction='';
 let pendingActionFocus=false;
 function focusCandleAction(){const fallback=action.disabled;(fallback?$('journey-menu-open'):action).focus();pendingActionFocus=fallback}
-function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||!candleWindowFocused||landscapeMode.matches||chapterLoading||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro')KA.resume()}
+function syncCandleAudio(){if(!candle||!KA.ready)return;if(document.hidden||!candleWindowFocused||landscapeMode.matches||chapterLoading||(candleDialog&&candleDialog.id!=='kienaide-intro'))KA.suspend();else if(mode==='play'||mode==='intro'||mode==='end')KA.resume()}
 if(candle)document.addEventListener('focusin',e=>{if(pendingActionFocus&&e.target!==action&&e.target!==document.body)pendingActionFocus=false});
 function setCandleDialog(panel,open){
  if(!candle||(open&&candleDialog))return;
