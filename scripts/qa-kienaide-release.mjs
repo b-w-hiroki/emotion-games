@@ -131,6 +131,7 @@ try{
  for(const size of [{width:390,height:844},{width:360,height:640}]){
   const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001');
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);
+  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('emotion-endings-v1-kienaide'),localStorage.getItem('kienaide-art-endings-v1')]),[null,null],'first run does not invent or overwrite a collection');
   assert.match(await page.locator('#open-collection').innerText(),/結末図鑑 0\/5 · 旅 0回/);
   await page.locator('#open-collection').click();assert.match(await page.locator('#journey-progress').innerText(),/旅 0回 · 結末まで 0回/);
   await page.screenshot({path:path.join(out,`${engine}-${size.width}-journey-progress.png`)});
