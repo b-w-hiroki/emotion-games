@@ -154,12 +154,16 @@ function readJourneyProgress(){
  try{const saved=JSON.parse(localStorage.getItem(journeyKey)||'{}');const started=safeJourneyCount(saved?.started);return {started,completed:Math.min(started,safeJourneyCount(saved?.completed))}}catch(_){return {started:0,completed:0}}
 }
 const journeyProgress=candle?readJourneyProgress():null;
-function saveJourneyProgress(kind){
+function syncJourneyProgress(){
  if(!journeyProgress)return;
- // Keep journeys already recorded by another tab since this one opened.
+ // Preserve this tab's in-memory counts if storage is unavailable or older.
  const saved=readJourneyProgress();
  journeyProgress.started=Math.max(journeyProgress.started,saved.started);
  journeyProgress.completed=Math.max(journeyProgress.completed,saved.completed);
+}
+function saveJourneyProgress(kind){
+ if(!journeyProgress)return;
+ syncJourneyProgress();
  journeyProgress[kind]++;
  try{localStorage.setItem(journeyKey,JSON.stringify(journeyProgress))}catch(_){}
  renderJourneyProgress();
@@ -323,6 +327,7 @@ function renderJourneyProgress(){
 }
 function syncCandleCollection(){
  if(!candle)return;
+ syncJourneyProgress();
  try{const saved=JSON.parse(localStorage.getItem('emotion-endings-v1-'+slug)||'[]');if(Array.isArray(saved))collected=[...new Set([...collected,...saved.filter(id=>endingList.some(e=>e.id===id))])]}catch(_){}
 }
 function unlock(id){

@@ -27,10 +27,12 @@ test('blocked storage still exposes all valid unique discoveries for the current
 
 test('personal journey count survives reload, rejects corrupt values and tolerates blocked storage',()=>{
  const source=app.slice(app.indexOf("const journeyKey='emotion-kienaide-journeys-v1';"),app.indexOf('const landscapeMode='));
- function load(raw,blocked=false){const data=new Map(raw===null?[]:[['emotion-kienaide-journeys-v1',raw]]);const scope={candle:true,JSON,Number,localStorage:{getItem:key=>data.get(key)||null,setItem(key,value){if(blocked)throw Error('denied');data.set(key,value)}},renderJourneyProgress(){}};vm.runInNewContext(source+';result={read:readJourneyProgress,save:saveJourneyProgress,current:journeyProgress}',scope);return {scope,data}}
+ function load(raw,blocked=false){const data=new Map(raw===null?[]:[['emotion-kienaide-journeys-v1',raw]]);const scope={candle:true,JSON,Number,localStorage:{getItem:key=>data.get(key)||null,setItem(key,value){if(blocked)throw Error('denied');data.set(key,value)}},renderJourneyProgress(){}};vm.runInNewContext(source+';result={read:readJourneyProgress,sync:syncJourneyProgress,save:saveJourneyProgress,current:journeyProgress}',scope);return {scope,data}}
  const first=load(null);assert.deepEqual(JSON.parse(JSON.stringify(first.scope.result.current)),{started:0,completed:0});first.scope.result.save('started');first.scope.result.save('completed');assert.deepEqual(JSON.parse(first.data.get('emotion-kienaide-journeys-v1')),{started:1,completed:1});
  assert.deepEqual(JSON.parse(JSON.stringify(load(first.data.get('emotion-kienaide-journeys-v1')).scope.result.current)),{started:1,completed:1});
  assert.deepEqual(JSON.parse(JSON.stringify(load('{"started":3,"completed":99}').scope.result.current)),{started:3,completed:3});
  assert.deepEqual(JSON.parse(JSON.stringify(load('{"started":-1,"completed":"7"}').scope.result.current)),{started:0,completed:0});
  const blocked=load('broken',true);blocked.scope.result.save('started');assert.equal(blocked.scope.result.current.started,1);
+ const tab=load(null);tab.data.set('emotion-kienaide-journeys-v1',JSON.stringify({started:3,completed:2}));tab.scope.result.sync();assert.deepEqual(JSON.parse(JSON.stringify(tab.scope.result.current)),{started:3,completed:2},'opening an older tab observes newer journeys');
+ tab.data.set('emotion-kienaide-journeys-v1','broken');tab.scope.result.sync();assert.deepEqual(JSON.parse(JSON.stringify(tab.scope.result.current)),{started:3,completed:2},'invalid storage cannot erase in-memory progress');
 });

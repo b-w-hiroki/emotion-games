@@ -693,6 +693,8 @@ try{
   await first.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
   await first.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await first.locator('#collection-list .found').count(),4,'opening an older tab refreshes the collection');
+  assert.match(await first.locator('#journey-progress').innerText(),/旅 3回 · 結末まで 3回/,'opening an older tab refreshes both journey counts');
+  assert.match(await first.locator('#open-collection').innerText(),/旅 3回/,'the gallery entry also shows the latest journey count');
   assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:3,completed:3},'all three journeys remain recorded across tabs');
   await second.reload();await second.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await second.locator('#collection-list .found').count(),4,'all discoveries remain after reload');
