@@ -256,10 +256,10 @@ const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)'
 let endingAt=0,endingTime=0,endingClockAt=0,endingPaused=false,endingRevealed=false,runCount=0;
 function syncEndingClock(){if(mode!=='end'||!endingAt)return;const now=performance.now();if(!endingPaused)endingTime+=(now-endingClockAt)/1000;endingClockAt=now;endingPaused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog)}
 function guidanceMarkup(text){return text.split(/(?<=[、。])|(?<= — )/u).map(part=>'<span class="guidance-phrase">'+esc(part)+'</span>').join('')}
-let storyReadingTime=0;
-function syncStoryAnimation(){if(!candle)return;const paused=document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog||chapterLoading;$('story-beat').style.animationPlayState=paused?'paused':'running'}
+let storyReadingTime=0,storyClockAt=0,storyPaused=true;
+function syncStoryAnimation(){if(!candle)return;const now=performance.now();if(storyClockAt&&!storyPaused)storyReadingTime=Math.max(0,storyReadingTime-(now-storyClockAt)/1000);storyClockAt=now;storyPaused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog||chapterLoading);const el=$('story-beat'),playState=storyPaused?'paused':'running';if(el.style.animationPlayState!==playState)el.style.animationPlayState=playState}
 function setStory(chapter,text){
- if(!candle)return;const el=$('story-beat');if(!el||(state.story===chapter&&state.storyText===text))return;state.story=chapter;state.storyText=text;storyReadingTime=4.2;el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+guidanceMarkup(text)+'</strong>';el.classList.add('show');syncStoryAnimation();
+ if(!candle)return;const el=$('story-beat');if(!el||(state.story===chapter&&state.storyText===text))return;state.story=chapter;state.storyText=text;storyReadingTime=4.2;storyClockAt=performance.now();el.classList.remove('show');void el.offsetWidth;el.innerHTML='<small>'+esc(chapter)+'</small><strong>'+guidanceMarkup(text)+'</strong>';el.classList.add('show');syncStoryAnimation();
 }
 if(candle){
  const sounds=[$('sound-toggle'),$('pause-sound')],volumes=[$('volume'),$('pause-volume')];
@@ -552,7 +552,7 @@ function drawCandle(dt){
  if(mode==='end'&&lastEnding){syncEndingClock();if(!endingPaused&&!endingRevealed&&endingTime>=(reducedMotion()?.5:2.6)){endingRevealed=true;curtain.classList.remove('hidden');curtain.scrollTop=0;momentCard.prepare()}KV.endingFrame(ctx,s,lastEnding,endingTime,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
  if(mode!=='play'||!s.events){KV.frame(ctx,s.events?s:K.create({seed:1}),elapsed,{reduced:reducedMotion(),playing:false,caption:'',expression:'calm'});return}
  const paused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog||chapterLoading||s.routeChoice==='pending'||s.decisionPending),step=paused?0:dt*(s.qaSpeed||1);
- if(!paused&&storyReadingTime>0){storyReadingTime=Math.max(0,storyReadingTime-dt);if(!storyReadingTime)$('story-beat').classList.remove('show')}
+ syncStoryAnimation();if(!paused&&!storyReadingTime)$('story-beat').classList.remove('show');
  // An intentional down/up can happen between frames; its release proves the hold existed.
  const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield||shelterRelease,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
