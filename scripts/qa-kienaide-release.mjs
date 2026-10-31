@@ -11,7 +11,7 @@ async function open(size,query='',{save=false,noAudio=false,intro=false}={}){
  const ctx=await browser.newContext({viewport:size,hasTouch:true,isMobile:engine==='chromium'});
  await ctx.addInitScript(({save,noAudio,intro})=>{
   if(!intro)localStorage.setItem('emotion-kienaide-intro-v1','1');
-  if(save){localStorage.setItem('emotion-endings-v1-kienaide','["dawn","dawn"]');localStorage.setItem('kienaide-art-endings-v1','["wish"]')}
+  if(save&&!sessionStorage.getItem('qa-save-seeded')){localStorage.setItem('emotion-endings-v1-kienaide','["dawn","dawn"]');localStorage.setItem('kienaide-art-endings-v1','["wish"]');sessionStorage.setItem('qa-save-seeded','1')}
   if(noAudio){window.AudioContext=undefined;window.webkitAudioContext=undefined}
   Object.defineProperty(navigator,'share',{configurable:true,value:data=>{window.sharedResult=data;return Promise.resolve()}});
  },{save,noAudio,intro});
@@ -112,9 +112,26 @@ try{
   await page.waitForFunction(previous=>document.querySelector('#kienaide-intro .intro-line')?.textContent!==previous,line,{timeout:5000});
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS focus-only prologue pause and recovery');
  }
+ // Seed only once per tab: reloads must read the actual migrated and newly earned data.
+ for(const size of [{width:390,height:844},{width:360,height:640}]){
+  const {ctx,page,errors}=await open(size,'?qa=1&seed=2&speed=1&t=89&mem=0&vital=flame-full',{save:true});
+  const read=()=>page.evaluate(()=>({current:JSON.parse(localStorage.getItem('emotion-endings-v1-kienaide')),legacy:JSON.parse(localStorage.getItem('kienaide-art-endings-v1'))}));
+  assert.deepEqual(await read(),{current:['dawn','wish'],legacy:['wish']},'migration deduplicates and preserves the legacy key');
+  await page.reload();assert.deepEqual(await read(),{current:['dawn','wish'],legacy:['wish']},'reload retains the migrated collection');
+  await page.locator('#play').click();
+  await page.waitForFunction(()=>!!document.querySelector('#stage').dataset.ending,null,{timeout:10000});
+  const ending=await page.locator('#stage').getAttribute('data-ending');
+  assert.ok(!['dawn','wish'].includes(ending),'the repeat journey earns a different ending: '+ending);
+  assert.deepEqual(await read(),{current:['dawn','wish',ending],legacy:['wish']},'a new ending is added without losing either prior save');
+  await page.goto(base);assert.deepEqual(await read(),{current:['dawn','wish',ending],legacy:['wish']},'the production route keeps all discoveries on return');
+  assert.equal(await page.locator('#collection-progress').innerText(),'結末 3 / 5');
+  await page.locator('#open-collection').click();await page.screenshot({path:path.join(out,`${engine}-${size.width}-save-migration-repeat.png`)});
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS migrated saves survive reload, a new ending and production route',size.width);
+ }
  for(const size of [{width:390,height:844},{width:360,height:640}]){
   const {ctx,page,errors}=await open(size,'?qa=1&speed=0.0001');
   await page.waitForFunction(()=>!document.querySelector('#play').disabled);
+  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('emotion-endings-v1-kienaide'),localStorage.getItem('kienaide-art-endings-v1')]),[null,null],'first run does not invent or overwrite a collection');
   assert.match(await page.locator('#open-collection').innerText(),/結末図鑑 0\/5 · 旅 0回/);
   await page.locator('#open-collection').click();assert.match(await page.locator('#journey-progress').innerText(),/旅 0回 · 結末まで 0回/);
   await page.screenshot({path:path.join(out,`${engine}-${size.width}-journey-progress.png`)});
