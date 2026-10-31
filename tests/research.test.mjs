@@ -66,3 +66,25 @@ test('study analyzer reports comprehension, intensity, replay intent and flagshi
  assert.equal(result.status,0,result.stderr);
  for(const text of ['full survey=1/2','immediate=100.0%','mean 4.0/5','other-ending 1','mean memories=2.5/3','miracle=50.0%','journey observations: 1/3 attempts','hearth feed 1','bridge shelter 1','scarf 1','companion 1 / shelter 1 / miracle 1','window reply: bright 1 / mean gust shield=3.2s / mean silence release=0.8s','rest: choices=1 completed=1 (100.0%)','shortcut: choices=1 completed=0 (0.0%)','route unrecorded=1'])assert.ok(result.stdout.includes(text),text+'\n'+result.stdout);
 });
+test('study analyzer excludes missing observations instead of treating them as zero',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'emotion-study-missing-'));
+ const file=path.join(dir,'study.json');
+ fs.writeFileSync(file,JSON.stringify({records:[
+  {game_id:'kienaide',completed:true,duration_ms:90000,inputs:10,memories:3,miracle:true,lowest_flame:20,route:'rest',felt:'安心',understood:'during',intensity:4,replay_reason:'improve'},
+  {game_id:'kienaide',completed:true,duration_ms:null,inputs:null,memories:null,miracle:null,lowest_flame:null,route:'rest',felt:'緊張',understood:'immediate',intensity:null,replay_reason:'improve'}
+ ]}));
+ const result=spawnSync(process.execPath,['scripts/analyze-study.mjs',file],{encoding:'utf8'});
+ fs.rmSync(dir,{recursive:true,force:true});
+ assert.equal(result.status,0,result.stderr);
+ for(const text of ['full survey=1/2','mean duration=90.0s / mean inputs=10.0','mean 4.0/5 (n=1)','mean memories=3.0/3 / miracle=100.0% / mean lowest flame=20.0','rest: choices=2 completed=2 (100.0%) / endings: No responses / miracle=100.0%'])assert.ok(result.stdout.includes(text),text+'\n'+result.stdout);
+});
+test('study analyzer keeps recorded zero values and false outcomes',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'emotion-study-zero-'));
+ const file=path.join(dir,'study.json');
+ fs.writeFileSync(file,JSON.stringify({records:[{game_id:'kienaide',completed:true,duration_ms:0,inputs:0,memories:0,miracle:false,lowest_flame:0,route:'rest'}]}));
+ const result=spawnSync(process.execPath,['scripts/analyze-study.mjs',file],{encoding:'utf8'});
+ fs.rmSync(dir,{recursive:true,force:true});
+ assert.equal(result.status,0,result.stderr);
+ assert.match(result.stdout,/mean duration=0\.0s \/ mean inputs=0\.0/);
+ assert.match(result.stdout,/mean memories=0\.0\/3 \/ miracle=0\.0% \/ mean lowest flame=0\.0/);
+});

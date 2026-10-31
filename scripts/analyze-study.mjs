@@ -9,6 +9,7 @@ for(const r of records){
  const list=groups.get(r.game_id)||[];list.push(r);groups.set(r.game_id,list);
 }
 const fmt=n=>Number.isFinite(n)?n.toFixed(1):'—';
+const numeric=value=>typeof value==='number'?value:typeof value==='string'&&value.trim()!==''?Number(value):NaN;
 const ratio=(n,total)=>total?fmt(n/total*100)+'%':'—';
 const counts=(items,key)=>{const result={};for(const item of items)if(item[key]!==null&&item[key]!==undefined&&item[key]!=='')result[item[key]]=(result[item[key]]||0)+1;return result};
 const listCounts=value=>Object.entries(value).sort((a,b)=>b[1]-a[1]).map(([key,n])=>key+' '+n).join('、')||'No responses';
@@ -17,12 +18,14 @@ console.log('※ Self-reported feelings are exploratory; do not interpret this a
 for(const [game,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){
  const done=items.filter(x=>x.completed===true);
  const feelings=done.filter(x=>x.felt);
- const full=done.filter(x=>x.felt&&x.understood&&Number.isFinite(Number(x.intensity))&&x.replay_reason);
+ const full=done.filter(x=>x.felt&&x.understood&&numeric(x.intensity)>=1&&numeric(x.intensity)<=5&&x.replay_reason);
  const understood=done.filter(x=>x.understood);
- const intensity=done.map(x=>Number(x.intensity)).filter(x=>Number.isFinite(x)&&x>=1&&x<=5);
+ const intensity=done.map(x=>numeric(x.intensity)).filter(x=>Number.isFinite(x)&&x>=1&&x<=5);
  const retries=items.filter(x=>Number(x.attempt_index)>1).length;
- const avgInput=done.length?done.reduce((a,x)=>a+(Number(x.inputs)||0),0)/done.length:NaN;
- const avgSecs=done.length?done.reduce((a,x)=>a+(Number(x.duration_ms)||0),0)/done.length/1000:NaN;
+ const mean=values=>values.length?values.reduce((a,n)=>a+n,0)/values.length:NaN;
+ const inputs=done.map(x=>numeric(x.inputs)).filter(n=>Number.isFinite(n)&&n>=0);
+ const durations=done.map(x=>numeric(x.duration_ms)).filter(n=>Number.isFinite(n)&&n>=0);
+ const avgInput=mean(inputs),avgSecs=mean(durations)/1000;
  console.log('\n'+game+' | starts='+items.length+' completed='+done.length+' ('+ratio(done.length,items.length)+') | full survey='+full.length+'/'+done.length);
  console.log('  mean duration='+fmt(avgSecs)+'s / mean inputs='+fmt(avgInput)+' / retry attempts='+retries);
  console.log('  feelings: '+listCounts(counts(feelings,'felt')));
@@ -31,9 +34,10 @@ for(const [game,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){
  console.log('  replay intent: '+listCounts(counts(done,'replay_reason')));
  console.log('  endings: '+listCounts(counts(done,'ending_id')));
  if(game==='kienaide'){
-  const mechanic=done.filter(x=>Number.isFinite(Number(x.memories)));
-  const flames=done.map(x=>Number(x.lowest_flame)).filter(Number.isFinite);
-  console.log('  flagship loop: mean memories='+fmt(mechanic.length?mechanic.reduce((a,x)=>a+Number(x.memories),0)/mechanic.length:NaN)+'/3 / miracle='+ratio(mechanic.filter(x=>x.miracle===true).length,mechanic.length)+' / mean lowest flame='+fmt(flames.length?flames.reduce((a,n)=>a+n,0)/flames.length:NaN));
+  const memories=done.map(x=>numeric(x.memories)).filter(n=>Number.isFinite(n)&&n>=0&&n<=3);
+  const miracles=done.filter(x=>typeof x.miracle==='boolean');
+  const flames=done.map(x=>numeric(x.lowest_flame)).filter(n=>Number.isFinite(n)&&n>=0&&n<=100);
+  console.log('  flagship loop: mean memories='+fmt(mean(memories))+'/3 / miracle='+ratio(miracles.filter(x=>x.miracle).length,miracles.length)+' / mean lowest flame='+fmt(mean(flames)));
   const observed=items.filter(x=>x.journey_detail&&Array.isArray(x.journey_detail.decisions)&&Array.isArray(x.journey_detail.collected)&&Array.isArray(x.journey_detail.missed));
   if(observed.length){
    const details=observed.map(x=>x.journey_detail),tally=id=>details.filter(x=>x[id]===true).length;
@@ -49,7 +53,8 @@ for(const [game,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){
   }
   for(const route of ['shortcut','rest']){
    const chosen=items.filter(x=>x.route===route),finished=chosen.filter(x=>x.completed===true);
-   console.log('  '+route+': choices='+chosen.length+' completed='+finished.length+' ('+ratio(finished.length,chosen.length)+') / endings: '+listCounts(counts(finished,'ending_id'))+' / miracle='+ratio(finished.filter(x=>x.miracle===true).length,finished.length));
+   const routeMiracles=finished.filter(x=>typeof x.miracle==='boolean');
+   console.log('  '+route+': choices='+chosen.length+' completed='+finished.length+' ('+ratio(finished.length,chosen.length)+') / endings: '+listCounts(counts(finished,'ending_id'))+' / miracle='+ratio(routeMiracles.filter(x=>x.miracle).length,routeMiracles.length));
   }
   console.log('  route unrecorded='+items.filter(x=>x.route!=='shortcut'&&x.route!=='rest').length+' (includes pre-choice exits and older exports)');
  }
