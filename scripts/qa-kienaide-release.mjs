@@ -45,6 +45,27 @@ try{
   if(await page.evaluate(()=>!!window.focusAudio))await page.waitForFunction(()=>window.focusAudio.state==='running');
   assert.deepEqual(errors,[]);await ctx.close();console.log('PASS focus-only pause and recovery',size.width);
  }
+ // Ending audio resumes after interruption, while a gallery remains silent.
+ {
+  const {ctx,page,errors}=await open({width:390,height:844},'?qa=1&seed=2&speed=1&t=89&mem=3&vital=flame-full');
+  await page.evaluate(()=>{const AC=window.AudioContext||window.webkitAudioContext;if(AC){window.AudioContext=function(...args){const ac=new AC(...args);window.endingAudio=ac;return ac};window.AudioContext.prototype=AC.prototype}});
+  await page.locator('#play').click();
+  await page.waitForFunction(()=>!!document.querySelector('#stage').dataset.ending,null,{timeout:10000});
+  const available=await page.evaluate(()=>!!window.endingAudio);
+  if(available){
+   await page.waitForFunction(()=>window.endingAudio.state==='running');
+   await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+   await page.waitForFunction(()=>window.endingAudio.state==='suspended');
+   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+   await page.waitForFunction(()=>window.endingAudio.state==='running',null,{timeout:3000});
+   await page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:6000});
+   await page.locator('#open-collection').click();
+   await page.waitForFunction(()=>window.endingAudio.state==='suspended');
+   await page.locator('#close-collection').click();
+   await page.waitForFunction(()=>window.endingAudio.state==='running',null,{timeout:3000});
+  }
+  assert.deepEqual(errors,[]);await ctx.close();console.log('PASS ending audio resumes after focus and gallery',available?'':'(Web Audio unavailable)');
+ }
  // The prologue also freezes when only window focus changes.
  // A browser may stop animation frames throughout the interruption.
  {
