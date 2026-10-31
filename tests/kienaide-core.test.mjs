@@ -110,6 +110,21 @@ test('a dead flame never gets a rescue reply',()=>{
  K.step(s,88.49,DT,{shield:false});
  assert.notEqual(s.replyLevel,'bright');
 });
+test('the final silence is resolved before the window answers',()=>{
+ for(const journey of [82,90,98]){
+  const boundary=journey-1.5,make=()=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'silence',flame:80,oxygen:80,memories:3,gustShield:3,silenceRelease:.5});return s};
+  const exhausted=make();exhausted.oxygen=.05;
+  const events=K.step(exhausted,boundary+.01,.035,{shield:true});
+  assert.equal(exhausted.ended,'smother','breath lost during silence ends the journey');
+  assert.equal(exhausted.finalePhase,'silence','the ending remains in the phase where breath ran out');
+  assert.ok(!events.some(e=>e.type==='reply'||e.type==='finale'&&e.phase==='window-reply'),'the window cannot answer after breath runs out');
+  const combined=make(),split=make();combined.flame=split.flame=67.9;
+  K.step(combined,boundary+.01,.035,{shield:false});
+  K.step(split,boundary-.000001,.024999,{shield:false});K.step(split,boundary+.01,.010001,{shield:false});
+  assert.ok(Math.abs(combined.flame-split.flame)<.0001,'flame recovery and reply apply in chronological order');
+  assert.ok(Math.abs(combined.oxygen-split.oxygen)<.0001,'breath recovery is independent of the frame boundary');
+ }
+});
 test('the final gust still costs flame and breath in a frame crossing into silence',()=>{
  for(const journey of [82,90,98]){
   const boundary=journey-3,make=()=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-active',flame:80,oxygen:80});return s};

@@ -134,6 +134,16 @@ function step(s,time,dt,input){
   dt=Math.max(0,dt-gustTime);
  }
  if(!s.shield)s.silenceRelease+=silenceTime;
+ // The last part of silence precedes the window response. Resolve its
+ // breath and flame first, so an exhausted traveller cannot hear a reply.
+ if(phase==='window-reply'&&silenceTime>0){
+  const calm=.08;s.wind=calm;
+  if(s.shield){s.oxygen=Math.max(0,s.oxygen-(4.5+calm*3.8)*silenceTime);s.flame=Math.min(100,s.flame+(.7-calm*.25)*silenceTime)}
+  else{s.oxygen=Math.min(100,s.oxygen+15*silenceTime);s.flame=Math.min(100,s.flame+1.3*silenceTime)}
+  s.lowestFlame=Math.min(s.lowestFlame,s.flame);s.peakWind=Math.max(s.peakWind,calm);
+  if(s.oxygen<=0||s.flame<=0){s.finalePhase='silence';s.ended=s.oxygen<=0?'smother':'blown';emit('end',{ending:s.ended});return out}
+  dt=Math.max(0,dt-silenceTime);
+ }
  if(phase==='gust-active')wind=1.15;else if(phase==='silence'||phase==='window-reply')wind=.08;
  if(phase!==s.previousFinalePhase){s.previousFinalePhase=phase;emit('finale',{phase});
   if(phase==='window-reply'){
