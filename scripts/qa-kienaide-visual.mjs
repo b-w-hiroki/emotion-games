@@ -693,6 +693,8 @@ try{
   await first.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'));
   await first.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await first.locator('#collection-list .found').count(),4,'opening an older tab refreshes the collection');
+  assert.match(await first.locator('#journey-progress').innerText(),/旅 3回 · 結末まで 3回/,'opening an older tab refreshes both journey counts');
+  assert.match(await first.locator('#open-collection').innerText(),/旅 3回/,'the gallery entry also shows the latest journey count');
   assert.deepEqual(await second.evaluate(()=>JSON.parse(localStorage.getItem('emotion-kienaide-journeys-v1'))),{started:3,completed:3},'all three journeys remain recorded across tabs');
   await second.reload();await second.locator('#open-collection').evaluate(el=>el.click());
   assert.equal(await second.locator('#collection-list .found').count(),4,'all discoveries remain after reload');
@@ -712,7 +714,8 @@ try{
    const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'silence',flame:80,oxygen:.05,gustShield:3,silenceRelease:.5});
    const events=K.step(s,journey-1.49,.035,{shield:true});
    const starts=shield=>{const boundary=journey-8,wind=K.baseWind(boundary,3),s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'gust-warning',flame:shield?80:(wind>.5?(7+wind*8)*.025:0)+(7+1.15*8)*.01+.04,oxygen:shield?((4.5+wind*3.8)*.025+(4.5+1.15*3.8)*.045)/2:80});K.step(s,boundary+.01,.035,{shield});return s.ended};
-   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true),silenceExhaustion:{ending:s.ended,phase:s.finalePhase,reply:events.some(e=>e.type==='reply')},startOpen:starts(false),startHeld:starts(true)};
+   const atArrival=oxygen=>{const t=K.create({seed:1});Object.assign(t,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'window-reply',flame:80,oxygen,replyLevel:'bright',reply:1,memories:3});K.step(t,journey+.02,.035,{shield:true});return t.ended};
+   return {journey,enough:run(.4),short:run(.34),blown:storm(false),smother:storm(true),silenceExhaustion:{ending:s.ended,phase:s.finalePhase,reply:events.some(e=>e.type==='reply')},startOpen:starts(false),startHeld:starts(true),arrivalSafe:atArrival(.08),arrivalExhausted:atArrival(.05)};
   }));
   for(const result of results){
    assert.equal(result.enough.reply,'bright','last slice of silence counts for route '+result.journey);
@@ -724,6 +727,8 @@ try{
    assert.deepEqual(result.silenceExhaustion,{ending:'smother',phase:'silence',reply:false},'breath can run out before the window replies on route '+result.journey);
    assert.equal(result.startOpen,'','the wind before the gust cannot prematurely extinguish the flame on route '+result.journey);
    assert.equal(result.startHeld,'','the time before the gust cannot prematurely exhaust breath on route '+result.journey);
+   assert.equal(result.arrivalSafe,'dawn','breath after arrival cannot change the ending on route '+result.journey);
+   assert.equal(result.arrivalExhausted,'smother','breath exhausted before arrival still loses on route '+result.journey);
   }
   assert.deepEqual(errors,[]);await ctx.close();done('finale boundary timing for all routes');
  }
