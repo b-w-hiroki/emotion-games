@@ -518,7 +518,11 @@ function candleCaption(s){
  const ev=s.event?.kind==='lantern'&&s.routeChoice==='shortcut'?null:s.event;
  const incomingGust=ev&&elapsed<ev.at&&(ev.kind==='gust'||ev.kind==='eddy');
  if(s.finalePhase==='silence')return [s.shield?'静かになった — いま離して':'手をひらいて、窓に灯りを見せて',false];
- if(s.finalePhase==='window-reply')return [s.oxygen<=22?(s.shield?'窓の返事 — 手を離して息を':'窓の返事 — そのまま息を戻す'):s.reply>0?'窓が答えている':'あと少し',s.oxygen<=22];
+ if(s.finalePhase==='window-reply'){
+  if(s.shield)return [(s.reply>0||s.oxygen<=22?'窓の返事':'あと少し')+' — 手を離して息を',s.oxygen<=22];
+  if(s.oxygen<=22)return ['窓の返事 — そのまま息を戻す',true];
+  return [s.reply>0?'窓が答えている':'あと少し',false];
+ }
  if(s.oxygen<=22)return ['息が危ない — 手をはなして',true];
  if(s.companionUntil>elapsed)return ['火の子が手を温めた — 息 +'+Math.round(s.companionGain||0),false];
  if(s.chapter===3&&!s.rescue&&s.memories>=2&&s.flame>0&&s.flame<=29&&s.oxygen>=30&&s.wind<.46&&s.shield&&s.finalePhase==='approach')return ['窓が見ている — いま手を離して',false];

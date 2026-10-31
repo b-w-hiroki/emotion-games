@@ -61,6 +61,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#stage').dataset.phase==='window-reply');
   assert.equal(await page.locator('#stage').getAttribute('data-reply'),openHands?'bright':'faint','the resumed silence choice determines the reply');
   assert.equal(await page.locator('#action .action-main em').innerText(),openHands?'家まであと少し':'息を戻す','the control describes the current reply, not a choice that has already passed');
+  if(!openHands){assert.ok(await page.locator('.action-cue').isVisible(),'the breathing cue is visible');assert.match(await page.locator('.action-cue').innerText(),/窓の返事.*手を離して息を/,'holding during the reply gives visible recovery guidance');}
   await page.screenshot({path:path.join(out,`${engine}-${size.width}-finale-focus-${openHands?'open':'held'}.png`)});
   if(!openHands)await page.keyboard.up('Space');assert.deepEqual(errors,[]);await ctx.close();
   console.log('PASS interrupted final gust and '+(openHands?'open':'held')+' silence',size.width);
