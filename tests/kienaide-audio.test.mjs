@@ -80,6 +80,7 @@ test('unmuting after zero volume restores the previous audible level',()=>{
  assert.equal(stats.gainTargets.at(-1),.175,'unmuting actually restores audible gain');
  const legacy=audioRig('{"muted":true,"volume":0}').audio;
  assert.equal(legacy.muted,true);legacy.setMuted(false);assert.ok(legacy.volume>0,'old zero-volume saves remain muted until explicitly enabled');
+ const inconsistent=audioRig('{"muted":false,"volume":0}').audio;assert.equal(inconsistent.muted,true,'an old false ON state remains silent');inconsistent.setMuted(false);assert.ok(inconsistent.volume>0,'explicitly enabling it restores audible volume');
 });
 
 test('breathing cue grows more frequent and present as oxygen becomes critical',()=>{
