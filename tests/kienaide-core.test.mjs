@@ -110,6 +110,21 @@ test('a dead flame never gets a rescue reply',()=>{
  K.step(s,88.49,DT,{shield:false});
  assert.notEqual(s.replyLevel,'bright');
 });
+test('arrival ignores the part of a frame after the journey deadline',()=>{
+ for(const journey of [82,90,98]){
+  const make=oxygen=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'window-reply',flame:80,oxygen,replyLevel:'bright',reply:1,memories:3});return s};
+  const cross=make(.08),exact=make(.08);
+  const events=K.step(cross,journey+.02,.035,{shield:true});K.step(exact,journey,.015,{shield:true});
+  assert.equal(cross.ended,'dawn','breath remaining at arrival reaches the true ending');
+  assert.equal(events.at(-1).ending,'dawn');
+  assert.ok(Math.abs(cross.oxygen-exact.oxygen)<1e-9,'post-arrival time does not drain breath');
+  assert.ok(Math.abs(cross.flame-exact.flame)<1e-9,'post-arrival time does not change the flame');
+  assert.ok(Math.abs(cross.shieldTime-exact.shieldTime)<1e-9,'post-arrival time does not count as input');
+  const exhausted=make(.05);K.step(exhausted,journey+.02,.035,{shield:true});
+  assert.equal(exhausted.ended,'smother','breath exhausted before arrival still loses');
+ }
+});
+
 test('the final silence is resolved before the window answers',()=>{
  for(const journey of [82,90,98]){
   const boundary=journey-1.5,make=()=>{const s=K.create({seed:1});Object.assign(s,{journey,chapter:3,routeChoice:'legacy-test',decisionIndex:2,events:[],previousFinalePhase:'silence',flame:80,oxygen:80,memories:3,gustShield:3,silenceRelease:.5});return s};

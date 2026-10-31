@@ -81,6 +81,9 @@ function step(s,time,dt,input){
  const out=[];const emit=(type,data={})=>out.push({type,...data});
  if(s.ended)return out;
  if(s.routeChoice==='pending'||s.decisionPending)return out;
+ // Arrival ends the journey at its deadline, not at the end of a later frame.
+ // Never apply wind, breath loss or input time beyond that instant.
+ if(time>s.journey){dt=Math.max(0,Math.min(dt,s.journey-(time-dt)));time=s.journey;}
  if(s.routeChoice==='none'&&time>=28&&time<30){s.routeChoice='pending';s.shield=false;emit('route-choice');return out}
  const decisionTimes=[42,56];
  if(s.routeChoice!=='none'&&s.decisionIndex<decisionTimes.length&&time>=decisionTimes[s.decisionIndex]){s.decisionPending=s.decisionIndex===0?'hearth':'bridge';s.shield=false;emit('decision-choice',{kind:s.decisionPending});return out}
