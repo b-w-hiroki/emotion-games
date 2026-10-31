@@ -109,7 +109,19 @@ function step(s,time,dt,input){
  const finaleStart=s.journey-10,frameStart=time-Math.max(0,dt);
  const overlap=(from,to)=>Math.max(0,Math.min(time,to)-Math.max(frameStart,from));
  const gustTime=overlap(finaleStart+2,finaleStart+7),silenceTime=overlap(finaleStart+7,finaleStart+8.5);
- if(s.shield)s.gustShield+=gustTime;else{s.gustExposed+=gustTime;s.silenceRelease+=silenceTime}
+ if(s.shield)s.gustShield+=gustTime;else s.gustExposed+=gustTime;
+ // Resolve the last slice of the storm before applying the silence to the
+ // rest of a boundary-crossing frame. A flame or traveller lost in that slice
+ // cannot be restored by the following calm.
+ if(phase==='silence'&&gustTime>0){
+  const storm=1.15;s.wind=storm;s.peakWind=Math.max(s.peakWind,storm);
+  if(s.shield){s.oxygen=Math.max(0,s.oxygen-(4.5+storm*3.8)*gustTime);s.flame=Math.min(100,s.flame+(.7-storm*.25)*gustTime)}
+  else{s.oxygen=Math.min(100,s.oxygen+15*gustTime);s.flame=Math.max(0,s.flame-(7+storm*8)*gustTime)}
+  s.lowestFlame=Math.min(s.lowestFlame,s.flame);
+  if(s.oxygen<=0||s.flame<=0){s.finalePhase='gust-active';s.ended=s.oxygen<=0?'smother':'blown';emit('end',{ending:s.ended});return out}
+  dt=Math.max(0,dt-gustTime);
+ }
+ if(!s.shield)s.silenceRelease+=silenceTime;
  if(phase==='gust-active')wind=1.15;else if(phase==='silence'||phase==='window-reply')wind=.08;
  if(phase!==s.previousFinalePhase){s.previousFinalePhase=phase;emit('finale',{phase});
   if(phase==='window-reply'){
