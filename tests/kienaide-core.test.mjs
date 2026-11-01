@@ -407,6 +407,11 @@ test('both routes change actual arrival time and preserve all memories and the c
 test('flame personality follows state and shows nothing when out',()=>{
  assert.equal(K.flameExpression({flame:0}),'out');
  assert.equal(K.flameExpression({flame:50,rescue:true}),'hope');
+ for(const signal of [{rescue:true},{reply:1}]){
+  assert.equal(K.flameExpression({flame:50,oxygen:10,...signal}),'suffocating','an earlier rescue or reply cannot hide critical breath');
+  assert.equal(K.flameExpression({flame:20,oxygen:80,...signal}),'afraid','an earlier rescue or reply cannot hide a weak flame');
+  assert.equal(K.flameExpression({flame:50,oxygen:80,...signal}),'hope','hope returns after the danger passes');
+ }
  assert.equal(K.flameExpression({flame:50,oxygen:10}),'suffocating');
  assert.equal(K.flameExpression({flame:20,oxygen:80}),'afraid');
  assert.equal(K.flameExpression({flame:50,oxygen:80,shield:true}),'comfort');
