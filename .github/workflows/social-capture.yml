@@ -31,6 +31,7 @@ jobs:
       - run: node scripts/qa-endings.mjs
       - run: node scripts/qa-20.mjs
       - run: node scripts/qa-research.mjs
+      - run: node scripts/qa-analytics.mjs chromium
       - run: node scripts/qa-art-preview.mjs
       - run: node scripts/qa-kienaide-visual.mjs chromium
       - name: Install pinned clip encoders
@@ -71,6 +72,7 @@ jobs:
       - run: node scripts/qa-fishing-battle.mjs webkit
       - run: node scripts/qa-kienaide-card.mjs webkit
       - run: node scripts/qa-research.mjs webkit
+      - run: node scripts/qa-analytics.mjs webkit
       - run: node scripts/qa-kienaide-visual.mjs webkit
       - if: always()
         uses: actions/upload-artifact@v4
@@ -81,4 +83,5 @@ jobs:
             artifacts/fishing-battle/
             artifacts/chahan/
             artifacts/studio/
+            artifacts/analytics/
           retention-days: 30

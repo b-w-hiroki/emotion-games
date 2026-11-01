@@ -16,6 +16,7 @@ const fields={
 const kienaideOnly=new Set(['decision_selected','memory_missed','chapter_reached','finale_warning','finale_gust','finale_silence','journey_exit','shelter_discovered','companion_warmth','miracle_triggered']);
 const numeric=new Set(['score','found_count','memories','lowest_flame','gust_shield','silence_release','rice_pct','mix_pct','doneness_pct','seasoning_pct','opening_hits','bad_reels','count']);
 let consent='';try{consent=localStorage.getItem(KEY)||''}catch(_){}
+let choiceObserver=null,choiceResize=null,choicePlay=null;
 let active=false;
 const starts=new Map();
 const prior=window.emotionTrack;
@@ -62,10 +63,16 @@ function track(name,payload){
  window.gtag('event',name,params);
 }
 window.emotionTrack=track;
+function dismissChoice(){
+ document.getElementById('analytics-choice')?.remove();
+ choiceObserver?.disconnect();choiceObserver=null;if(choiceResize)window.removeEventListener('resize',choiceResize);choiceResize=null;
+ if(choicePlay)document.removeEventListener('click',choicePlay,true);choicePlay=null;
+ document.body.classList.remove('analytics-choice-visible');document.body.style.removeProperty('--analytics-choice-height');
+}
 function choice(value){
  consent=value;
  try{localStorage.setItem(KEY,value)}catch(_){}
- document.getElementById('analytics-choice')?.remove();
+ dismissChoice();
  if(value==='yes')start();
  else if(active)location.reload();
 }
@@ -81,6 +88,13 @@ function showChoice(){
  box.innerHTML='<p>改善のためプレイ回数と結末をGA4で集計します。許可しますか？氏名・回答は送信しません。<a href="'+(document.body.dataset.game?'../':'./')+'privacy.html">詳細</a></p><div><button type="button" data-choice="no">送信しない</button><button type="button" data-choice="yes">許可する</button></div>';
  const style=document.createElement('style');style.textContent='#analytics-choice{position:fixed;z-index:10000;inset:auto 10px max(10px,env(safe-area-inset-bottom));max-width:620px;margin:auto;padding:9px 12px;border:1px solid #b9a78b;border-radius:12px;background:#101b2bf5;color:#fff5e9;box-shadow:0 10px 35px #0009;font:12px/1.4 system-ui,sans-serif}#analytics-choice p{margin:0 0 6px}#analytics-choice a{text-decoration:underline;color:#f8c788}#analytics-choice div{display:flex;gap:8px;justify-content:flex-end}#analytics-choice button{min-height:44px;padding:6px 14px;border:1px solid #aaacb0;border-radius:8px;background:#24344b;color:#fff;cursor:pointer}#analytics-choice button[data-choice=yes]{border-color:#f8c788;color:#ffe0af}';
  document.head.appendChild(style);box.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>choice(button.dataset.choice)));document.body.appendChild(box);
+ if(document.body.dataset.game==='kienaide'){
+  choiceResize=()=>document.body.style.setProperty('--analytics-choice-height',box.getBoundingClientRect().height+'px');
+  choiceResize();document.body.classList.add('analytics-choice-visible');window.addEventListener('resize',choiceResize);
+  if(window.ResizeObserver){choiceObserver=new ResizeObserver(choiceResize);choiceObserver.observe(box)}
+  choicePlay=event=>{const play=event.target.closest?.('#play');if(play&&!play.disabled&&!play.dataset.loadFailed)dismissChoice()};
+  document.addEventListener('click',choicePlay,true);
+ }
 }
 if(consent==='yes')start();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',controls,{once:true});else controls();
