@@ -22,6 +22,25 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin='http://127.0.0.1:'+server.address().port+'/';
 const browser=await pw[engine].launch({headless:true,...(engine==='chromium'?{args:['--no-sandbox']}:{})});
 try{
+ for(const size of [{width:390,height:844},{width:360,height:640}]){
+  const trial=await browser.newContext({viewport:size,hasTouch:true,isMobile:true}),screen=await trial.newPage();let requests=0;
+  await screen.route('**/www.googletagmanager.com/**',route=>{requests++;return route.abort()});
+  await screen.route('**/paint/hero-body.*',route=>route.abort());
+  await screen.goto(origin+'kienaide/',{waitUntil:'domcontentloaded'});
+  await screen.waitForFunction(()=>document.querySelector('#play')?.dataset.loadFailed);
+  const retry=screen.locator('#play'),banner=screen.locator('#analytics-choice');
+  assert.ok(await banner.isVisible());assert.equal(await retry.innerText(),'読み直す ↻');
+  const a=await retry.boundingBox(),b=await banner.boundingBox();
+  assert.ok(a.y+a.height<=b.y,'consent cannot cover retry at '+size.width+'x'+size.height);
+  assert.equal(await screen.evaluate(()=>{const r=document.querySelector('#play').getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id}),'play');
+  fs.mkdirSync('artifacts/analytics',{recursive:true});await screen.screenshot({path:`artifacts/analytics/${engine}-${size.width}-recovery-consent.png`});
+  await screen.unroute('**/paint/hero-body.*');await Promise.all([screen.waitForEvent('domcontentloaded'),retry.click()]);
+  await screen.waitForFunction(()=>!document.querySelector('#play').disabled);
+  assert.ok(await banner.isVisible(),'retry must not choose consent');assert.equal(requests,0,'no analytics before explicit choice');
+  await retry.click();assert.equal(await banner.count(),0,'starting the journey defers an unanswered choice');
+  assert.equal(await screen.evaluate(()=>localStorage.getItem('emotion-analytics-consent-v1')),null,'starting is not consent');assert.equal(requests,0);
+  await trial.close();
+ }
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
  const page=await context.newPage();const errors=[];let tagRequests=0;
  page.on('pageerror',error=>errors.push(error.message));
