@@ -45,9 +45,9 @@ function create(opts={}){
 }
 function flameExpression(s){
  if(s.flame<=0)return 'out';
- if(s.rescue||s.reply>0)return 'hope';
  if((s.oxygen??100)<24)return 'suffocating';
  if((s.flame??72)<31)return 'afraid';
+ if(s.rescue||s.reply>0)return 'hope';
  if(s.shield)return 'comfort';
  if((s.wind??0)>.58)return 'afraid';
  return 'calm';
