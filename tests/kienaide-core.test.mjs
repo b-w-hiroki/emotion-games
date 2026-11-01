@@ -416,6 +416,15 @@ test('flame personality follows state and shows nothing when out',()=>{
  assert.equal(K.flameExpression({flame:20,oxygen:80}),'afraid');
  assert.equal(K.flameExpression({flame:50,oxygen:80,shield:true}),'comfort');
 });
+test('the flame shows breath danger after a real rescue and hope again after recovery',()=>{
+ const s=K.create({seed:2});Object.assign(s,{routeChoice:'rest',decisionIndex:2,events:[],flame:20,oxygen:31,memories:2});
+ const events=K.step(s,75,.03,{shield:false,wasShield:true,releaseIntent:true});
+ assert.ok(events.some(e=>e.type==='miracle'));assert.equal(K.flameExpression(s),'hope');
+ for(let t=75.03;t<77;t+=.035)K.step(s,t,.035,{shield:true});
+ assert.ok(s.oxygen<24&&s.flame>31&&s.rescue);assert.equal(K.flameExpression(s),'suffocating');
+ K.step(s,77.1,.2,{shield:false,wasShield:true,releaseIntent:true});
+ assert.ok(s.oxygen>=24);assert.equal(K.flameExpression(s),'hope');
+});
 test('near-empty flame and breath have separate accessible danger states',()=>{
  assert.equal(K.vitalState({flame:20,oxygen:100}),'flame-critical');
  assert.equal(K.vitalState({flame:80,oxygen:22}),'breath-critical');
