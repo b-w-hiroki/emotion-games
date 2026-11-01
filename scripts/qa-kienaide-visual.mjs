@@ -40,6 +40,19 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A near-exhausted traveller can reach the hearth while still holding.
+  // The choice must not invent breath or show a negative cost.
+  {
+   const hearth=await open(size,'?qa=1&seed=3&speed=4&t=41.8&vital=flame-full');
+   await hearth.page.evaluate(()=>{const core=window.KienaideCore,step=core.step,choose=core.chooseDecision;let seeded=false;
+    core.step=(s,time,dt,input)=>{s.routeChoice='rest';if(!seeded&&time>=42){s.oxygen=.4;seeded=true}return step(s,time,dt,input)};
+    core.chooseDecision=(s,choice,time)=>{const before=s.oxygen,result=choose(s,choice,time);window.qaHearth={before,after:s.oxygen,result};return result}});
+   await hearth.page.locator('#play').click();const feed=hearth.page.locator('#route-choice [data-decision="feed"]');await feed.waitFor({state:'visible',timeout:10000});
+   assert.match(await feed.innerText(),/息−0/,'the displayed cost cannot be negative');
+   await hearth.page.screenshot({path:path.join(out,`${engine}-${tag}-hearth-low-breath.png`)});
+   await feed.click();assert.deepEqual(await hearth.page.evaluate(()=>window.qaHearth),{before:.4,after:.4,result:true},'feeding cannot increase an almost-empty breath meter');
+   assert.deepEqual(hearth.errors,[]);await hearth.ctx.close();done('hearth choice at near-zero breath '+tag);
+  }
   // A paused journey must not consume the reading time of its first guidance.
   {
    const story=await open(size,'?qa=1&seed=3&speed=.0001');await story.page.locator('#play').click();

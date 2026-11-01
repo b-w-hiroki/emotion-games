@@ -52,6 +52,16 @@ test('three choices pause the night and trade flame, breath and exposure',()=>{
  const exposed=K.create({seed:7});exposed.routeChoice='rest';exposed.decisionIndex=2;K.step(exposed,57,DT,{});K.step(s,57,DT,{});assert.ok(s.wind>exposed.wind,'fire recovery exposes the hands to stronger wind');
  assert.equal(s.decisions.length,2);assert.equal(K.chooseDecision(s,'shelter',57),false);
 });
+test('feeding the flame never increases breath at the safety floor',()=>{
+ for(const oxygen of [.4,1,1.2,10.5,30]){
+  const s=K.create({seed:7});Object.assign(s,{routeChoice:'rest',decisionPending:'hearth',oxygen,flame:50});
+  assert.equal(K.chooseDecision(s,'feed',42),true);
+  assert.ok(s.oxygen<=oxygen,'feeding cannot increase breath from '+oxygen);
+  assert.ok(s.oxygen>0,'a choice alone keeps a living traveller alive');
+  assert.equal(s.oxygen,Math.max(Math.min(1,oxygen),oxygen-18));
+  assert.equal(s.flame,64);
+ }
+});
 test('a warm tailwind rewards release rather than shielding',()=>{
  const one=K.create({seed:3}),event=one.events.find(e=>e.kind==='lull');one.events=[event];one.routeChoice='rest';one.decisionIndex=2;const two=K.create({seed:3});two.events=[event];two.routeChoice='rest';two.decisionIndex=2;
  K.step(one,event.at+.1,1,{shield:false});K.step(two,event.at+.1,1,{shield:true});assert.ok(one.flame>two.flame+2.5);assert.ok(one.oxygen>two.oxygen);

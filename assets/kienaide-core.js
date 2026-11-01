@@ -208,12 +208,15 @@ function chooseRoute(s,choice,time){
  }
  return true;
 }
+// The hearth keeps at least one unit of breath, but never grants breath when
+// the traveller arrives with less than one remaining.
+function feedBreathCost(oxygen){return Math.max(0,Math.min(18,oxygen-1))}
 function chooseDecision(s,choice,time){
  const kind=s.decisionPending;
  if(kind==='hearth'&&!['feed','breathe'].includes(choice))return false;
  if(kind==='bridge'&&!['spark','shelter'].includes(choice))return false;
  if(!kind)return false;
- if(choice==='feed'){s.flame=Math.min(100,s.flame+14);s.oxygen=Math.max(1,s.oxygen-18)}
+ if(choice==='feed'){s.flame=Math.min(100,s.flame+14);s.oxygen-=feedBreathCost(s.oxygen)}
  if(choice==='breathe'){s.oxygen=Math.min(100,s.oxygen+28);s.restUntil=time+3}
  if(choice==='spark'){s.flame=Math.min(100,s.flame+10);s.emberRiskUntil=time+6}
  if(choice==='shelter'){s.oxygen=Math.min(100,s.oxygen+15);s.shelterUntil=time+3}
@@ -224,7 +227,7 @@ function routeDistance(s,time){
  return Math.max(0,Math.ceil((s.routeChoiceAt==null?100:s.routeStartMeters)*(1-Math.max(0,Math.min(1,fraction)))));
 }
 function score(s){return Math.round(s.flame*.65+s.oxygen*.15+s.memories*7)}
-const api={JOURNEY,WIND_DAMAGE_THRESHOLD,CHAPTERS,MEMORIES,EVENT_KINDS,create,step,collect,chooseRoute,chooseDecision,routeDistance,score,flameExpression,vitalState,canTriggerMiracle,chapterAt,finalePhaseAt,arrivalEnding,eventSchedule,memorySlots,baseWind};
+const api={JOURNEY,WIND_DAMAGE_THRESHOLD,CHAPTERS,MEMORIES,EVENT_KINDS,create,step,collect,chooseRoute,chooseDecision,feedBreathCost,routeDistance,score,flameExpression,vitalState,canTriggerMiracle,chapterAt,finalePhaseAt,arrivalEnding,eventSchedule,memorySlots,baseWind};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 root.KienaideCore=api;
 })(typeof window!=='undefined'?window:globalThis);
