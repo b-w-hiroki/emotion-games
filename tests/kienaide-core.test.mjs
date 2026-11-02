@@ -69,6 +69,8 @@ test('a decision cannot save someone who ran out of breath before the choice',()
   assert.ok(Math.abs(crossing.shieldTime-exact.shieldTime)<1e-6,'only pre-choice input time is counted');
   assert.equal(boundary===28?crossing.routeChoice==='pending':!!crossing.decisionPending,true,'a surviving traveller gets the choice');
   assert.equal(choiceEvents.find(e=>e.type==='route-choice'||e.type==='decision-choice').at,boundary,'the display clock can stop at the exact choice time');
+  const late=make(),lateEvents=K.step(late,boundary+.9,.001,{shield:false});
+  assert.equal(lateEvents.find(e=>e.type==='route-choice'||e.type==='decision-choice').at,boundary+.9,'a state that starts after the threshold is not rewound');
  }
 });
 test('feeding the flame never increases breath at the safety floor',()=>{

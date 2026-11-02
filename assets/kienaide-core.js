@@ -95,8 +95,10 @@ function step(s,time,dt,input){
   const prior=before>0?step(s,boundary-1e-8,before,input):[];
   if(s.ended)return prior;
   s.shield=false;
-  if(routeDue){s.routeChoice='pending';emit('route-choice',{at:boundary})}
-  else{s.decisionPending=s.decisionIndex===0?'hearth':'bridge';emit('decision-choice',{kind:s.decisionPending,at:boundary})}
+  // A restored or QA state may start after the threshold; do not rewind it.
+  const choiceAt=before>0?boundary:time;
+  if(routeDue){s.routeChoice='pending';emit('route-choice',{at:choiceAt})}
+  else{s.decisionPending=s.decisionIndex===0?'hearth':'bridge';emit('decision-choice',{kind:s.decisionPending,at:choiceAt})}
   return prior.concat(out);
  }
  s.shield=!!input.shield;
