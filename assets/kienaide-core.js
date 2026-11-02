@@ -95,8 +95,8 @@ function step(s,time,dt,input){
   const prior=before>0?step(s,boundary-1e-8,before,input):[];
   if(s.ended)return prior;
   s.shield=false;
-  if(routeDue){s.routeChoice='pending';emit('route-choice')}
-  else{s.decisionPending=s.decisionIndex===0?'hearth':'bridge';emit('decision-choice',{kind:s.decisionPending})}
+  if(routeDue){s.routeChoice='pending';emit('route-choice',{at:boundary})}
+  else{s.decisionPending=s.decisionIndex===0?'hearth':'bridge';emit('decision-choice',{kind:s.decisionPending,at:boundary})}
   return prior.concat(out);
  }
  s.shield=!!input.shield;

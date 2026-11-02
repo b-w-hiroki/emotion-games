@@ -509,6 +509,7 @@ try{
   const fork=await open(routeSize,'?qa=1&seed=3&speed=1&t=25');await fork.page.locator('#play').click();
   const actionBox=await fork.page.locator('#action').boundingBox();await fork.page.mouse.move(actionBox.x+actionBox.width/2,actionBox.y+actionBox.height/2);await fork.page.mouse.down();
   await fork.page.locator('#route-choice [data-route="shortcut"]').waitFor({state:'visible',timeout:10000});
+  assert.equal(await fork.page.locator('#stage').getAttribute('data-elapsed'),'28.00','the clock stops at the route boundary');
   await fork.page.mouse.up();
   const before=Number(await fork.page.locator('#distance-value').textContent()),remaining=await fork.page.locator('#timer').innerText();
   assert.match(await fork.page.locator('#route-choice [data-route="shortcut"] small').innerText(),/8秒早く・強風8秒/,'shortcut must explain its time and wind tradeoff');
@@ -533,9 +534,11 @@ try{
   if(size.width===390){
    const choices=await open(size,'?qa=1&seed=3&speed=12&t=27&vital=flame-full');await choices.page.locator('#play').click();await choices.page.locator('#route-choice [data-route="rest"]').click();
    await choices.page.locator('#route-choice [data-decision="feed"]').waitFor({state:'visible',timeout:10000});
+   assert.equal(await choices.page.locator('#stage').getAttribute('data-elapsed'),'42.00','the clock stops at the hearth boundary');
    const before=await choices.page.locator('#timer').innerText();await choices.page.waitForTimeout(250);assert.equal(await choices.page.locator('#timer').innerText(),before,'the hearth choice pauses the clock');
    await choices.page.screenshot({path:path.join(out,`${engine}-hearth-choice.png`)});await choices.page.locator('#route-choice [data-decision="feed"]').click();
    await choices.page.locator('#route-choice [data-decision="spark"]').waitFor({state:'visible',timeout:10000});
+   assert.equal(await choices.page.locator('#stage').getAttribute('data-elapsed'),'56.00','the clock stops at the bridge boundary');
    assert.equal(await choices.page.locator('#route-choice button').count(),2);await choices.page.screenshot({path:path.join(out,`${engine}-bridge-choice.png`)});
    await choices.page.locator('#route-choice [data-decision="shelter"]').click();assert.equal(await choices.page.locator('#route-choice').isVisible(),false);
    assert.deepEqual(choices.errors,[]);await choices.ctx.close();done('three playable choices');

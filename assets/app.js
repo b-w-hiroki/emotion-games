@@ -565,6 +565,7 @@ function drawCandle(dt){
  syncStoryAnimation();if(!paused&&!storyReadingTime)$('story-beat').classList.remove('show');
  // An intentional down/up can happen between frames; its release proves the hold existed.
  const events=paused?[]:K.step(s,elapsed,step,{shield:!!s.shield,wasShield:lastShield||shelterRelease,releaseIntent:shelterRelease});shelterRelease=false;if(!paused)lastShield=s.shield;
+ const choiceEvent=events.find(e=>e.type==='route-choice'||e.type==='decision-choice');if(choiceEvent)elapsed=choiceEvent.at;
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);

@@ -63,11 +63,12 @@ test('a decision cannot save someone who ran out of breath before the choice',()
   assert.equal(exposed.ended,'blown','a gust can extinguish the flame before '+boundary);
   assert.ok(!gustEvents.some(e=>e.type==='route-choice'||e.type==='decision-choice'),'the choice cannot relight an extinguished flame');
   const crossing=make(),exact=make();crossing.oxygen=exact.oxygen=50;
-  K.step(crossing,boundary+.01,.035,{shield:true});K.step(exact,boundary-1e-8,.025,{shield:true});
+  const choiceEvents=K.step(crossing,boundary+.01,.035,{shield:true});K.step(exact,boundary-1e-8,.025,{shield:true});
   assert.ok(Math.abs(crossing.oxygen-exact.oxygen)<1e-6,'only the time before the choice spends breath');
   assert.ok(Math.abs(crossing.flame-exact.flame)<1e-6,'flame also follows the pre-choice interval');
   assert.ok(Math.abs(crossing.shieldTime-exact.shieldTime)<1e-6,'only pre-choice input time is counted');
   assert.equal(boundary===28?crossing.routeChoice==='pending':!!crossing.decisionPending,true,'a surviving traveller gets the choice');
+  assert.equal(choiceEvents.find(e=>e.type==='route-choice'||e.type==='decision-choice').at,boundary,'the display clock can stop at the exact choice time');
  }
 });
 test('feeding the flame never increases breath at the safety floor',()=>{
