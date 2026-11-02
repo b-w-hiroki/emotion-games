@@ -48,9 +48,27 @@ test('three choices pause the night and trade flame, breath and exposure',()=>{
  assert.deepEqual(K.step(s,42,DT,{}),[],'the clock stays frozen until a choice');
  const flame=s.flame,oxygen=s.oxygen;assert.equal(K.chooseDecision(s,'feed',42),true);assert.equal(s.flame,flame+14);assert.equal(s.oxygen,oxygen-18);
  assert.equal(K.step(s,56,DT,{}).some(e=>e.type==='decision-choice'&&e.kind==='bridge'),true);
- assert.equal(K.chooseDecision(s,'spark',56),true);assert.equal(s.flame,Math.min(100,flame+24));assert.equal(s.emberRiskUntil,62);
+ const bridgeFlame=s.flame;assert.equal(K.chooseDecision(s,'spark',56),true);assert.equal(s.flame,Math.min(100,bridgeFlame+10));assert.equal(s.emberRiskUntil,62);
  const exposed=K.create({seed:7});exposed.routeChoice='rest';exposed.decisionIndex=2;K.step(exposed,57,DT,{});K.step(s,57,DT,{});assert.ok(s.wind>exposed.wind,'fire recovery exposes the hands to stronger wind');
  assert.equal(s.decisions.length,2);assert.equal(K.chooseDecision(s,'shelter',57),false);
+});
+test('a decision cannot save someone who ran out of breath before the choice',()=>{
+ for(const boundary of [28,42,56]){
+  const make=()=>{const s=K.create({seed:7});Object.assign(s,{routeChoice:boundary===28?'none':'rest',decisionIndex:boundary===56?1:0,events:[],flame:80,oxygen:.01});return s};
+  const s=make(),events=K.step(s,boundary+.01,.035,{shield:true});
+  assert.equal(s.ended,'smother','breath exhausted before '+boundary+' ends the journey');
+  assert.ok(!events.some(e=>e.type==='route-choice'||e.type==='decision-choice'),'no choice appears after the traveller falls');
+  const exposed=make();Object.assign(exposed,{oxygen:80,flame:.01,events:[{id:'gust-test',kind:'gust',warnAt:boundary-2,at:boundary-1,end:boundary+2}]});
+  const gustEvents=K.step(exposed,boundary+.01,.035,{shield:false});
+  assert.equal(exposed.ended,'blown','a gust can extinguish the flame before '+boundary);
+  assert.ok(!gustEvents.some(e=>e.type==='route-choice'||e.type==='decision-choice'),'the choice cannot relight an extinguished flame');
+  const crossing=make(),exact=make();crossing.oxygen=exact.oxygen=50;
+  K.step(crossing,boundary+.01,.035,{shield:true});K.step(exact,boundary-1e-8,.025,{shield:true});
+  assert.ok(Math.abs(crossing.oxygen-exact.oxygen)<1e-6,'only the time before the choice spends breath');
+  assert.ok(Math.abs(crossing.flame-exact.flame)<1e-6,'flame also follows the pre-choice interval');
+  assert.ok(Math.abs(crossing.shieldTime-exact.shieldTime)<1e-6,'only pre-choice input time is counted');
+  assert.equal(boundary===28?crossing.routeChoice==='pending':!!crossing.decisionPending,true,'a surviving traveller gets the choice');
+ }
 });
 test('feeding the flame never increases breath at the safety floor',()=>{
  for(const oxygen of [.4,1,1.2,10.5,30]){

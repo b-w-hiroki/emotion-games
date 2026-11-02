@@ -84,9 +84,21 @@ function step(s,time,dt,input){
  // Arrival ends the journey at its deadline, not at the end of a later frame.
  // Never apply wind, breath loss or input time beyond that instant.
  if(time>s.journey){dt=Math.max(0,Math.min(dt,s.journey-(time-dt)));time=s.journey;}
- if(s.routeChoice==='none'&&time>=28&&time<30){s.routeChoice='pending';s.shield=false;emit('route-choice');return out}
  const decisionTimes=[42,56];
- if(s.routeChoice!=='none'&&s.decisionIndex<decisionTimes.length&&time>=decisionTimes[s.decisionIndex]){s.decisionPending=s.decisionIndex===0?'hearth':'bridge';s.shield=false;emit('decision-choice',{kind:s.decisionPending});return out}
+ const routeDue=s.routeChoice==='none'&&time>=28&&time<30;
+ const decisionDue=s.routeChoice!=='none'&&s.decisionIndex<decisionTimes.length&&time>=decisionTimes[s.decisionIndex];
+ if(routeDue||decisionDue){
+  // Resolve the part of this frame before the choice. A traveller whose
+  // breath or flame expires there cannot be saved by the ensuing dialog.
+  const boundary=routeDue?28:decisionTimes[s.decisionIndex];
+  const before=Math.max(0,Math.min(dt,boundary-(time-dt)));
+  const prior=before>0?step(s,boundary-1e-8,before,input):[];
+  if(s.ended)return prior;
+  s.shield=false;
+  if(routeDue){s.routeChoice='pending';emit('route-choice')}
+  else{s.decisionPending=s.decisionIndex===0?'hearth':'bridge';emit('decision-choice',{kind:s.decisionPending})}
+  return prior.concat(out);
+ }
  s.shield=!!input.shield;
  if(s.shield){s.shieldTime+=dt;s.releaseAt=-100;}
  const chapter=chapterAt(time,s.journey);

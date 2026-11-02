@@ -40,17 +40,30 @@ async function layout(page,size){
 try{
  for(const size of sizes){
   const tag=size.width+'x'+size.height;
+  // A hold that exhausts breath before the hearth must end the journey,
+  // rather than letting the next dialog rescue the traveller.
+  {
+   const boundary=await open(size,'?qa=1&seed=3&speed=.5&t=41.8&vital=flame-full');
+   await boundary.page.evaluate(()=>{const core=window.KienaideCore,step=core.step;let seeded=false;
+    core.step=(s,time,dt,input)=>{s.routeChoice='rest';if(!seeded&&time>=42){s.oxygen=.000001;seeded=true}return step(s,time,dt,input)}});
+   await boundary.page.locator('#play').click();await boundary.page.locator('#action').focus();await boundary.page.keyboard.down('Space');
+   await boundary.page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='smother',null,{timeout:10000});
+   assert.ok(await boundary.page.locator('#route-choice').isHidden(),'the choice cannot appear after breath runs out');
+   await boundary.page.keyboard.up('Space');await boundary.page.screenshot({path:path.join(out,`${engine}-${tag}-hearth-boundary-ending.png`)});
+   assert.deepEqual(boundary.errors,[]);await boundary.ctx.close();done('breath runs out before hearth '+tag);
+  }
   // A near-exhausted traveller can reach the hearth while still holding.
   // The choice must not invent breath or show a negative cost.
   {
-   const hearth=await open(size,'?qa=1&seed=3&speed=4&t=41.8&vital=flame-full');
+   const hearth=await open(size,'?qa=1&seed=3&speed=.1&t=41.99&vital=flame-full');
    await hearth.page.evaluate(()=>{const core=window.KienaideCore,step=core.step,choose=core.chooseDecision;let seeded=false;
     core.step=(s,time,dt,input)=>{s.routeChoice='rest';if(!seeded&&time>=42){s.oxygen=.4;seeded=true}return step(s,time,dt,input)};
     core.chooseDecision=(s,choice,time)=>{const before=s.oxygen,result=choose(s,choice,time);window.qaHearth={before,after:s.oxygen,result};return result}});
    await hearth.page.locator('#play').click();const feed=hearth.page.locator('#route-choice [data-decision="feed"]');await feed.waitFor({state:'visible',timeout:10000});
    assert.match(await feed.innerText(),/息−0/,'the displayed cost cannot be negative');
    await hearth.page.screenshot({path:path.join(out,`${engine}-${tag}-hearth-low-breath.png`)});
-   await feed.click();assert.deepEqual(await hearth.page.evaluate(()=>window.qaHearth),{before:.4,after:.4,result:true},'feeding cannot increase an almost-empty breath meter');
+   await feed.click();const observed=await hearth.page.evaluate(()=>window.qaHearth);
+   assert.ok(observed.before<1,'the actual pre-choice breath remains below one');assert.equal(observed.after,observed.before,'feeding cannot increase an almost-empty breath meter');assert.equal(observed.result,true);
    assert.deepEqual(hearth.errors,[]);await hearth.ctx.close();done('hearth choice at near-zero breath '+tag);
   }
   // A paused journey must not consume the reading time of its first guidance.
