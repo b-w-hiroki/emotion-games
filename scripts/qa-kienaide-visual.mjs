@@ -49,7 +49,9 @@ try{
    await boundary.page.locator('#play').click();await boundary.page.locator('#action').focus();await boundary.page.keyboard.down('Space');
    await boundary.page.waitForFunction(()=>document.querySelector('#stage').dataset.ending==='smother',null,{timeout:10000});
    assert.ok(await boundary.page.locator('#route-choice').isHidden(),'the choice cannot appear after breath runs out');
-   await boundary.page.keyboard.up('Space');await boundary.page.screenshot({path:path.join(out,`${engine}-${tag}-hearth-boundary-ending.png`)});
+   await boundary.page.keyboard.up('Space');await boundary.page.waitForFunction(()=>!document.querySelector('#curtain').classList.contains('hidden'),null,{timeout:10000});
+   assert.match(await boundary.page.locator('#curtain-title').innerText(),/守りすぎた/,'the result explains the breath loss');
+   await boundary.page.screenshot({path:path.join(out,`${engine}-${tag}-hearth-boundary-ending.png`)});
    assert.deepEqual(boundary.errors,[]);await boundary.ctx.close();done('breath runs out before hearth '+tag);
   }
   // A near-exhausted traveller can reach the hearth while still holding.
