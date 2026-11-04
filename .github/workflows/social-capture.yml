@@ -86,4 +86,5 @@ jobs:
             artifacts/chahan/
             artifacts/studio/
             artifacts/analytics/
+            artifacts/gust-cue/
           retention-days: 30
