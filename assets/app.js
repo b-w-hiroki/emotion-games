@@ -256,6 +256,16 @@ if(candle){
  Promise.all([KV.loaded,...titleImages]).then(results=>{const play=$('play');play.disabled=false;play.removeAttribute('aria-busy');if(results.every(Boolean))$('journey-loading').remove();else{$('journey-loading').textContent='絵を読み込めませんでした。通信を確認して読み直してください。';play.dataset.loadFailed='1';play.textContent='読み直す ↻'}});
 }
 const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
+// Opt-in presentation comparison. Never changes rules, input, timings, saves or audio.
+const gustPreviewVariant=qa&&params.get('gustCue')==='anticipation';
+const gustPreview=gustPreviewVariant?document.createElement('span'):null;
+if(gustPreview){action.classList.add('gust-preview-host');gustPreview.className='gust-anticipation';gustPreview.setAttribute('aria-hidden','true');gustPreview.hidden=true;action.append(gustPreview)}
+function gustAnticipationProgress(s,t,enabled){
+ const ev=s.event;
+ if(!enabled||s.chapter!==0||s.finalePhase!=='approach'||s.oxygen<=22||s.flame<=20||!ev||ev.kind!=='gust'||!(ev.at>ev.warnAt)||t<ev.warnAt||t>=ev.at)return null;
+ return Math.max(0,Math.min(1,(t-ev.warnAt)/(ev.at-ev.warnAt)));
+}
+
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 let endingAt=0,endingTime=0,endingClockAt=0,endingPaused=false,endingRevealed=false,runCount=0;
 function syncEndingClock(){if(mode!=='end'||!endingAt)return;const now=performance.now();if(!endingPaused)endingTime+=(now-endingClockAt)/1000;endingClockAt=now;endingPaused=!!(document.hidden||!candleWindowFocused||landscapeMode.matches||candleDialog)}
@@ -557,6 +567,7 @@ function candleActionCopy(s){
  return s.oxygen<=22?[s.shield?'はなす':'ひと休み','手を離して息を戻す']:s.shield?['はなす','息を戻す']:['押さえる','灯りを守る'];
 }
 function drawCandle(dt){
+ if(gustPreview)gustPreview.hidden=true;
  if(candleDialog?.id==='kienaide-intro')return;
  const s=state;KV.resize(canvas);
  if(mode==='end'&&lastEnding){syncEndingClock();if(!endingPaused&&!endingRevealed&&endingTime>=(reducedMotion()?.5:2.6)){endingRevealed=true;curtain.classList.remove('hidden');curtain.scrollTop=0;momentCard.prepare()}KV.endingFrame(ctx,s,lastEnding,endingTime,{reduced:reducedMotion()});const fa=KV.flameAnchor(),fc=KV.toCss(fa.x,fa.y);canvas.dataset.flame=Math.round(fc.x)+','+Math.round(fc.y);return}
@@ -569,6 +580,8 @@ function drawCandle(dt){
  if(!paused&&s.routeChoice!=='pending'&&elapsed>(s.storyPause||0)&&elapsed-s.sceneChangedAt>=1.2&&s.finalePhase==='approach')setStory(K.CHAPTERS[s.chapter].label,K.CHAPTERS[s.chapter].line);
  candleEvents(events);if(mode!=='play')return;
  const [text,warn]=candleCaption(s);
+ if(gustPreview){const progress=gustAnticipationProgress(s,elapsed,gustPreviewVariant);gustPreview.hidden=progress===null;if(progress!==null)gustPreview.style.setProperty('--gust-progress',String(progress));}
+
  $('hint').textContent=text;
   const [mainText,subText]=candleActionCopy(s),disableHold=chapterLoading||s.oxygen<=22&&!s.shield;
   if(actionCue.textContent!==text)actionCue.innerHTML=guidanceMarkup(text);if(actionMain.textContent!==mainText)actionMain.textContent=mainText;if(actionSub.textContent!==subText)actionSub.textContent=subText;
