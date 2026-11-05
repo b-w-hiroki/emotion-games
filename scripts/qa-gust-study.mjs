@@ -11,7 +11,7 @@ try{
  browser=await ({chromium,webkit})[engine].launch({headless:true});
  for(const width of [390,360])for(const sequence of ['AB','BA']){
  const context=await browser.newContext({viewport:{width,height:width===390?844:640},reducedMotion:'reduce'});
- await context.addInitScript(seq=>{sessionStorage.setItem('kienaide-gust-study-v1',JSON.stringify({schema:1,participant:'test',sequence:seq,period:1,runs:[]}));localStorage.setItem('emotion-kienaide-intro-v1','1')},sequence);
+ await context.addInitScript(seq=>{if(!sessionStorage.getItem('kienaide-gust-study-v1'))sessionStorage.setItem('kienaide-gust-study-v1',JSON.stringify({schema:1,participant:'test',sequence:seq,period:1,runs:[]}));localStorage.setItem('emotion-kienaide-intro-v1','1')},sequence);
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  const base=`http://127.0.0.1:${server.address().port}/kienaide/`;
  await page.goto(base+'?study=1');await page.locator('#play').click();
