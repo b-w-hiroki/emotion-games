@@ -75,3 +75,7 @@ npm run study:analyze -- path/to/emotion-games-study.json
 ## 記録上の注意
 
 JSONに氏名、連絡先、自由記述などの個人情報を入れない。外部共有する前に内容を確認し、参加者の同意なしに公開しない。自動テストの結果と人間の感情評価を同じ「完了」にまとめない。
+
+## 突風予兆A/Bの例外手順
+
+通常公開URLやQA URLでは行わず、[比較専用手順](./KIENAIDE-GUST-STUDY.md)で作成した非公開プレビューの `?study=1` を使用する。既存study JSON単体では版・順序を識別できない。比較JSONを保存し、初見と反復を分離する。

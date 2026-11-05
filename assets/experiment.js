@@ -2,6 +2,7 @@
    No data is sent anywhere; users can export the JSON and clear it locally. */
 (()=>{
 'use strict';
+if(window.KienaideGustStudyBlocked)return;
 const query=new URL(location.href).searchParams;
 if(query.get('study')!=='1')return;
 document.documentElement.dataset.study='1';
