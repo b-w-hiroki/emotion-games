@@ -1,0 +1,18 @@
+name: Gust study preview regression
+on: [pull_request, workflow_dispatch]
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - run: KIENAIDE_GUST_STUDY=1 npm run build
+      - run: node scripts/qa-gust-study.mjs ${{ matrix.engine }}

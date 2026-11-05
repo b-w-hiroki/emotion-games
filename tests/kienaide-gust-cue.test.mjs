@@ -12,7 +12,7 @@ test('gust preview is opt-in and bounded by the existing warning interval',()=>{
  assert.ok(Math.abs(progress(state,6.8,true)-.5)<1e-9);
  assert.equal(progress(state,7.4,true),null);
  assert.equal(progress(state,8,true),null);
- assert.match(app,/gustPreviewVariant=qa&&params\.get\('gustCue'\)==='anticipation'/);
+ assert.match(app,/:qa&&params\.get\('gustCue'\)==='anticipation'/);
 });
 test('preview cannot compete with critical guidance or other mechanics',()=>{
  for(const change of [{chapter:1},{oxygen:22},{flame:20},{event:null},{event:{kind:'eddy',warnAt:6.2,at:7.4}},{event:{kind:'gust',warnAt:7.4,at:7.4}},{finalePhase:'gust-warning'}])assert.equal(progress({...state,...change},6.8,true),null);

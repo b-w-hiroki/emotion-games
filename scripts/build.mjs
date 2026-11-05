@@ -57,3 +57,13 @@ for(const [file,prefix] of [[path.join(dist,'index.html'),'./'],[path.join(dist,
  fs.writeFileSync(file,html);
 }
 console.log('Built hub, works collection, '+games.length+' games, and '+(games.length+2)+' Open Graph PNGs to dist/ (origin '+origin+')');
+
+// Dedicated human-study preview only. Never included in ordinary/public builds.
+if(process.env.KIENAIDE_GUST_STUDY==='1'){
+ if(gaId)throw Error('Study preview must not enable analytics');
+ fs.copyFileSync('assets/gust-study.js',path.join(dist,'assets/gust-study.js'));
+ const file=path.join(dist,'kienaide/index.html');
+ let html=fs.readFileSync(file,'utf8');
+ html=html.replace('<script defer src="../assets/app.js">','<meta name="robots" content="noindex,nofollow"><script defer src="../assets/gust-study.js"></script><script defer src="../assets/app.js">');
+ fs.writeFileSync(file,html);
+}
