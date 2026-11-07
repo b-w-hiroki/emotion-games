@@ -1,4 +1,5 @@
 (()=>{'use strict';
+if(window.KienaideGustStudyBlocked)return;
 const root=document.getElementById('app'),slug=document.body.dataset.game||'',base=slug?'../':'./';
 const games=[
 {slug:'girigiri',title:'ぎりぎり。',emotion:'緊張',subtitle:'止めたあとも、水は落ちてくる。',mechanic:'指を離すタイミングがすべて。',theme:'aqua',number:'01',duration:'30秒'},
@@ -257,7 +258,8 @@ if(candle){
 }
 const params=new URLSearchParams(location.search),qa=candle&&params.has('qa');
 // Opt-in presentation comparison. Never changes rules, input, timings, saves or audio.
-const gustPreviewVariant=qa&&params.get('gustCue')==='anticipation';
+const gustStudy=window.KienaideGustStudy;
+const gustPreviewVariant=gustStudy?gustStudy.variant==='B':qa&&params.get('gustCue')==='anticipation';
 const gustPreview=gustPreviewVariant?document.createElement('span'):null;
 if(gustPreview){action.classList.add('gust-preview-host');gustPreview.className='gust-anticipation';gustPreview.setAttribute('aria-hidden','true');gustPreview.hidden=true;action.append(gustPreview)}
 function gustAnticipationProgress(s,t,enabled){
@@ -500,8 +502,8 @@ function startCandle(){
  memoryTouch.hidden=true;
  pendingActionFocus=false;
  releaseCandleInput();shelterRelease=false;KA.init();KA.resume();KA.startJourney();runCount++;
- const seed=qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
- Object.assign(state,K.create({seed}),{qaSpeed:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='flame-full')state.flame=100;if(qa&&params.get('vital')==='breath')state.oxygen=16;if(qa&&params.get('vital')==='breath-warning')state.oxygen=26;if(qa&&params.get('vital')==='breath-mid')state.oxygen=80;lastShield=false;endingAt=0;
+ const seed=gustStudy?5:qa?(Number(params.get('seed'))||1):((Date.now()^runCount*2654435761)>>>0);
+ Object.assign(state,K.create({seed}),{qaSpeed:gustStudy?1:qa?(Number(params.get('speed'))||12):1});if(qa&&params.get('vital')==='flame')state.flame=18;if(qa&&params.get('vital')==='flame-full')state.flame=100;if(qa&&params.get('vital')==='breath')state.oxygen=16;if(qa&&params.get('vital')==='breath-warning')state.oxygen=26;if(qa&&params.get('vital')==='breath-mid')state.oxygen=80;lastShield=false;endingAt=0;
  if(qa&&params.has('mem')){for(const m of state.slots.slice(0,Math.min(3,Number(params.get('mem'))||0)))state.memoryGot.add(m.id);state.memories=state.memoryGot.size}
  if(qa&&params.has('t')){elapsed=Math.max(0,Math.min(89,Number(params.get('t'))||0));state.chapter=state.previousChapter=K.chapterAt(elapsed)}
  $('moment-save').hidden=true;$('next-hint').hidden=true;delete canvas.dataset.ending;$('story-beat').hidden=false;curtain.classList.remove('tableau');best.textContent=state.memories+' / 3';
@@ -567,6 +569,7 @@ function candleActionCopy(s){
  return s.oxygen<=22?[s.shield?'はなす':'ひと休み','手を離して息を戻す']:s.shield?['はなす','息を戻す']:['押さえる','灯りを守る'];
 }
 function drawCandle(dt){
+ if(gustStudy&&mode==='play')gustStudy.frame(elapsed,state);
  if(gustPreview)gustPreview.hidden=true;
  if(candleDialog?.id==='kienaide-intro')return;
  const s=state;KV.resize(canvas);
