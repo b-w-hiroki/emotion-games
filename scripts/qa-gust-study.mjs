@@ -20,9 +20,12 @@ try{
  await page.locator('#action').dispatchEvent('pointerdown',{pointerId:1});
  await page.waitForFunction(()=>JSON.parse(sessionStorage.getItem('kienaide-gust-study-v1')).runs[0].first_input_ms!==null);
  await page.locator('#action').dispatchEvent('pointercancel',{pointerId:1});
- await page.waitForTimeout(8000);
+ // Wait for the actual recorded warning rather than assuming CI renders 8s of frames in 8s wall time.
+ await page.waitForFunction(()=>JSON.parse(sessionStorage.getItem('kienaide-gust-study-v1')).runs[0].events.some(e=>e.warning),null,{timeout:30000});
  const record=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('kienaide-gust-study-v1')).runs[0]);
  assert.ok(record.events.some(e=>e.warning),'first warning recorded');assert.ok(record.events.at(-1).t<12,'normal speed');
+ const warning=record.events.find(e=>e.warning);
+ assert.ok(Date.now()-record.started >= warning.t*1000-1000,'warning must not use accelerated game time');
  await page.reload();assert.equal(await page.evaluate(()=>window.KienaideGustStudy.variant),sequence[0]);
  await page.evaluate(()=>{const d=JSON.parse(sessionStorage.getItem('kienaide-gust-study-v1'));d.period=2;sessionStorage.setItem('kienaide-gust-study-v1',JSON.stringify(d))});await page.reload();assert.equal(await page.evaluate(()=>window.KienaideGustStudy.variant),sequence[1]);
  await page.goto(base+'?study=1&qa=1&t=7');assert.equal(await page.locator('#play').count(),0);assert.deepEqual(errors,[]);await context.close();
