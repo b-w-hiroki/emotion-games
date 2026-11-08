@@ -13,23 +13,23 @@ export function analyzeGustStudy(exports) {
    const key=`${r.period}:${r.attempt}`;if(keys.has(key))throw Error('Duplicate trial within participant');keys.add(key);
    if(r.first_input_ms!==null&&(!Number.isFinite(r.first_input_ms)||r.first_input_ms<0))throw Error('Invalid input latency');
    const cohort=r.period===1&&r.attempt===1?'primary-first-trial':'exploratory';
-   const groupKey=`${cohort}/${data.sequence}/period${r.period}/${r.variant}`;
-   if(!groups.has(groupKey))groups.set(groupKey,{cohort,sequence:data.sequence,period:r.period,variant:r.variant,rows:[]});
+   const groupKey=`${cohort}/${data.sequence}/period${r.period}/${r.variant}/attempt${r.attempt}`;
+   if(!groups.has(groupKey))groups.set(groupKey,{cohort,sequence:data.sequence,period:r.period,variant:r.variant,attempt:r.attempt,rows:[]});
    groups.get(groupKey).rows.push(r);total++;
   }
  }
  const mean=xs=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
  const counts=(rows,key)=>{
-  const values={},missing=rows.filter(r=>typeof r.answers?.[key]!=='string'||!r.answers[key]).length;
+  const values=Object.create(null),missing=rows.filter(r=>typeof r.answers?.[key]!=='string'||!r.answers[key]).length;
   for(const r of rows){const v=r.answers?.[key];if(typeof v==='string'&&v)values[v]=(values[v]||0)+1;}
   return {answered:rows.length-missing,missing,values};
  };
- return {schema:1,participants:participants.size,trials:total,groups:[...groups.values()].map(g=>{
+ return {schema:2,participants:participants.size,trials:total,groups:[...groups.values()].map(g=>{
   const rows=g.rows,latencies=rows.map(r=>r.first_input_ms).filter(Number.isFinite);
   const ratings=key=>{const values=rows.map(r=>r.answers?.[key]).filter(v=>typeof v==='string'&&/^[1-5]$/.test(v)).map(Number);return {n:values.length,missing:rows.length-values.length,mean:mean(values)};};
-  return {cohort:g.cohort,sequence:g.sequence,period:g.period,variant:g.variant,started:rows.length,completed:rows.filter(r=>r.completed).length,incomplete:rows.filter(r=>!r.completed).length,
-   firstInputMs:{n:latencies.length,missing:rows.length-latencies.length,mean:mean(latencies)},line:counts(rows,'line'),prediction:counts(rows,'prediction'),fair:ratings('fair'),fun:ratings('fun')};
- }),limitations:['Descriptive only: no adoption decision or causal benefit is established.', 'Primary comparison uses period 1 attempt 1 only. Later trials are exploratory and remain separated by sequence and period.', 'Input latency includes interruptions; it is not proof of comprehension. A-line answers are not successful cue comprehension.', 'Completion is not enjoyment; retry attempts do not establish voluntary retry. Missing answers are not zero. Device balance and observer notes require separate review.']};
+  return {cohort:g.cohort,sequence:g.sequence,period:g.period,variant:g.variant,attempt:g.attempt,started:rows.length,completed:rows.filter(r=>r.completed).length,incomplete:rows.filter(r=>!r.completed).length,
+   firstInputMs:{n:latencies.length,missing:rows.length-latencies.length,mean:mean(latencies)},line:counts(rows,'line'),prediction:counts(rows,'prediction'),failure:counts(rows,'failure'),fair:ratings('fair'),fun:ratings('fun')};
+ }),limitations:['Descriptive only: no adoption decision or causal benefit is established.', 'Primary comparison uses period 1 attempt 1 only. Later trials are exploratory and remain separated by sequence, period and attempt.', 'Input latency includes interruptions; it is not proof of comprehension. A-line answers are not successful cue comprehension.', 'Completion is not enjoyment; retry attempts do not establish voluntary retry. Missing answers are not zero. Device balance and observer notes require separate review.']};
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
  try{const paths=process.argv.slice(2);if(!paths.length)throw Error('Usage: node scripts/analyze-gust-study.mjs participant1.json [participant2.json ...]');
