@@ -24,3 +24,17 @@ test('empty exports and incomplete plays remain honest',()=>{
  const s=analyzeGustStudy([data('p','AB',[])]);assert.equal(s.trials,0);assert.deepEqual(s.groups,[]);
  assert.equal(analyzeGustStudy([]).participants,0);
 });
+
+test('exploratory attempts remain separate and failure answers preserve missingness',()=>{
+ const s=analyzeGustStudy([data('p1','AB',[trial(2,1,'B',{failure:'風に気づかなかった'}),trial(2,2,'B',{failure:'手を離した'})]),data('p2','AB',[trial(2,1,'B')])]);
+ assert.equal(s.schema,2);assert.equal(s.groups.length,2);
+ const first=s.groups.find(g=>g.attempt===1),retry=s.groups.find(g=>g.attempt===2);
+ assert.equal(first.started,2);assert.equal(first.failure.answered,1);assert.equal(first.failure.missing,1);
+ assert.equal(first.failure.values['風に気づかなかった'],1);assert.equal(retry.failure.values['手を離した'],1);
+ assert.ok(s.groups.every(g=>g.cohort==='exploratory'));
+});
+test('answer labels are data even when they match object property names',()=>{
+ const s=analyzeGustStudy([data('p1','AB',[trial(1,1,'A',{failure:'__proto__',line:'constructor'})])]);
+ assert.equal(s.groups[0].failure.values['__proto__'],1);
+ assert.equal(JSON.parse(JSON.stringify(s)).groups[0].line.values.constructor,1);
+});
